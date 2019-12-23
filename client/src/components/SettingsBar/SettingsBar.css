@@ -1,0 +1,25 @@
+.SideBar {
+    position: fixed;
+    right:0;
+    background-color: #21262b;
+    top:80px;
+    width:150px;
+    height:calc(100vh - 80px);
+}
+
+.SideBarIcon {
+    margin-bottom:-5px;
+    width: 20px;
+    margin-right:10px;
+}
+
+.SideBarItem {
+    padding:15px;
+    color:white;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 15px;
+}
+
+.SideBarItem:hover {
+    background-color: #101417;
+}

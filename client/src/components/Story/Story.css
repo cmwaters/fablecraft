@@ -1,0 +1,47 @@
+.Page {
+    width:900px;
+    margin-left:auto;
+    margin-right: auto;
+    padding:150px;
+    background-color: white;
+    height:1200px;
+    border-top-right-radius: 8px;
+    border-top-left-radius: 8px;
+    margin-top: 100px;
+}
+
+.Title {
+    color: black;
+    font-family: 'Jomolhari', serif;
+    font-size: 60px;
+    text-align: center;
+    margin-top:10px;
+    padding:20px;
+}
+
+.Underline {
+    width:400px;
+    margin-bottom:100px;
+}
+
+.OverTitle {
+    text-align: center;
+    margin-top:60px;
+}
+
+.TitleChangeIcon {
+    width: 20px;
+    position:absolute;
+    margin-top:-20px;
+    margin-left:10px;
+}
+
+.EditTitleInput {
+    font-family: 'Jomolhari', serif;
+    font-size: 60px;
+    text-align: center;
+    width:100%;
+    background-color: transparent;
+    outline: none;
+    border: none;
+}
