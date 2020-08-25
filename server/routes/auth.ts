@@ -44,7 +44,7 @@ passport.deserializeUser(function(user, done) {
 router.post(
   "/login",
   passport.authenticate("local", {
-    successRedirect: "/auth/",
+    successRedirect: "/api/me",
     failureRedirect: "/auth/login/",
     failureFlash: true,
   })
@@ -56,7 +56,7 @@ router.get('/login', function(req, res, next) {
     return res.status(200).send({ message: flash });
   }
   if (req.isAuthenticated()) {
-    return res.redirect("/auth")
+    return res.status(200).send({ message: "You are logged in as " + req.user.email})
   }
   return res.status(200).send({ message: "You are not logged in. Enter your email and password to login."})
 });
@@ -72,16 +72,14 @@ router.post("/signup", async (req, res) => {
       password: passwordHashed,
       name: name,
     });
-    return res
-      .status(200)
-      .send({ message: "congrats you have made an account" });
+    res.redirect('/auth/login')
+    // passport.authenticate('local')
+    // return res
+    //   .status(200)
+    //   .send({ message: "congrats you have made an account" });
   } catch (e) {
     return res.status(500).send(e);
   }
-});
-
-router.get("/", (req: any, res) => {
-  return res.status(200).send({ message: req.user.email + " is logged in" });
 });
 
 router.get("/logout", (req: any, res) => {

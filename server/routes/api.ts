@@ -2,7 +2,7 @@ import * as express from "express";
 import mongoose from "mongoose";
 import passport from "passport";
 const router = express.Router();
-import { User } from '../models/user'
+import { User, UserModel } from '../models/user'
 import { Story, StoryModel } from '../models/story';
 import { CardModel } from '../models/card';
 
@@ -51,6 +51,11 @@ function hasPermission(permissionLevel: string, userId: User, story: Story): str
 router.get("/me", ensureAuthenticated, (req: any, res) => {
     res.json({ id: req.user._id, email: req.user.email });
 });
+
+router.delete("/me", ensureAuthenticated, (req: any, res) => {
+    UserModel.findByIdAndDelete(req.user._id)
+    res.status()
+})
 
 router.get("/stories", ensureAuthenticated, async (req, res) => { 
     const stories = await StoryModel.find({owner: req.user})

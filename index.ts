@@ -10,6 +10,8 @@ import apiRouter from './server/routes/api';
 import passport from 'passport';
 // import debug from 'debug';
 import flash from 'connect-flash'
+import path from 'path'
+let clientRouter = express.Router();
 
 dotenv.config()
 
@@ -24,6 +26,8 @@ db.once('open', () => {
   console.log("Connected to database")
 });
 
+app.set('view engine', 'pug');
+
 app.use(bodyParser.json());
 app.use(express.json());
 app.use(session({ 
@@ -36,6 +40,9 @@ app.use(flash())
 app.use(passport.initialize())
 app.use(passport.session())
 
+app.use(express.static(path.join(__dirname, 'dist/client')));
+
+
 // app.use(function(req, res, next) {
 //   res.header("Access-Control-Allow-Origin", 'http://localhost:3000'); // update to match the domain you will make the request from
 //   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -44,6 +51,12 @@ app.use(passport.session())
 //   next();
 // });
 
+clientRouter.get('/', (req, res, next) => {
+  console.log("Starting client")
+  res.render('index')
+})
+
+app.use('/', clientRouter)
 app.use('/auth', authRouter);
 app.use('/api', apiRouter);
 
