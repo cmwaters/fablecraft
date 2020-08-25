@@ -1,12 +1,15 @@
-import * as mongoose from 'mongoose'
-const Author = mongoose.model('Author')
+import mongoose from "mongoose";
+const User = mongoose.model("User");
+
+export interface Card extends mongoose.Document {
+    uid: number;
+    text: string;
+    depth: number;
+    index: number;
+    owner: typeof User;
+}
 
 const CardSchema = new mongoose.Schema({
-    uid: {
-        type: Number,
-        unique: true,
-        required: true
-    },
     text: {
         type: String,
         required: true,
@@ -20,24 +23,15 @@ const CardSchema = new mongoose.Schema({
         required: true,
     },
     owner: {
-        type: Author,
-        required: true
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
     },
+    story: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Story",
+        required: true
+    }
 });
 
-// const NoteSchema = new mongoose.Schema({
-//    text: String,
-//    cardSchema: [String],
-// });
-
-// const storySchema = new mongoose.Schema({
-//     title: String,
-//     color: String,
-//     cards: [cardSchema],
-//     notes: [NoteSchema]
-// });
-
-export default mongoose.model<mongoose.Document>('Card', CardSchema);
-// mongoose.model('note', NoteSchema);
-// mongoose.model('story', storySchema);
-
+export const CardModel = mongoose.model<Card>("Card", CardSchema);

@@ -3,7 +3,9 @@ import express from 'express';
 import mongoose from 'mongoose';
 import session from 'express-session';
 import * as bodyParser from 'body-parser';
-import router from './server/routes/api';
+import "./server/models/user"
+import authRouter from './server/routes/auth';
+import apiRouter from './server/routes/api';
 // import * as http from 'http'
 import passport from 'passport';
 // import debug from 'debug';
@@ -18,7 +20,9 @@ const app = express();
 mongoose.connect(process.env.DATABASE_URL || "mongodb://localhost/fablecraft", { useNewUrlParser: true, useUnifiedTopology: true});
 const db = mongoose.connection;
 db.on('error', (error) => console.error(error));
-db.once('open', () => console.log("Connected to database"));
+db.once('open', () => {
+  console.log("Connected to database")
+});
 
 app.use(bodyParser.json());
 app.use(express.json());
@@ -40,7 +44,8 @@ app.use(passport.session())
 //   next();
 // });
 
-app.use('/api', router);
+app.use('/auth', authRouter);
+app.use('/api', apiRouter);
 
 
 const PORT = process.env.SERVER_PORT || 8080;

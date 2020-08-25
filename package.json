@@ -13,7 +13,7 @@
     "fix": "eslint --fix .eslintrc.js --ext .ts"
   },
   "keywords": [],
-  "author": "",
+  "User": "",
   "license": "ISC",
   "dependencies": {
     "@types/debug": "^4.1.5",

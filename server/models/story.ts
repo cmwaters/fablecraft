@@ -1,8 +1,40 @@
-const mongoose = require('mongoose');
+import mongoose from "mongoose";
+// const Card = mongoose.model("Card");
+// const User = mongoose.model("User");
+import { Card } from './card'
+import { User } from './user' 
+export interface Story extends mongoose.Document {
+    title: string;
+    description?: string;
+    owner: User;
+    authors: User[];
+    editors: User[];
+    viewers: User[];
+}
 
-const productSchema = new mongoose.Schema({
-    name: String,
+const StorySchema = new mongoose.Schema({
+    title: {
+        type: String,
+        required: true,
+    },
     description: String,
+    owner: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+    },
+    authors: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+    }],
+    editors: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+    }],
+    viewers: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+    }]
 });
 
-mongoose.model('products', productSchema);
+export const StoryModel = mongoose.model<Story>("Story", StorySchema);
