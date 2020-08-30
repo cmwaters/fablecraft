@@ -6,9 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "server": "nodemon dist/index.js",
-    "build": "tsc --watch --preserveWatchOutput",
-    "webpack": "webpack --watch",
-    "dev": "concurrently --kill-others-on-fail \"npm run server\" \"npm run client\"",
+    "build-server": "tsc --watch --preserveWatchOutput",
+    "build": "concurrently --kill-others-on-fail \"npm run build-server\" \"gulp ts\"",
     "start": "node dist/index.js",
     "lint": "eslint -c .eslintrc.js --ext .ts",
     "fix": "eslint --fix .eslintrc.js --ext .ts"
@@ -37,6 +36,7 @@
     "jsonwebtoken": "^8.5.1",
     "lodash.assign": "^4.2.0",
     "mongoose": "^5.6.3",
+    "paper": "^0.12.11",
     "passport": "^0.4.1",
     "passport-local": "^1.0.0",
     "pug": "^3.0.0",

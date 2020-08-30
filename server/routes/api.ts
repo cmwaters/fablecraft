@@ -54,7 +54,7 @@ router.get("/me", ensureAuthenticated, (req: any, res) => {
 
 router.delete("/me", ensureAuthenticated, (req: any, res) => {
     UserModel.findByIdAndDelete(req.user._id)
-    res.status()
+    res.status(201).send({ message: "user deleted"})
 })
 
 router.get("/stories", ensureAuthenticated, async (req, res) => { 
