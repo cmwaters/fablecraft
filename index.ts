@@ -17,8 +17,6 @@ dotenv.config()
 
 const app = express();
 
-//IMPORT ROUTES
-
 mongoose.connect(process.env.DATABASE_URL || "mongodb://localhost/fablecraft", { useNewUrlParser: true, useUnifiedTopology: true});
 const db = mongoose.connection;
 db.on('error', (error) => console.error(error));
@@ -29,8 +27,6 @@ db.once('open', () => {
 app.set('view engine', 'pug');
 
 app.use(express.static(path.join(__dirname, 'client')));
-// app.use(express.static(path.join(__dirname, 'public')));
-// app.use(express.static(path.join(__dirname, 'views')));
 
 app.use(bodyParser.json());
 app.use(express.json());
@@ -45,19 +41,12 @@ app.use(passport.initialize())
 app.use(passport.session())
 
 
-// app.use(function(req, res, next) {
-//   res.header("Access-Control-Allow-Origin", 'http://localhost:3000'); // update to match the domain you will make the request from
-//   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-//   res.header("Access-Control-Allow-Methods", "PUT, DELETE");
-//   console.log(new Date().toISOString().slice(0,19), ' ' , req.method, ' ', req.originalUrl);
-//   next();
-// });
-
 clientRouter.get('/', (req, res, next) => {
   console.log("Starting client")
   res.render('index')
 })
 
+//IMPORT ROUTES
 app.use('/', clientRouter)
 app.use('/auth', authRouter);
 app.use('/api', apiRouter);
