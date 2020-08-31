@@ -5,9 +5,10 @@
   "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "server": "nodemon dist/index.js",
+    "nodemon": "nodemon dist/index.js",
     "build-server": "tsc --watch --preserveWatchOutput",
-    "build": "concurrently --kill-others-on-fail \"npm run build-server\" \"gulp ts\"",
+    "build-client": "webpack --watch",
+    "build": "concurrently --kill-others-on-fail \"npm run build-server\" \"npm run build-client\"",
     "start": "node dist/index.js",
     "lint": "eslint -c .eslintrc.js --ext .ts",
     "fix": "eslint --fix .eslintrc.js --ext .ts"
@@ -23,27 +24,19 @@
     "@types/passport-local": "^1.0.33",
     "argon2": "^0.26.2",
     "body-parser": "^1.19.0",
-    "browserify": "^16.5.2",
     "connect-flash": "^0.1.1",
     "debug": "^4.1.1",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "express-jwt": "^6.0.0",
     "express-session": "^1.17.1",
-    "gulp": "^4.0.2",
     "gulp-sourcemaps": "^2.6.5",
-    "gulplog": "^1.0.0",
     "jsonwebtoken": "^8.5.1",
-    "lodash.assign": "^4.2.0",
     "mongoose": "^5.6.3",
     "paper": "^0.12.11",
     "passport": "^0.4.1",
     "passport-local": "^1.0.0",
-    "pug": "^3.0.0",
-    "tsify": "^5.0.2",
-    "vinyl-buffer": "^1.0.1",
-    "vinyl-source-stream": "^2.0.0",
-    "watchify": "^3.11.1"
+    "pug": "^3.0.0"
   },
   "devDependencies": {
     "@types/connect-flash": "0.0.35",
@@ -52,9 +45,12 @@
     "copy-webpack-plugin": "^6.0.3",
     "eslint": "^7.6.0",
     "eslint-config-prettier": "^6.11.0",
+    "jest": "^26.4.2",
     "nodemon": "^1.19.1",
     "ts-loader": "^8.0.3",
     "ts-node": "^8.10.2",
-    "typescript": "^3.9.7"
+    "typescript": "^3.9.7",
+    "webpack": "^4.44.1",
+    "webpack-cli": "^3.3.12"
   }
 }

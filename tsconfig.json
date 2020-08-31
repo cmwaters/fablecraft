@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "outDir": "dist", 
     "strict": true,
     "module": "commonjs",
@@ -13,6 +14,8 @@
     "dist",
     "node_modules",
     "archive",
-    "gulpfile.js"
+    "gulpfile.js",
+    "webpack.config.js",
+    "client"
   ]
 }

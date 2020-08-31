@@ -63,7 +63,7 @@ app.use('/auth', authRouter);
 app.use('/api', apiRouter);
 
 
-const PORT = process.env.SERVER_PORT || 8080;
+const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, () => {
   console.log('Fablecraft server listening on port ' + PORT) 
