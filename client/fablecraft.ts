@@ -11,23 +11,15 @@ window.onload = () => {
     paper.setup(canvas);
     document.body.appendChild(canvas)
     alert("Finished fablecraft")
+    
+    const text = new TextBox({
+        content: "Hello World", 
+        position: new Point(300, 100), 
+        size: new Size(200, 100)
+    });
 
-    const playerSprite = new Path.Circle(new Point(100, 100), 20);
-    playerSprite.fillColor = new Color("black");
-    playerSprite.onClick = () => {
-        console.log("Hello World")
-    }
-    
-    const text = new TextBox("Hello World", new Point(0, 100), new Size(200, 100));
-    // text.fontSize = "40px"
-    
-    let anotherText = new PointText({
-        content: "Hello World",
-        point: new Point(300, 100),
-        fontSize: "16px"
-    })
-    anotherText.onClick = () => {
-        console.log("Hello World")
+    document.onkeydown = (e) => {
+        text.input(e.key)
     }
 
 }
