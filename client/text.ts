@@ -20,7 +20,8 @@ export class TextBox {
         options.font ? this.font = options.font : this.font = defaultFont
         options.lineSpacing ? this.lineSpacing = options.lineSpacing : this.lineSpacing = defaultLineSpacing
         this.insertLine()
-        this.insert(options.content)
+        if (options.content !== undefined)
+            this.insert(options.content)
     }
 
     // input takes a key action and performs the respective action
@@ -176,6 +177,7 @@ export class TextBox {
         if (this.lastLine()) {
             this.cursor.column = this.lineEnd()
             this.insertLine()
+
         } else {
             this.cursor.row++
             if (this.cursor.column > this.lineEnd()) {
@@ -228,6 +230,11 @@ export class TextBox {
         this.cursor.row++
         this.return()
         this.lines.splice(this.cursor.row, 0, newLine)
+        // check 
+        if (newLine.point.y + this.font.size > this.box.y + this.box.height) {
+            this.box.height = newLine.point.y + this.font.size - this.box.y
+            console.log(this.box.height)
+        }
     }
     
     text(): string {
@@ -252,8 +259,6 @@ export class TextBox {
     }
 
 }
-
-
 
 function getTextWidth(text: string, font: Font): number {
     // re-use canvas object for better performance

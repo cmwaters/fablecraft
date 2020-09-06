@@ -85,13 +85,16 @@ test('add characters to text box', () => {
     expect(textBox.line().content).toBe("W")
     expect(textBox.text()).toBe("HelloW")
     textBox.insert("orld")
+    expect(textBox.text()).toBe("HelloWorld")
+    textBox.insert(" I am your maker")
+    expect(textBox.text()).toBe("HelloWorld I am your maker")
+    console.log(textBox.string())
 })
 
 test('delete characters in text box', () => {
     const str = "this is a multiline text"
     const textBox = setup(str)
     textBox.up()
-    // console.log(textBox.string())
     textBox.delete(2)
     expect(textBox.text()).toBe("this is multiline text")
     textBox.down()
@@ -102,12 +105,8 @@ test('delete characters in text box', () => {
     textBox.delete()
     expect(textBox.text()).toBe("this ismulti text")
     expect(textBox.line().content).toBe("this ismulti ")
-    console.log(textBox.line().content.length)
-    console.log(textBox.string())
-    // textBox.right()
     textBox.delete(8)
     expect(textBox.text()).toBe("multi text")
-    console.log(textBox.string())
 })
 
 test('remove function', () => {
