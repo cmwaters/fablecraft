@@ -83,7 +83,20 @@ export class TextBox {
                 this.lines[this.cursor.row].content = remove(this.lines[this.cursor.row].content, this.cursor.column)
                 this.cursor.column--;
             } else {
+                if (this.cursor.row === 0) {
+                    return
+                }
+                // we will delete the trailing space at the line above
+                let index = this.line().content.indexOf(" ")
+                // include the space when we bring the word up to the line above
+                let word = this.line().content.substr(0, index + 1)
+                this.line().content = this.line().content.slice(index + 1)
+                // jump to the end of the last line and continue to delete
                 this.left()
+                this.delete(x - i)
+                // insert the word from the previous line
+                this.insert(word)
+                this.shift(word.length * -1)
             }
         
         }
@@ -187,6 +200,10 @@ export class TextBox {
         this.cursor.row = 0;
         this.cursor.column = 0;
     }
+    
+    currentChar(): string {
+        return this.line().content.charAt(this.cursor.column)
+    }
 
     insertLine() {
         let pos = new Point(this.box.x, this.box.y + this.font.size)
@@ -229,7 +246,10 @@ export class TextBox {
         return str
     }
     
-    
+    string(): string {
+        return "text:\n" + this.formattedText() + "cursor pos, x: " + 
+        this.cursor.column + " y: " + this.cursor.row + "\nat letter: " + this.currentChar()
+    }
 
 }
 
