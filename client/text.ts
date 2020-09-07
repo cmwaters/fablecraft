@@ -1,4 +1,4 @@
-import { Rectangle, Path, Point, PointText, Color } from 'paper'
+import { Rectangle, Path, Point, PointText, Color, Size } from 'paper'
 import paper from 'paper'
 
 const defaultFont: Font = {family: "Arial", size: 16}
@@ -9,16 +9,23 @@ export class TextBox {
     box: paper.Rectangle
     lines: paper.PointText[] = []
     cursor: TextPos
+    pointer: paper.Path.RegularPolygon
     font: Font
     lineSpacing: number
     
     constructor(options: TextBoxOptions) {
         this.cursor = {row: -1, column: 0}
-        this.box = new Rectangle(options.position, options.size)
-        // let path = new Path.Rectangle(this.box)
-        // path.strokeColor = new Color("black")
         options.font ? this.font = options.font : this.font = defaultFont
         options.lineSpacing ? this.lineSpacing = options.lineSpacing : this.lineSpacing = defaultLineSpacing
+        if (options.position === undefined) {
+            this.box = new Rectangle(new Point(0, 0), new Size(options.width, this.font.size))
+        } else {
+            this.box = new Rectangle(options.position, new Size(options.width, this.font.size))
+        }
+        this.pointer = new Path.RegularPolygon(this.box.bottomLeft.add(new Point(0, 6)), 3, 5)
+        this.pointer.fillColor = new Color('black')
+        // let path = new Path.Rectangle(this.box)
+        // path.strokeColor = new Color("black")
         this.insertLine()
         if (options.content !== undefined)
             this.insert(options.content)
@@ -58,7 +65,11 @@ export class TextBox {
     // then checks for overflow and balances out the lines
     insert(char: string): void {
         if (this.cursor.column === this.lines[this.cursor.row].content.length) {
-            this.lines[this.cursor.row].content+=char
+            if (this.cursor.column === 0 && char === " ") { // can't start a line with a space
+                return
+            } else {
+                this.lines[this.cursor.row].content+=char
+            }
         } else {
             let firstPart = this.lines[this.cursor.row].content.slice(0, this.cursor.column)
             let lastPart = this.lines[this.cursor.row].content.slice(this.cursor.column)
@@ -107,13 +118,16 @@ export class TextBox {
     // if so then cuts the text that is overflowing and returns it else returns an empty string
     overflow(): string {
         let output = ""
-        let str = this.lines[this.cursor.row].content
+        let str = this.line().content
         let width = getTextWidth(str, this.font)
         while (width > this.box.width) { // check for overflow
-            const index = str.lastIndexOf(" ")
+            let index = str.lastIndexOf(" ")
+            if (index == this.lineEnd() - 1) { // if we end on a space then take the word before then
+                index = str.substring(0, index).lastIndexOf(" ")
+            }
             if (index === -1) { // rare case that this is all one word
-                output = str.slice(str.length - 1) + output
-                this.lines[this.cursor.row].content = str.substring(0, str.length - 1)
+                output = str.slice(str.length - 2) + output
+                this.lines[this.cursor.row].content = str.substring(0, str.length - 2) + "-"
             } else {
                 if (output === "") {
                     output = str.substring(index + 1)
@@ -233,7 +247,6 @@ export class TextBox {
         // check 
         if (newLine.point.y + this.font.size > this.box.y + this.box.height) {
             this.box.height = newLine.point.y + this.font.size - this.box.y
-            console.log(this.box.height)
         }
     }
     
@@ -271,9 +284,9 @@ function getTextWidth(text: string, font: Font): number {
 }
 
 type TextBoxOptions = {
+    width: number, //height is inferred from the content
     content?: string,
-    position: paper.Point,
-    size: paper.Size,
+    position?: paper.Point,
     font?: Font
     lineSpacing?: number
 }

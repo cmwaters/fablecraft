@@ -1,6 +1,6 @@
-import { TextBox, remove } from '../text';
+import { TextBox } from '../text';
 import { Point, Size, PaperScope } from 'paper';
-import { text } from 'body-parser';
+import * as fc from 'fast-check'
 
 beforeAll(() => {
     const paper = new PaperScope()
@@ -13,7 +13,7 @@ function setup(str: string): TextBox {
     return new TextBox({
         content: str, 
         position: new Point(0, 0), 
-        size: new Size(100, 100)
+        width: 100,
     });
 }
 
@@ -39,6 +39,7 @@ test('initialize multi-line', () => {
 test('basic move cursor', () => {
     const str = "Hello"
     const textBox = setup(str)
+    const height = textBox.box.height
     expect(textBox.cursor.row).toBe(0)
     expect(textBox.cursor.column).toBe(str.length)
     textBox.left()
@@ -50,6 +51,7 @@ test('basic move cursor', () => {
     expect(textBox.lineEnd()).toBe(0)
     expect(textBox.cursor.column).toBe(0)
     expect(textBox.cursor.row).toBe(1)
+    expect(textBox.box.height).toBeGreaterThan(height)
     textBox.up()
     expect(textBox.cursor.row).toBe(0)
     expect(textBox.cursor.column).toBe(0)
@@ -73,8 +75,8 @@ test('basic move cursor', () => {
 })
 
 test('add characters to text box', () => {
-    const str = "Hel"
-    const textBox = setup(str)
+    let str = "Hel"
+    let textBox = setup(str)
     textBox.insert("o")
     expect(textBox.line().content).toBe("Helo")
     textBox.left()
@@ -88,7 +90,12 @@ test('add characters to text box', () => {
     expect(textBox.text()).toBe("HelloWorld")
     textBox.insert(" I am your maker")
     expect(textBox.text()).toBe("HelloWorld I am your maker")
-    console.log(textBox.string())
+    
+    str = "Hello painters"
+    textBox = setup(str)
+    textBox.insert(" ")
+    expect(textBox.lines[0].content).toBe("Hello ")
+    expect(textBox.lines[1].content).toBe("painters ")
 })
 
 test('delete characters in text box', () => {
@@ -109,7 +116,14 @@ test('delete characters in text box', () => {
     expect(textBox.text()).toBe("multi text")
 })
 
-test('remove function', () => {
-    const str = "Hello World"
-    expect(remove(str, 3)).toBe("Helo World")
+test('line should never start with a space', ()=> {
+    const textBox = new TextBox({
+        width: 100
+    })
+    fc.assert(
+        fc.property(fc.string(12), fc.string(12), fc.string(12), (a, b, c) => {
+            textBox.insert(a + " " + b + " " + c)
+            expect(textBox.lines[textBox.cursor.row].content[0]).not.toBe(" ")
+        })
+    )
 })

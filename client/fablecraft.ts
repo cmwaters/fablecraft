@@ -14,14 +14,11 @@ window.onload = () => {
     
     const card = new Card(new Point(300, 100), new Size(200, 40))
 
-    // const text = new TextBox({
-    //     content: "Hello World", 
-    //     position: new Point(300, 100), 
-    //     size: new Size(400, 100)
-    // });
+    console.log(card.text.box.height)
+    console.log(card.box.bounds.height)
 
     document.onkeydown = (e) => {
-        card.text.input(e.key)
+        card.input(e.key)
     }
 
 }
