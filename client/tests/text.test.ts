@@ -1,4 +1,4 @@
-import { TextBox } from '../text';
+import { TextBox, getTextWidth } from '../text';
 import { Point, Size, PaperScope } from 'paper';
 import * as fc from 'fast-check'
 
@@ -26,6 +26,7 @@ test('initialize text box', () => {
 test('initialize multi-line', () => {
     const str = "This is a very long line"
     const textBox = setup(str)
+
     expect(textBox.cursor.row).toBe(1)
     expect(textBox.lines.length).toBe(2)
     expect(textBox.text()).toBe(str)
@@ -42,6 +43,7 @@ test('basic move cursor', () => {
     const height = textBox.box.height
     expect(textBox.cursor.row).toBe(0)
     expect(textBox.cursor.column).toBe(str.length)
+    expect(textBox.pointer.position.x).toBe(getTextWidth(str, textBox.font))
     textBox.left()
     expect(textBox.cursor.column).toBe(str.length - 1)
     textBox.right()

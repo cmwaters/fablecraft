@@ -22,7 +22,7 @@ export class Card {
     
     input(char: string): void {
         this.text.input(char)
-        if (this.text.box.height + this.margin.height > this.box.bounds.height ) {
+        if (this.text.box.height + this.margin.height !== this.box.bounds.height ) {
             this.box.bounds.height = this.text.box.height + this.margin.height
         }
     }
