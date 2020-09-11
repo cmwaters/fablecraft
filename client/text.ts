@@ -1,5 +1,6 @@
 import { Rectangle, Path, Point, PointText, Color, Size } from 'paper'
 import paper from 'paper'
+import { defaultReportMessage } from 'fast-check';
 
 const defaultFont: Font = {family: "Arial", size: 16}
 const defaultLineSpacing = 6; 
@@ -23,13 +24,17 @@ export class TextBox {
         } else {
             this.box = new Rectangle(options.position, new Size(options.width, this.font.size))
         }
+        console.log("height: " + this.box.height)
         this.pointer = new Path.RegularPolygon(this.box.bottomLeft.add(new Point(0, this.lineSpacing)), 3, 5)
         this.pointer.fillColor = new Color('black')
         // let path = new Path.Rectangle(this.box)
         // path.strokeColor = new Color("black")
         this.insertLine()
+        console.log("height: " + this.box.height)
         if (options.content !== undefined)
             this.insert(options.content)
+        console.log("height: " + this.box.height)
+        console.log("line: " + this.lines.length)
     }
 
     // input takes a key action and performs the respective action
@@ -143,10 +148,10 @@ export class TextBox {
                 this.left();
                 // we are making a deletion at the end of the line so remove the last saved width
                 if (this.cursor.column === this.lineEnd()) {
-                    this.widthMap[this.cursor.row] = this.widthMap[this.cursor.row].slice(0, this.cursor.column)
+                    this.widthMap[this.cursor.row] = this.widthMap[this.cursor.row].slice(0, this.cursor.column + 1)
                 } else {
                     // we are making a deletion somewhere in the line. Recalculate the new width
-                    for (let idx = this.cursor.row; idx < this.lineEnd(); idx++) {
+                    for (let idx = this.cursor.column + 1; idx < this.lineEnd(); idx++) {
                         this.widthMap[this.cursor.row][idx] = getTextWidth(this.line().content.slice(0, idx), this.font)
                     }
                 }
@@ -167,8 +172,9 @@ export class TextBox {
                 this.shift(word.length * -1)
                 this.updateHeight()
             }
+            this.slidePointer()
         }
-        this.slidePointer()
+        
     }
     
     // overflow checks to see if the current line that the cursor is at is overflowing.
@@ -320,9 +326,39 @@ export class TextBox {
     }
 
     updateHeight(): void {
-        if (this.lines[this.lines.length - 1].point.y + this.font.size != this.box.y + this.box.height) {
-            this.box.height = this.lines[this.lines.length - 1].point.y + this.font.size - this.box.y
+        if (this.lines[this.lines.length - 1].point.y != this.box.y + this.box.height) {
+            this.box.height = this.lines[this.lines.length - 1].point.y - this.box.y
         }
+    }
+    
+    move(newPos: paper.Point): void {
+        let delta = this.box.topLeft.subtract(newPos)
+        this.lines.forEach(line => {
+            line.translate(delta)
+        })
+        this.pointer.translate(delta)
+        this.box.topLeft = newPos
+    }
+    
+    resize(newWidth: number): number {
+        let text = this.text()
+        console.log("resizing: " + text)
+        this.box.width = newWidth
+        this.clear()
+        this.insert(text)
+        return this.box.height
+    }
+    
+    clear(): void {
+        this.lines.forEach(line => {
+            line.remove()
+        })
+        this.lines = []
+        this.widthMap = []
+        this.textStart()
+        this.cursor.row = -1
+        this.insertLine()
+        this.slidePointer()
     }
     
     text(): string {
@@ -343,7 +379,8 @@ export class TextBox {
     
     string(): string {
         return "text:\n" + this.formattedText() + "cursor pos, x: " + 
-        this.cursor.column + " y: " + this.cursor.row + "\nat letter: " + this.currentChar()
+        this.cursor.column + " y: " + this.cursor.row + "\nat letter: " + this.currentChar() +
+        "\nheight: " + this.box.height + " width: " + this.box.width
     }
 
 }

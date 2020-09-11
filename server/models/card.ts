@@ -27,11 +27,6 @@ const CardSchema = new mongoose.Schema({
         ref: "User",
         required: true,
     },
-    story: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Story",
-        required: true
-    }
 });
 
 export const CardModel = mongoose.model<Card>("Card", CardSchema);

@@ -6,6 +6,7 @@ import { User } from './user'
 export interface Story extends mongoose.Document {
     title: string;
     description?: string;
+    cards: Card[];
     owner: User;
     authors: User[];
     editors: User[];
@@ -18,6 +19,10 @@ const StorySchema = new mongoose.Schema({
         required: true,
     },
     description: String,
+    cards: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Card"
+    }],
     owner: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
