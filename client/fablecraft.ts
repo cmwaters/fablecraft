@@ -1,6 +1,7 @@
 import { PaperScope, Path, Color, Point, Size, Rectangle, Layer, PointText, Group } from "paper";
 import { Card } from './card'
 import { Story } from './story'
+import ArrowDown from './icons/box-arrow-in-down.svg'
 
 const paper = new PaperScope()
 window.onload = () => {
@@ -20,6 +21,13 @@ window.onload = () => {
     ctx.translate(0.5, 0.5);
     
     paper.setup(canvas);
+
+    // paper.project.importSVG(ArrowDown, {
+    //     onLoad: (item: any) => {
+    //         item.position = new Point(50, 50)
+    //         item.scale(100)
+    //     }
+    // })
     
     let snippets = [{
         text: "Hello World",
@@ -29,10 +37,19 @@ window.onload = () => {
         text: "Welcome to Fablecraft",
         depth: 1,
         index: 2,
+    }, {
+        text: "An elegant text editor with an emphasis on structured design",
+        depth: 1,
+        index: 3,
     }]
     
-    let story = new Story("My Story", snippets)
+    let story = new Story("My Story", paper.project, snippets)
     
+    // window.addEventListener("resize", () => {
+    //     canvas.height = window.innerHeight
+    //     canvas.width = window.innerWidth
+    // })
+
     // const card = new Card(new Point(300, 100), 400, new Size(20, 20))
 
 }

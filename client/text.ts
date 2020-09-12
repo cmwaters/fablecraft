@@ -24,17 +24,14 @@ export class TextBox {
         } else {
             this.box = new Rectangle(options.position, new Size(options.width, this.font.size))
         }
-        console.log("height: " + this.box.height)
         this.pointer = new Path.RegularPolygon(this.box.bottomLeft.add(new Point(0, this.lineSpacing)), 3, 5)
         this.pointer.fillColor = new Color('black')
+        this.pointer.visible = false
         // let path = new Path.Rectangle(this.box)
         // path.strokeColor = new Color("black")
         this.insertLine()
-        console.log("height: " + this.box.height)
         if (options.content !== undefined)
             this.insert(options.content)
-        console.log("height: " + this.box.height)
-        console.log("line: " + this.lines.length)
     }
 
     // input takes a key action and performs the respective action
@@ -331,13 +328,21 @@ export class TextBox {
         }
     }
     
+    // move moves the card to a defined absolute position.
     move(newPos: paper.Point): void {
         let delta = this.box.topLeft.subtract(newPos)
+        this.translate(delta)
+    }
+
+    // translate moves the text box across from it's current position by a vector.
+    // Does not transform the size in any way.
+    translate(delta: paper.Point) {
         this.lines.forEach(line => {
             line.translate(delta)
         })
         this.pointer.translate(delta)
-        this.box.topLeft = newPos
+        this.box.topLeft = this.box.topLeft.add(delta)
+
     }
     
     resize(newWidth: number): number {
@@ -359,6 +364,14 @@ export class TextBox {
         this.cursor.row = -1
         this.insertLine()
         this.slidePointer()
+    }
+
+    activate(): void {
+        this.pointer.visible = true;
+    }
+
+    decativate(): void {
+        this.pointer.visible = false
     }
     
     text(): string {

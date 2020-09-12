@@ -2,6 +2,7 @@ import { Card } from './card'
 import { Point, Size } from 'paper'
 
 const minimumCardWidth = 400
+const maximumCardWidth = 800
 const defaultViewMargin = new Size(20, 20)
 const defaultViewPadding = new Size(20, 20)
 export class Story {
@@ -10,12 +11,14 @@ export class Story {
     description: string
     view: View
     snippets: Snippet[]
+    project: paper.Project
     
-    constructor(title: string, snippets: Snippet[]) {
+    constructor(title: string, project: paper.Project, snippets: Snippet[]) {
         this.title = title
         this.snippets = snippets
+        this.project = project
         this.view = new View(new Point(0, 40), new Size(document.body.clientWidth, document.body.clientHeight), 
-        defaultViewPadding, defaultViewMargin, snippets)
+        defaultViewPadding, defaultViewMargin, snippets, this.project)
         
         document.onkeydown = (e) => {
             this.view.input(e.key)
@@ -32,25 +35,26 @@ class View {
     location: paper.Point
     camera: paper.Point
     cards: Card[] = []
-    
+    project: paper.Project
     padding: paper.Size
     margin: paper.Size
-    activeCardIdx: number
+    activeCardIdx: number = 0
     size: paper.Size
+    shiftMode: boolean = false;
     
-    constructor(position: paper.Point, size: paper.Size, padding: paper.Size, margin: paper.Size, snippets: Snippet[]) {
+    constructor(position: paper.Point, size: paper.Size, padding: paper.Size, margin: paper.Size, snippets: Snippet[], project: paper.Project) {
         this.location = position;
         this.size = size;
+        this.project = project
         this.padding = padding;
         this.margin = margin
-        let cardWidth = Math.max(0.5 * this.size.width, minimumCardWidth)
+        let cardWidth = Math.min(Math.max(0.5 * this.size.width, minimumCardWidth), maximumCardWidth)
         let cardX = (this.size.width - cardWidth) / 2 + this.location.x
         let cardY = this.location.y + this.padding.height + this.margin.height
         
         // let's assume a flat tree and keep everything on the same x margin
         snippets.forEach(snippet => {
-            let newCard = new Card(new Point(cardX, cardY), cardWidth, snippet.text)
-            newCard.deactivate()
+            let newCard = new Card(this.project, new Point(cardX, cardY), cardWidth, snippet.text)
             cardY += newCard.box.bounds.height + this.padding.height
             this.cards.push(newCard)
         })
@@ -60,14 +64,48 @@ class View {
     }
     
     input(char: string):void {
-        this.card().input(char)
+        if (this.card().textMode()) {
+            if (char === "Escape") {
+                this.card().text.decativate()
+            } else {
+                let initialHeight = this.card().box.bounds.height
+                this.card().input(char)
+                let delta = this.card().box.bounds.height - initialHeight
+                if (delta !== 0) {
+                    this.slideBottom(delta)
+                }
+            }
+        } else {
+            switch (char) {
+                case "Shift":
+                    this.shiftMode = true
+                case "ArrowDown":
+                    if (this.shiftMode) {
+                        this.createBelow()
+                    } else if (this.activeCardIdx < this.cards.length - 1) {
+                        this.focus(this.activeCardIdx + 1)
+                    }
+                    break;
+                case "ArrowUp":
+                    if (this.shiftMode) {
+                        this.createAbove()
+                    } else if (this.activeCardIdx > 0){
+                        this.focus(this.activeCardIdx - 1)
+                    }
+                    break
+                case "Enter":
+                    this.card().text.activate()
+                    break;
+                default:
+                    break; //nop
+            }
+        }
     }
     
     resize(): void {
-        // console.log("resizing")
         this.size.height = window.innerHeight
         this.size.width = window.innerWidth
-        let cardWidth = Math.max(0.5 * this.size.width, minimumCardWidth)
+        let cardWidth = Math.min(Math.max(0.5 * this.size.width, minimumCardWidth), maximumCardWidth)
         console.log(this.location.y)
         let y = this.location.y + this.margin.height + this.padding.height
         for (let card of this.cards) {
@@ -85,8 +123,27 @@ class View {
     }
     
     focus(cardIdx: number): void {
+        this.card().deactivate()
         this.activeCardIdx = cardIdx
         this.card().activate()
+    }
+
+    createAbove(): void {
+
+    }
+
+    createBelow(): void {
+
+
+    }
+
+    slideBottom(delta: number): void {
+        if (this.activeCardIdx === this.cards.length -1) {
+            return
+        }
+        for (let i = this.activeCardIdx + 1; i < this.cards.length; i++) {
+            this.cards[i].translate(new Point(0, delta))
+        }
     }
 }
 
