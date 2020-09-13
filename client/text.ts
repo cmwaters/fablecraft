@@ -72,6 +72,7 @@ export class TextBox {
         for (let idx = 0; idx < str.length; idx++) {
             this.insertSingle(str.charAt(idx))
         }
+        this.slidePointer()
     }
 
     private insertSingle(char: string): void {
@@ -128,7 +129,6 @@ export class TextBox {
                 
             }
         }
-        this.slidePointer()
 
     }
     

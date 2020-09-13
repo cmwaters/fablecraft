@@ -24,7 +24,6 @@ export class Card {
             width: width - (2 * this.margin.width),
             content: content
         })
-        console.log("textbox: " + this.text.string())
         let height = this.text.box.height + (2 * this.margin.height)
         this.bar = new Path.Line(new Point(pos.x, pos.y + height), new Point(pos.x + width, pos.y + height))
         this.bar.strokeColor = new Color(0.8, 0.8, 0.8, 1)
