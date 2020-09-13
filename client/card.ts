@@ -10,6 +10,7 @@ export class Card {
     text: TextBox
     box: paper.Path.Rectangle
     bar: paper.Path.Line
+    // potentially margin can be just one number.
     margin: paper.Size
     icon: paper.Path.Rectangle
     project: paper.Project
@@ -60,15 +61,20 @@ export class Card {
     resize(newWidth: number): number {
         this.box.bounds.width = newWidth
         this.bar.bounds.width = newWidth
-        return this.text.resize(newWidth - (2 * this.margin.width)) + (2 * this.margin.height)
+        return this.text.resize(newWidth - (2 * this.margin.width)) + (2 * this.margin.height) + defaultBarHeight
     }
 
     move(newPos: paper.Point): void {
-        console.log(newPos)
-        this.box.position = newPos.add(new Point(0, this.box.bounds.height/2))
-        this.bar.position.y = this.box.position.y + (this.box.bounds.height)/2 - defaultBarHeight
-        this.bar.position.x = this.box.position.x
-        this.text.move(this.box.position.add(new Point(this.margin.width - this.box.bounds.width/2, this.margin.height - this.box.bounds.height/2)))
+        let delta = newPos.subtract(this.position())
+        this.translate(delta)
+    }
+    
+    position(): paper.Point {
+        return this.box.position.subtract(new Point(this.box.bounds.width/2, this.box.bounds.height/2)) 
+    }
+    
+    size(): paper.Size {
+        return new Size(this.box.bounds.width, this.box.bounds.height)
     }
     
     translate(delta: paper.Point): void {

@@ -62,10 +62,7 @@ export class TextBox {
                 this.insertLine()
                 this.slidePointer()
             default:
-                // only accept single digit keys TODO: we should probably remove this later on?
-                if (key.length === 1) {
-                    this.insert(key)
-                }
+                this.insert(key)
         }
     }
     
@@ -330,7 +327,7 @@ export class TextBox {
     
     // move moves the card to a defined absolute position.
     move(newPos: paper.Point): void {
-        let delta = this.box.topLeft.subtract(newPos)
+        let delta = newPos.subtract(this.box.topLeft)
         this.translate(delta)
     }
 
@@ -372,6 +369,10 @@ export class TextBox {
 
     decativate(): void {
         this.pointer.visible = false
+    }
+    
+    position(): paper.Point {
+        return this.box.topLeft
     }
     
     text(): string {

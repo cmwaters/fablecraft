@@ -1,7 +1,7 @@
 import { PaperScope, Path, Color, Point, Size, Rectangle, Layer, PointText, Group } from "paper";
 import { Card } from './card'
 import { Story } from './story'
-import ArrowDown from './icons/box-arrow-in-down.svg'
+// import ArrowDown from './icons/box-arrow-in-down.svg'
 
 const paper = new PaperScope()
 window.onload = () => {
