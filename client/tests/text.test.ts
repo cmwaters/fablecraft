@@ -140,7 +140,6 @@ test('move text box', () => {
     let movePos = new Point(80, 230)
     textBox.translate(movePos)
     expect(new Point(textBox.box.topLeft.x, textBox.box.topLeft.y)).toStrictEqual(translatePos.add(movePos))
-    console.log(movePos.subtract(textBox.box.topLeft))
     textBox.move(movePos)
     expect(new Point(textBox.box.topLeft.x, textBox.box.topLeft.y)).toStrictEqual(movePos)
     expect(textBox.resize(50)).toBe((textBox.font.size * 2) + textBox.lineSpacing)

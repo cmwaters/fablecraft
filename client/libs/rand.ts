@@ -28,7 +28,7 @@ export namespace StrGen {
     }
     
     function letter(): string {
-        return alphabet[NumGen.int(alphabet.length)]
+        return alphabet[NumGen.int(alphabet.length - 1)]
     }
 
 }

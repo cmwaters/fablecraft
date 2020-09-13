@@ -25,11 +25,18 @@ export class View {
         let cardY = this.location.y + this.padding.height + this.margin.height
         
         // let's assume a flat tree and keep everything on the same x margin
-        snippets.forEach(snippet => {
-            let newCard = new Card(this.project, new Point(cardX, cardY), cardWidth, snippet.text)
+        for (let i = 0; i < snippets.length; i++) {
+            let newCard = new Card(this.project, this, new Point(cardX, cardY), cardWidth, snippets[i].text)
             cardY += newCard.box.bounds.height + this.padding.height
+            newCard.box.onMouseEnter = () => {
+                
+                // alert("Hello World")
+            }
+            newCard.box.onClick = () => {
+                this.focus(i)
+            }
             this.cards.push(newCard)
-        })
+        }
         
         this.focus(0)
         console.log(this.size)
@@ -74,19 +81,15 @@ export class View {
         }
     }
     
-    resize(): void {
-        this.size.height = window.innerHeight
-        this.size.width = window.innerWidth
+    resize(newSize: paper.Size): void {
+        this.size = newSize
         let cardWidth = this.calculateCardWidth()
         console.log(this.location.y)
         let y = this.location.y + this.margin.height + this.padding.height
         for (let card of this.cards) {
-            console.log("y: " + y)
-            console.log("x: " + (this.size.width - cardWidth) / 2 + this.location.x + cardWidth/2)
-            card.move(new Point((this.size.width - cardWidth) / 2 + this.location.x + cardWidth/2, y))
-            // let height = card.resize(cardWidth)
-            // console.log("height: " + height)
-            y += (card.size().height + this.padding.height)
+            card.move(new Point((this.size.width - cardWidth) / 2 + this.location.x, y))
+            let height = card.resize(cardWidth)
+            y += (height + this.padding.height)
         }
     }
     
@@ -105,7 +108,7 @@ export class View {
     }
 
     createAbove(): void {
-
+        console.log("create above")
     }
 
     createBelow(): void {

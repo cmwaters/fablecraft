@@ -1,6 +1,6 @@
 import { PaperScope, Path, Color, Point, Size, Rectangle, Layer, PointText, Group } from "paper";
-import { Card } from './card'
-import { Story } from './story'
+import { Story, Snippet } from './story'
+import { StrGen, NumGen } from './libs/rand'
 // import ArrowDown from './icons/box-arrow-in-down.svg'
 
 const paper = new PaperScope()
@@ -11,8 +11,8 @@ window.onload = () => {
     const canvas = document.createElement('canvas')
     canvas.width = document.body.clientWidth
     canvas.height = document.body.clientHeight
-    canvas.style.width = document.body.clientWidth + "px";
-    canvas.style.height = document.body.clientHeight + "px";
+    // canvas.style.width = document.body.clientWidth + "px";
+    // canvas.style.height = document.body.clientHeight + "px";
     
     document.body.appendChild(canvas)
     
@@ -29,27 +29,25 @@ window.onload = () => {
     //     }
     // })
     
-    let snippets = [{
-        text: "Hello World",
-        depth: 1,
-        index: 1,
-    }, {
-        text: "Welcome to Fablecraft",
-        depth: 1,
-        index: 2,
-    }, {
-        text: "An elegant text editor with an emphasis on structured design",
-        depth: 1,
-        index: 3,
-    }]
     
-    let story = new Story("My Story", paper.project, snippets)
     
-    // window.addEventListener("resize", () => {
-    //     canvas.height = window.innerHeight
-    //     canvas.width = window.innerWidth
-    // })
+    let story = new Story("My Story", paper.project, makeRandomSnippets(4))
+    
+    window.addEventListener("resize", () => {
+        canvas.width = document.body.clientWidth
+        canvas.height = document.body.clientHeight
+    })
 
-    // const card = new Card(new Point(300, 100), 400, new Size(20, 20))
+}
 
+function makeRandomSnippets(length: number): Snippet[] {
+    let snippets: Snippet[] = []
+    for (let i = 0; i < length; i ++) {
+        snippets.push({
+            text: StrGen.words(NumGen.int(20, 5)),
+            depth: 1,
+            index: i + 1
+        })
+    }
+    return snippets
 }

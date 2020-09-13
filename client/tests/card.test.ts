@@ -1,6 +1,5 @@
-import { Card } from '../card'
-import { PaperScope, Point, Size } from 'paper'
-// import { }
+import { Card } from '../card';
+import { PaperScope, Point, Size } from 'paper';
 
 let card: Card;
 let margin: paper.Size
@@ -16,7 +15,7 @@ beforeEach(() => {
     const canvas = document.createElement('canvas')
     paper.setup(canvas)
     // use default margin (will likely later move to config)
-    card = new Card(paper.project, defaultPos, defaultWidth)
+    card = new Card(paper.project, null, defaultPos, defaultWidth)
     margin = card.margin
     fontSize = card.text.font.size
 })
@@ -52,20 +51,22 @@ test('translate card', () => {
 })
 
 test('resize card', () => {
-    card.resize(50)
+    card.resize(90)
     expect(card.position()).toStrictEqual(defaultPos)
-    expect(card.size()).toStrictEqual(new Size(50, fontSize + (2 * margin.height) + defaultBarHeight))
-    card.text.insert("Sed ut perspiciatis")
-    // card.text.insert("unde omnis iste natus error sit")
-    // expect(card.text.string()).toBe("Hello")
-    // expect(card.size()).toStrictEqual(new Size(50, (2 * fontSize) + (2 * margin.height) + defaultBarHeight))
-    // card.resize(200)
-    // expect(card.position()).toStrictEqual(defaultPos)
-    // expect(card.size()).toStrictEqual(new Size(200, fontSize + (2 * margin.height) + defaultBarHeight))
+    expect(card.size()).toStrictEqual(new Size(90, fontSize + (2 * margin.height) + defaultBarHeight))
+    card.text.insert("aaaa aaaa aaaa")
+    expect(card.text.lines.length).toBe(3)
+    card.resize(200)
+    expect(card.position()).toStrictEqual(defaultPos)
+    expect(card.text.lines.length).toBe(1)
+    expect(card.size()).toStrictEqual(new Size(200, fontSize + (2 * margin.height) + defaultBarHeight))
+    card.resize(80)
+    console.log(card.text.string())
+    expect(card.text.lines.length).toBe(3)
+    expect(card.size()).toStrictEqual(new Size(80, (3 * fontSize + 2 * card.text.lineSpacing) + (2 * margin.height) + defaultBarHeight))
 })
 
-test('activate and focus card', () => {
-    expect(card.box.visible).toBe(false)
-    card.activate()
-    // expect(card.box.)
-})
+// test('activate and focus card', () => {
+//     expect(card.box.visible).toBe(false)
+//     card.activate()
+// })

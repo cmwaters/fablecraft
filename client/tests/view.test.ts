@@ -8,19 +8,20 @@ import { StrGen, NumGen } from '../libs/rand'
 let view: View
 let defaultPos = new Point(100, 100)
 let defaultSize = new Size(500, 500)
-let snippets = [{
-    text: "Hello World",
-    depth: 1,
-    index: 1,
-}, {
-    text: "Welcome to Fablecraft",
-    depth: 1,
-    index: 2,
-}, {
-    text: "An elegant text editor with an emphasis on structured design",
-    depth: 1,
-    index: 3,
-}]
+let snippets = makeRandomSnippets(3)
+// [{
+//     text: "Hello World",
+//     depth: 1,
+//     index: 1,
+// }, {
+//     text: "Welcome to Fablecraft",
+//     depth: 1,
+//     index: 2,
+// }, {
+//     text: "An elegant text editor with an emphasis on structured design",
+//     depth: 1,
+//     index: 3,
+// }]
 
 beforeEach(() => {
     const paper = new PaperScope()
@@ -42,3 +43,27 @@ function makeRandomSnippets(length: number): Snippet[] {
     }
     return snippets
 }
+
+test('initialize view', () => {
+    let currentCard = view.card()
+    expect(currentCard.box.bounds.width).toBe(Config.cardWidth.min)
+    expect(view.location).toBe(defaultPos)
+    expect(currentCard.position()).toStrictEqual(new Point(150, 140))
+    expect(view.cards.length).toBe(3)
+    expect(view.activeCardIdx).toBe(0)
+    let height = currentCard.size().height
+    expect(view.cards[1].position()).toStrictEqual(new Point(150, 140 + height + Config.view.padding.height))
+})
+
+test('resize view', () => {
+    let size = new Size(1000, 1000)
+    view.resize(size)
+    expect(view.size).toStrictEqual(size)
+    expect(view.card().box.bounds.width).toBe(size.width/2)
+    expect(view.card().position()).toStrictEqual(new Point(350, 140))
+    let height = view.card().size().height
+    view.focus(1)
+    expect(view.card().box.bounds.width).toBe(size.width/2)
+    expect(view.card().position()).toStrictEqual(new Point(350, 140 + height + Config.view.padding.height))
+    
+})

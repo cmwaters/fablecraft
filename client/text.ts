@@ -61,6 +61,9 @@ export class TextBox {
             case "Enter":
                 this.insertLine()
                 this.slidePointer()
+                break;
+            case "Shift":
+                break; //nop
             default:
                 this.insert(key)
         }
@@ -344,7 +347,6 @@ export class TextBox {
     
     resize(newWidth: number): number {
         let text = this.text()
-        console.log("resizing: " + text)
         this.box.width = newWidth
         this.clear()
         this.insert(text)

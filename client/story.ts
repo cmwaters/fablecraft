@@ -22,8 +22,10 @@ export class Story {
             this.view.input(e.key)
         }
         
+        // automatically resize to the entire screen. When we have multiple views we will
+        // need to change this.
         window.addEventListener('resize', () => {
-            this.view.resize()
+            this.view.resize(new Size(window.innerWidth,window.innerHeight))
         })
     }
     
