@@ -3,6 +3,8 @@ import { Point } from 'paper'
 import { Config} from './config'
 import { Snippet } from './story'
 
+const inverseScrollSpeed = 3
+
 export class View {
     location: paper.Point
     camera: paper.Point
@@ -24,6 +26,10 @@ export class View {
         let cardX = (this.size.width - cardWidth) / 2 + this.location.x
         let cardY = this.location.y + this.padding.height + this.margin.height
         
+        document.onmousewheel = (e: WheelEvent) => {
+            this.shift(new Point(-e.deltaX/inverseScrollSpeed, -e.deltaY/inverseScrollSpeed))
+        }
+        
         // let's assume a flat tree and keep everything on the same x margin
         for (let i = 0; i < snippets.length; i++) {
             let newCard = new Card(this.project, this, new Point(cardX, cardY), cardWidth, snippets[i].text)
@@ -32,11 +38,17 @@ export class View {
                 
                 // alert("Hello World")
             }
-            newCard.box.onClick = () => {
+            newCard.box.onClick = (e) => {
+                console.log("me x: " + e.clientX + " y: " + e.clientY)
                 this.focus(i)
             }
             this.cards.push(newCard)
         }
+        
+        document.onclick = (e: MouseEvent) => {
+            console.log("x: " + e.clientX + " y: " + e.clientY)
+            this.handleClick(e)
+        } 
         
         this.focus(0)
         console.log(this.size)
@@ -45,7 +57,7 @@ export class View {
     input(char: string):void {
         if (this.card().textMode()) {
             if (char === "Escape") {
-                this.card().text.decativate()
+                this.card().text.deactivate()
             } else {
                 let initialHeight = this.card().box.bounds.height
                 this.card().input(char)
@@ -116,10 +128,32 @@ export class View {
 
     }
     
+    branch(): void {
+    
+    }
+    
+    deleteCard(): void {
+    
+    }
+    
+    handleClick(e: MouseEvent): void {
+        console.log("x: " + e.clientX + " y: " + e.clientY)
+        let clickPoint = new Point(e.clientX, e.clientY)
+        console.log(this.cards)
+        for (let i = 0; i < this.cards.length; i++) {
+            if (this.cards[i].box.bounds.contains(clickPoint)) {
+                this.focus(i)
+                this.cards[i].handleClick(clickPoint)
+            }
+        }
+    }
+    
     // shift shifts the entire view by a delta vector. This is primarily
     // used to traverse along the tree an focus on different cards.
     shift(delta: paper.Point): void {
-    
+        this.cards.forEach(card => {
+            card.translate(delta)
+        })
     }
 
     slideBottom(delta: number): void {

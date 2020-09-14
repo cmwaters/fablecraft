@@ -306,6 +306,7 @@ export class TextBox {
             fontSize: this.font.size,
             fontWeight: this.font.weight !== undefined ? this.font.weight : 'normal'
         })
+        
         // add line and move cursor to the start of that line
         this.cursor.row++
         this.return()
@@ -364,12 +365,34 @@ export class TextBox {
         this.insertLine()
         this.slidePointer()
     }
+    
+    // setCursorPos takes a point in space and tries to find where the nearest letter to that
+    // point is and set's both the cursor and pointer to that location. This allows the user
+    // to click and add text
+    setCursorPos(pos: paper.Point): void {
+        // loop through the lines to find the height
+        this.textStart()
+        for (let i = 0; i < this.lines.length; i++) {
+            if (this.box.topCenter.y + ((i + 1) * (this.font.size + this.lineSpacing)) > pos.y) {
+                this.cursor.row = i
+                break
+            }
+        }
+        for (let i = this.widthMap[this.cursor.row].length; i > 0; i--) {
+            if (this.box.topLeft.x + this.widthMap[this.cursor.row][i] < pos.x) {
+                this.cursor.column = i
+                break;
+            }
+        }
+        this.slidePointer()
+        console.log(this.cursor.column)
+    }
 
     activate(): void {
         this.pointer.visible = true;
     }
 
-    decativate(): void {
+    deactivate(): void {
         this.pointer.visible = false
     }
     

@@ -1,9 +1,9 @@
 import { TextBox } from './text'
 import { Point, Size, Path, Rectangle, Color, Project, Group } from 'paper'
-// import ArrowDown from './icons/box-arrow-in-down.svg' 
-// import ArrowUp from './icons/box-arrow-in-up.svg' 
-// import Trash from './icons/trash.svg'
-// import Share from './icons/share.svg'
+import ArrowDown from './icons/box-arrow-in-down.svg' 
+import ArrowUp from './icons/box-arrow-in-up.svg' 
+import Trash from './icons/trash.svg'
+import Share from './icons/share.svg'
 import { View } from './view'
 
 const defaultMargin = new Size(15, 15)
@@ -43,10 +43,10 @@ export class Card {
         this.bar.visible = false;
 
         let icons = [
-            // {img: ArrowDown, y: 3, func: () => {this.view.createBelow()}},
-            // {img: ArrowUp, y: 8},
-            // {img: Trash, y: 6},
-            // {img: Share, y: 6},
+            {img: ArrowDown, y: 3, func: () => {this.view.createBelow()}},
+            {img: ArrowUp, y: 8, func: () => {this.view.createAbove()}},
+            {img: Trash, y: 6},
+            {img: Share, y: 6},
         ]
         this.icons = new Group()
         
@@ -79,6 +79,7 @@ export class Card {
         if (this.text.box.height + (2 * this.margin.height) + defaultBarHeight !== this.box.bounds.height ) {
             this.box.bounds.height = this.text.box.height + (2 * this.margin.height) + defaultBarHeight
             this.bar.position.y = this.box.position.y + (this.box.bounds.height/2) - defaultBarHeight
+            this.icons.position.y = this.bar.position.y + this.icons.bounds.height / 2 + 3
         }
     }
     
@@ -89,6 +90,7 @@ export class Card {
         this.bar.bounds.width = newWidth
         this.box.bounds.height = this.text.resize(newWidth - (2 * this.margin.width)) + (2 * this.margin.height) + defaultBarHeight
         this.bar.position.y = this.box.position.y + (this.box.bounds.height/2) - defaultBarHeight
+        this.icons.position.y = this.bar.position.y + this.icons.bounds.height / 2 + 3
         return this.box.bounds.height
     }
 
@@ -109,6 +111,7 @@ export class Card {
         this.box.translate(delta)
         this.bar.translate(delta)
         this.text.translate(delta)
+        this.icons.translate(delta)
     }
 
     activate(): void {
@@ -121,10 +124,20 @@ export class Card {
         this.box.strokeColor = new Color("white");
         this.bar.visible = false;
         this.icons.visible = false;
+        this.text.deactivate()
     }
 
     textMode(): boolean {
         return this.text.pointer.visible
+    }
+    
+    handleClick(pos: paper.Point): void {
+        console.log(pos)
+        if (this.text.box.contains(pos)) {
+            this.text.activate()
+            console.log("clicked on text")
+            this.text.setCursorPos(pos)
+        }
     }
 
 }
