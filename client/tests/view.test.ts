@@ -38,7 +38,8 @@ function makeRandomSnippets(length: number): Snippet[] {
         snippets.push({
             text: StrGen.words(NumGen.int(20, 5)),
             depth: 1,
-            index: i + 1
+            index: i + 1,
+            parent: null
         })
     }
     return snippets

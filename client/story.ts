@@ -39,4 +39,5 @@ export type Snippet = {
     text: string
     depth: number
     index: number
+    parent: Snippet | null
 }

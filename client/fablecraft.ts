@@ -17,20 +17,11 @@ window.onload = () => {
     document.body.appendChild(canvas)
     
     var ctx = canvas.getContext("2d");
-    
-    ctx.translate(0.5, 0.5);
-    
+    if (ctx !== null) {
+        ctx.translate(0.5, 0.5);
+    }
     paper.setup(canvas);
 
-    // paper.project.importSVG(ArrowDown, {
-    //     onLoad: (item: any) => {
-    //         item.position = new Point(50, 50)
-    //         item.scale(100)
-    //     }
-    // })
-    
-    
-    
     let story = new Story("My Story", paper.project, makeRandomSnippets(4))
     
     window.addEventListener("resize", () => {
@@ -46,8 +37,45 @@ function makeRandomSnippets(length: number): Snippet[] {
         snippets.push({
             text: StrGen.words(NumGen.int(20, 5)),
             depth: 1,
-            index: i + 1
+            index: i + 1, 
+            parent: null
         })
     }
     return snippets
 }
+
+// function makeRandomSnippetTree(widths: number[]): Snippet[] {
+//     let snippets: Snippet[] = []
+//     let parentIdx = 0
+//     let splitPoints = []
+//     for (let depth = 0; depth < widths.length; depth++) {
+//         if (depth !== 0) {
+//             parentIdx
+//             let parents = widths[depth - 1]
+//             let children = widths[depth]
+//             let current = children/parents
+//             for (let i = 0; i < parents; i++) {
+//                 splitPoints.push(current)
+//                 current += (children/parents)
+//             }
+//         }
+//         for (let idx = 0; idx < widths[depth]; idx++) {
+//             if (depth !== 0) {
+//                 snippets.push({
+//                     text: StrGen.words(NumGen.int(20, 5)),
+//                     depth: depth,
+//                     index: idx, 
+//                     parent: snippets[idx]
+//                 })
+//             } else {
+//                 snippets.push({
+//                     text: StrGen.words(NumGen.int(20, 5)),
+//                     depth: depth,
+//                     index: idx, 
+//                     parent: null
+//                 })
+//             }
+//         }
+//     }
+//     return snippets
+// }

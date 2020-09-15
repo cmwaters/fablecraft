@@ -46,8 +46,10 @@ test('move card', () => {
 })
 
 test('translate card', () => {
+    let originalSize = card.size()
     card.translate(defaultPos)
     expect(card.position()).toStrictEqual(defaultPos.multiply(2))
+    expect(card.size()).toStrictEqual(originalSize)
 })
 
 test('resize card', () => {

@@ -20,6 +20,8 @@ export class Card {
     icons: paper.Group
     project: paper.Project
     view: View
+    parent: Card | null = null
+    children: Card[] = []
     
     
     constructor(project: paper.Project, view: View, pos: paper.Point, width: number, content?: string, margin?: paper.Size) {

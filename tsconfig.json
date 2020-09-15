@@ -17,5 +17,6 @@
     "gulpfile.js",
     "webpack.config.js",
     "client"
-  ]
+  ],
+  "include": ["custom.d.ts",]
 }
