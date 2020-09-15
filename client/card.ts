@@ -45,8 +45,8 @@ export class Card {
         let icons = [
             {img: ArrowDown, y: 3, func: () => {this.view.createBelow()}},
             {img: ArrowUp, y: 8, func: () => {this.view.createAbove()}},
-            {img: Trash, y: 6},
-            {img: Share, y: 6},
+            {img: Trash, y: 6, func: () => {this.view.deleteCard()}},
+            {img: Share, y: 6, func: () => {this.view.branch()}},
         ]
         this.icons = new Group()
         
@@ -64,7 +64,7 @@ export class Card {
                         item.fillColor = new Color(0.8, 0.8, 0.8, 1)
                     }
                     item.onClick = () => {
-                        console.log("Hello World")
+                        icons[i].func()
                     }
                     this.icons.addChild(item)
                 }
@@ -74,12 +74,23 @@ export class Card {
 
     }
     
+    // input handles keyboard inputs directed to this card
     input(char: string): void {
-        this.text.input(char)
-        if (this.text.box.height + (2 * this.margin.height) + defaultBarHeight !== this.box.bounds.height ) {
-            this.box.bounds.height = this.text.box.height + (2 * this.margin.height) + defaultBarHeight
-            this.bar.position.y = this.box.position.y + (this.box.bounds.height/2) - defaultBarHeight
-            this.icons.position.y = this.bar.position.y + this.icons.bounds.height / 2 + 3
+        if (this.text.text() === "" && char == "Backspace") {
+            this.view.deleteCard()
+        } else if (this.text.cursor.row === 0 && char === "ArrowUp") {
+            // move up to the next card if we have reached the top of this
+            this.view.up()
+        } else if (this.text.lastLine() && char === "ArrowDown") {
+            // move down to the card below if we have reached the bottom of this
+            this.view.down()
+        } else {
+            this.text.input(char)
+            if (this.text.box.height + (2 * this.margin.height) + defaultBarHeight !== this.box.bounds.height ) {
+                this.box.bounds.height = this.text.box.height + (2 * this.margin.height) + defaultBarHeight
+                this.bar.position.y = this.box.position.y + (this.box.bounds.height/2) - defaultBarHeight
+                this.icons.position.y = this.bar.position.y + this.icons.bounds.height / 2 + 3
+            }
         }
     }
     
@@ -125,6 +136,13 @@ export class Card {
         this.bar.visible = false;
         this.icons.visible = false;
         this.text.deactivate()
+    }
+    
+    remove(): void {
+        this.box.remove()
+        this.bar.remove()
+        this.icons.remove()
+        this.text.remove()
     }
 
     textMode(): boolean {

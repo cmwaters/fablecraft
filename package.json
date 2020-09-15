@@ -4,7 +4,7 @@
   "description": "",
   "private": true,
   "scripts": {
-    "test": "jest --detectOpenHandles",
+    "test": "jest",
     "nodemon": "nodemon dist/index.js",
     "build-server": "tsc --watch --preserveWatchOutput",
     "build-client": "webpack --watch",

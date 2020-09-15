@@ -19,7 +19,11 @@ export class Story {
         defaultViewPadding, defaultViewMargin, snippets)
         
         document.onkeydown = (e) => {
-            this.view.input(e.key)
+            this.view.keydown(e.key)
+        }
+        
+        document.onkeyup = (e) => {
+            this.view.keyup(e.key)
         }
         
         // automatically resize to the entire screen. When we have multiple views we will

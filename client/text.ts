@@ -156,6 +156,10 @@ export class TextBox {
                 if (this.cursor.row === 0) {
                     return
                 }
+                if (x === 1) { // we don't delete anything but just return to the line before
+                    this.left()
+                    break
+                }
                 // we will delete the trailing space at the line above
                 let index = this.line().content.indexOf(" ")
                 // include the space when we bring the word up to the line above
@@ -169,9 +173,8 @@ export class TextBox {
                 this.shift(word.length * -1)
                 this.updateHeight()
             }
-            this.slidePointer()
         }
-        
+        this.slidePointer()
     }
     
     // overflow checks to see if the current line that the cursor is at is overflowing.
@@ -283,6 +286,11 @@ export class TextBox {
         this.cursor.column = 0;
     }
     
+    textEnd(): void {
+        this.cursor.row = this.lines.length - 1
+        this.cursor.column = this.lineEnd()
+    }
+    
     currentChar(): string {
         return this.line().content.charAt(this.cursor.column)
     }
@@ -343,7 +351,7 @@ export class TextBox {
         })
         this.pointer.translate(delta)
         this.box.topLeft = this.box.topLeft.add(delta)
-
+        this.box.bottomRight = this.box.bottomRight.add(delta)
     }
     
     resize(newWidth: number): number {
@@ -406,6 +414,13 @@ export class TextBox {
             str += line.content
         })
         return str
+    }
+    
+    remove(): void {
+        this.lines.forEach(line => {
+            line.remove()
+        })
+        this.pointer.remove()
     }
     
     formattedText(): string {

@@ -34,10 +34,10 @@ export class View {
         for (let i = 0; i < snippets.length; i++) {
             let newCard = new Card(this.project, this, new Point(cardX, cardY), cardWidth, snippets[i].text)
             cardY += newCard.box.bounds.height + this.padding.height
-            newCard.box.onMouseEnter = () => {
+            // newCard.box.onMouseEnter = () => {
                 
-                // alert("Hello World")
-            }
+            //     // alert("Hello World")
+            // }
             newCard.box.onClick = (e) => {
                 console.log("me x: " + e.clientX + " y: " + e.clientY)
                 this.focus(i)
@@ -46,7 +46,6 @@ export class View {
         }
         
         document.onclick = (e: MouseEvent) => {
-            console.log("x: " + e.clientX + " y: " + e.clientY)
             this.handleClick(e)
         } 
         
@@ -54,22 +53,24 @@ export class View {
         console.log(this.size)
     }
     
-    input(char: string):void {
+    keydown(key: string):void {
+        
         if (this.card().textMode()) {
-            if (char === "Escape") {
+            if (key === "Escape") {
                 this.card().text.deactivate()
             } else {
                 let initialHeight = this.card().box.bounds.height
-                this.card().input(char)
+                this.card().input(key)
                 let delta = this.card().box.bounds.height - initialHeight
                 if (delta !== 0) {
                     this.slideBottom(delta)
                 }
             }
         } else {
-            switch (char) {
+            switch (key) {
                 case "Shift":
-                    this.shiftMode = true
+                    this.shiftMode = true;
+                    break;
                 case "ArrowDown":
                     if (this.shiftMode) {
                         this.createBelow()
@@ -84,12 +85,24 @@ export class View {
                         this.focus(this.activeCardIdx - 1)
                     }
                     break
+                case "Backspace":
+                    this.deleteCard()
                 case "Enter":
                     this.card().text.activate()
                     break;
                 default:
                     break; //nop
             }
+        }
+    }
+    
+    // most things are done on key down but for combinations that require holding a key we
+    // use this key up to check when the operation is over
+    keyup(key: string): void {
+        switch (key) {
+        case "Shift":
+            this.shiftMode = false;
+            break
         }
     }
     
@@ -118,30 +131,74 @@ export class View {
     calculateCardWidth(): number {
         return Math.min(Math.max(0.5 * this.size.width, Config.cardWidth.min), Config.cardWidth.max)
     }
+    
+    up(): void {
+        this.focus(this.activeCardIdx - 1)
+        let card = this.card()
+        card.text.textEnd()
+        card.text.slidePointer()
+        card.text.activate()
+    }
+    
+    down(): void {
+        this.focus(this.activeCardIdx + 1)
+        let card = this.card()
+        card.text.textStart()
+        card.text.slidePointer()
+        card.text.activate()
+    }
 
     createAbove(): void {
         console.log("create above")
+        let currentCard = this.card()
+        let newCard = new Card(this.project, this, currentCard.position(), this.calculateCardWidth())
+        this.cards.splice(this.activeCardIdx, 0, newCard)
+        this.slideBottom(newCard.size().height + this.padding.height)
+        currentCard.deactivate()
+        newCard.activate()
+        this.card().text.activate()
     }
 
     createBelow(): void {
-
-
+        console.log("create below")
+        let currentCard = this.card()
+        currentCard.deactivate()
+        let newPos = currentCard.position().add(new Point(0, currentCard.size().height + this.padding.height))
+        let newCard = new Card(this.project, this, newPos, this.calculateCardWidth())
+        this.slideBottom(newCard.size().height + this.padding.height)
+        this.cards.splice(this.activeCardIdx + 1, 0, newCard)
+        this.activeCardIdx += 1
+        this.card().activate()
+        this.card().text.activate()
     }
     
     branch(): void {
-    
+        console.log("branch")
     }
     
     deleteCard(): void {
-    
+        console.log("deleting card")
+        let height = this.card().size().height
+        console.log(height + this.padding.height)
+        this.card().remove()
+        this.cards.splice(this.activeCardIdx, 1)
+        this.activeCardIdx--
+        this.slideBottom(- (height + this.padding.height))
+        // TODO: add a case for when it was the last card
+        if (this.cards.length === 1) {
+            this.activeCardIdx = 0
+        }
+        if (this.activeCardIdx < this.cards.length - 1) {
+            this.activeCardIdx++
+        }
+        this.card().activate()
     }
     
     handleClick(e: MouseEvent): void {
         console.log("x: " + e.clientX + " y: " + e.clientY)
         let clickPoint = new Point(e.clientX, e.clientY)
-        console.log(this.cards)
         for (let i = 0; i < this.cards.length; i++) {
-            if (this.cards[i].box.bounds.contains(clickPoint)) {
+            if (this.cards[i].box.bounds.contains(clickPoint) && !this.cards[i].icons.contains(clickPoint)) {
                 this.focus(i)
                 this.cards[i].handleClick(clickPoint)
             }
