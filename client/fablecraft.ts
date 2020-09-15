@@ -1,6 +1,7 @@
 import { PaperScope, Path, Color, Point, Size, Rectangle, Layer, PointText, Group } from "paper";
 import { Story, Snippet } from './story'
 import { StrGen, NumGen } from './libs/rand'
+import Axios from "axios";
 // import ArrowDown from './icons/box-arrow-in-down.svg'
 
 const paper = new PaperScope()
@@ -21,6 +22,18 @@ window.onload = () => {
         ctx.translate(0.5, 0.5);
     }
     paper.setup(canvas);
+
+    // strictly used for testing
+    Axios.post('/login', {
+        email: 'john.smith@gmail.com',
+        password: 'johnny'
+    })
+    .then(function (response) {
+        console.log(response);
+    })
+    .catch(function (error) {
+        console.log(error);
+    });
 
     let story = new Story("My Story", paper.project, makeRandomSnippets(4))
     

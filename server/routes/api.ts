@@ -13,37 +13,37 @@ function ensureAuthenticated(req: any, res: any, next: any) {
     res.redirect("/auth/login")
 }
 
-function hasPermission(permissionLevel: string, userId: User, story: Story): string {
+function hasPermission(permissionLevel: string, userId: User, story: Story): boolean {
     switch(permissionLevel) {
         case "owner": 
             if (story.owner === userId) {
-                return ""
+                return true
             }
             break;
         case "author":
             for (let i = 0; i < story.authors.length; i++) {
                 if (story.authors[i] === userId) {
-                    return ""
+                    return true
                 }
             }
             return hasPermission("owner", userId, story)
         case "editor":
             for (let i = 0; i < story.editors.length; i++) {
                 if (story.editors[i] === userId) {
-                    return ""
+                    return true
                 }
             }
             return hasPermission("author", userId, story)
         case "viewer":
             for (let i = 0; i < story.viewers.length; i++) {
                 if (story.viewers[i] === userId) {
-                    return ""
+                    return true
                 }
             }
             return hasPermission("editor", userId, story)
     }
     
-    return "you don't have permission to do that"
+    return false
 }
 
 
@@ -83,9 +83,20 @@ router.put("/story", ensureAuthenticated, (req, res) => {
 
 });
 
-router.get("/story/:storyId/", ensureAuthenticated, async (req, res) => {
+router.get("/story/id/:storyId/", ensureAuthenticated, async (req, res) => {
     const story = await StoryModel.findById(req.params.storyId)
     return res.status(200).send({ story: story })
+});
+
+router.get("/story/title/:storyTitle/", ensureAuthenticated, async (req, res) => {
+    const allStories = await StoryModel.find({title: req.params.storyTitle})
+    let permissionedStories: Story[] = []
+    for (let story of allStories) {
+        if (hasPermission("viewer", req.user as User, story)) {
+            permissionedStories.push(story)
+        }
+    }
+    return res.status(200).send({ stories: permissionedStories })
 });
 
 router.post("/card", ensureAuthenticated, async (req, res) => {
