@@ -156,10 +156,7 @@ export class TextBox {
                 if (this.cursor.row === 0) {
                     return
                 }
-                if (x === 1) { // we don't delete anything but just return to the line before
-                    this.left()
-                    break
-                }
+                
                 // we will delete the trailing space at the line above
                 let index = this.line().content.indexOf(" ")
                 // include the space when we bring the word up to the line above
@@ -320,7 +317,7 @@ export class TextBox {
         this.return()
         let widthSet = [0]
         this.widthMap.push(widthSet)
-        this.lines.splice(this.cursor.row, 0, newLine)
+        this.lines.splice(this.cursor.row - 1, 0, newLine)
         this.updateHeight()
     }
 

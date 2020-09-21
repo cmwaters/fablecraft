@@ -1,8 +1,6 @@
 import { PaperScope, Path, Color, Point, Size, Rectangle, Layer, PointText, Group } from "paper";
 import { Story, Snippet } from './story'
-import { StrGen, NumGen } from './libs/rand'
 import Axios from "axios";
-// import ArrowDown from './icons/box-arrow-in-down.svg'
 
 const paper = new PaperScope()
 window.onload = () => {
@@ -12,9 +10,6 @@ window.onload = () => {
     const canvas = document.createElement('canvas')
     canvas.width = document.body.clientWidth
     canvas.height = document.body.clientHeight
-    // canvas.style.width = document.body.clientWidth + "px";
-    // canvas.style.height = document.body.clientHeight + "px";
-    
     document.body.appendChild(canvas)
     
     var ctx = canvas.getContext("2d");
@@ -30,10 +25,7 @@ window.onload = () => {
     // strictly used for testing create a user if we don't already have one
     Axios.post('/auth/login', loginData)
     .then(function (response) {
-        console.log(response.data.token)
         const token = response.data.token
-        // Axios.get('/api/stories/', { params: { token: token }})
-        // "5f64b0fce3c7cf20ac86339e"
         Axios.get('/api/story/5f64b0fce3c7cf20ac86339e/', { params: { token: token }})
         .then(function (response) {
             console.log(response.data)

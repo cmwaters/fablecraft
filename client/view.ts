@@ -146,6 +146,11 @@ export class View {
         this.activeCardIdx = cardIdx
         
         this.card().activate()
+        this.center(this.currentDepth, this.activeCardIdx)
+    }
+    
+    center(depth: number, cardIdx: number): void {
+    
     }
     
     calculateCardWidth(): number {

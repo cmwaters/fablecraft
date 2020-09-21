@@ -12,8 +12,3 @@ export const Config = {
     }
 
 }
-
-type Range = {
-    min: number,
-    max: number
-}
