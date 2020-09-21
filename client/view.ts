@@ -53,13 +53,15 @@ export class View {
             this.handleClick(e)
         } 
         
+        console.log(this.cards[0].length)
         this.focus(0, 0)
         console.log(this.size)
     }
     
     keydown(key: string):void {
-        
+        console.log("key down: " + key)
         if (this.card().textMode()) {
+            console.log("Hello here")
             if (key === "Escape") {
                 this.card().text.deactivate()
             } else {
@@ -76,9 +78,10 @@ export class View {
                     this.shiftMode = true;
                     break;
                 case "ArrowDown":
+                    console.log("Hello World")
                     if (this.shiftMode) {
                         this.createBelow()
-                    } else if (this.activeCardIdx < this.cards.length - 1) {
+                    } else if (this.activeCardIdx < this.cards[this.currentDepth].length - 1) {
                         this.focus(this.currentDepth, this.activeCardIdx + 1)
                     }
                     break;
@@ -129,13 +132,14 @@ export class View {
     }
     
     focus(depth: number, cardIdx: number): void {
+        console.log("focus on card at depth: " + depth + " and index: " + cardIdx)
         this.card().deactivate()
         if (depth >= this.cards.length || depth < 0) {
             console.log("invalid depth: " + depth)
             return
         }
         this.currentDepth = depth
-        if (cardIdx >= this.cards.length || cardIdx < 0) {
+        if (cardIdx >= this.cards[depth].length || cardIdx < 0) {
             console.log("invalid card index " + cardIdx + " at depth " + depth)
             return
         }
@@ -260,7 +264,7 @@ export class View {
     // slides the rest of the cards in the current column by delta (used for inserting or deleting or changing heights)
     slideBottom(delta: number): void {
         // if it is the last card then we have nothing to slide down
-        if (this.activeCardIdx === this.cards.length -1) {
+        if (this.activeCardIdx === this.cards[this.currentDepth].length -1) {
             return
         }
         for (let i = this.activeCardIdx + 1; i < this.cards[this.currentDepth].length; i++) {

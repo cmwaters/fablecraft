@@ -35,9 +35,12 @@ export class Story {
     
 }
 
+// TODO id and owner to be added later
 export type Snippet = {
+    // _id: string
     text: string
     depth: number
     index: number
-    parent: Snippet | null
+    parentIndex: number | null
+    // owner: string
 }

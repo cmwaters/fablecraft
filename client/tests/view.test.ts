@@ -6,22 +6,10 @@ import { StrGen, NumGen } from '../libs/rand'
 // import * as fc from 'fast-check'
 
 let view: View
+let cardCount = 4;
 let defaultPos = new Point(100, 100)
 let defaultSize = new Size(500, 500)
-let snippets = makeRandomSnippets(3)
-// [{
-//     text: "Hello World",
-//     depth: 1,
-//     index: 1,
-// }, {
-//     text: "Welcome to Fablecraft",
-//     depth: 1,
-//     index: 2,
-// }, {
-//     text: "An elegant text editor with an emphasis on structured design",
-//     depth: 1,
-//     index: 3,
-// }]
+let snippets = makeRandomSnippets(cardCount)
 
 beforeEach(() => {
     const paper = new PaperScope()
@@ -39,7 +27,7 @@ function makeRandomSnippets(length: number): Snippet[] {
             text: StrGen.words(NumGen.int(20, 5)),
             depth: 1,
             index: i + 1,
-            parent: null
+            parentIndex: null
         })
     }
     return snippets
@@ -50,10 +38,11 @@ test('initialize view', () => {
     expect(currentCard.box.bounds.width).toBe(Config.cardWidth.min)
     expect(view.location).toBe(defaultPos)
     expect(currentCard.position()).toStrictEqual(new Point(150, 140))
-    expect(view.cards.length).toBe(3)
+    expect(view.cards[0].length).toBe(cardCount)
     expect(view.activeCardIdx).toBe(0)
+    expect(view.currentDepth).toBe(0)
     let height = currentCard.size().height
-    expect(view.cards[1].position()).toStrictEqual(new Point(150, 140 + height + Config.view.padding.height))
+    expect(view.cards[0][1].position()).toStrictEqual(new Point(150, 140 + height + Config.view.padding.height))
 })
 
 test('resize view', () => {
@@ -63,8 +52,13 @@ test('resize view', () => {
     expect(view.card().box.bounds.width).toBe(size.width/2)
     expect(view.card().position()).toStrictEqual(new Point(350, 140))
     let height = view.card().size().height
-    view.focus(1)
+    view.focus(0, 1)
     expect(view.card().box.bounds.width).toBe(size.width/2)
-    expect(view.card().position()).toStrictEqual(new Point(350, 140 + height + Config.view.padding.height))
-    
+    expect(view.card().position()).toStrictEqual(new Point(350, 140 + height + Config.view.padding.height))  
+})
+
+test('traverse up and down cards', () => {
+    view.keydown("Arrow Down")
+    expect(view.activeCardIdx).toBe(1)
+    expect(view.cards[0][0].)
 })

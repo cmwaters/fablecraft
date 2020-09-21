@@ -23,19 +23,31 @@ window.onload = () => {
     }
     paper.setup(canvas);
 
-    // strictly used for testing
-    Axios.post('/login', {
-        email: 'john.smith@gmail.com',
-        password: 'johnny'
-    })
+    const loginData = {
+        email: 'test',
+        password: 'test'
+    }
+    // strictly used for testing create a user if we don't already have one
+    Axios.post('/auth/login', loginData)
     .then(function (response) {
-        console.log(response);
+        console.log(response.data.token)
+        const token = response.data.token
+        // Axios.get('/api/stories/', { params: { token: token }})
+        // "5f64b0fce3c7cf20ac86339e"
+        Axios.get('/api/story/5f64b0fce3c7cf20ac86339e/', { params: { token: token }})
+        .then(function (response) {
+            console.log(response.data)
+            let story = new Story(response.data.story.title, paper.project, response.data.story.cards)
+        })
+        .catch(function (error) {
+            console.log(error)
+        })
     })
     .catch(function (error) {
         console.log(error);
     });
 
-    let story = new Story("My Story", paper.project, makeRandomSnippets(4))
+    
     
     window.addEventListener("resize", () => {
         canvas.width = document.body.clientWidth
@@ -43,52 +55,3 @@ window.onload = () => {
     })
 
 }
-
-function makeRandomSnippets(length: number): Snippet[] {
-    let snippets: Snippet[] = []
-    for (let i = 0; i < length; i ++) {
-        snippets.push({
-            text: StrGen.words(NumGen.int(20, 5)),
-            depth: 1,
-            index: i + 1, 
-            parent: null
-        })
-    }
-    return snippets
-}
-
-// function makeRandomSnippetTree(widths: number[]): Snippet[] {
-//     let snippets: Snippet[] = []
-//     let parentIdx = 0
-//     let splitPoints = []
-//     for (let depth = 0; depth < widths.length; depth++) {
-//         if (depth !== 0) {
-//             parentIdx
-//             let parents = widths[depth - 1]
-//             let children = widths[depth]
-//             let current = children/parents
-//             for (let i = 0; i < parents; i++) {
-//                 splitPoints.push(current)
-//                 current += (children/parents)
-//             }
-//         }
-//         for (let idx = 0; idx < widths[depth]; idx++) {
-//             if (depth !== 0) {
-//                 snippets.push({
-//                     text: StrGen.words(NumGen.int(20, 5)),
-//                     depth: depth,
-//                     index: idx, 
-//                     parent: snippets[idx]
-//                 })
-//             } else {
-//                 snippets.push({
-//                     text: StrGen.words(NumGen.int(20, 5)),
-//                     depth: depth,
-//                     index: idx, 
-//                     parent: null
-//                 })
-//             }
-//         }
-//     }
-//     return snippets
-// }

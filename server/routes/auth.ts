@@ -1,85 +1,38 @@
-import e, * as express from "express";
+import * as express from "express";
 import passport from "passport";
 import * as LocalStrategy from "passport-local";
 import * as argon2 from "argon2";
 const router = express.Router();
 import mongoose from 'mongoose';
-import { randomBytes } from "crypto";
-// const User = mongoose.model("User");
-import { User, UserModel} from '../models/user'
-
-passport.use(
-  new LocalStrategy.Strategy(
-    {
-      usernameField: "email",
-      passReqToCallback: true,
-    },
-    async function (req, username, password, done) {
-      console.log(req.session)
-      const user = await UserModel.findOne({ email: username });
-      if (!user) {
-        console.log("incorrect username");
-        return done(null, false, req.flash("message", "Invalid email."));
-      }
-      const correctPassword = await argon2.verify(user.password, password);
-      if (!correctPassword) {
-        console.log("incorrect password");
-        return done(null, false, req.flash("message", "Incorrect password."));
-      }
-      console.log("successfully logged in " + user)
-      return done(null, user);
-    }
-  )
-);
-
-passport.serializeUser(function(user, done) {
-  done(null, user);
-});
-
-passport.deserializeUser(function(user, done) {
-  done(null, user);
-});
+import jwt from  'jsonwebtoken'
 
 
-router.post(
-  "/login",
-  passport.authenticate("local", {
-    successRedirect: "/api/me",
-    failureRedirect: "/auth/login/",
-    failureFlash: true,
+router.post("/signup", passport.authenticate('signup', { session : false }), async (req, res) => {
+  return res.json({
+    message: "Signup succesful",
+    user: req.user
   })
-);
-
-router.get('/login', function(req, res, next) {
-  const flash = req.flash("message");
-  if (flash.length !== 0) {
-    return res.status(200).send({ message: flash });
-  }
-  if (req.isAuthenticated()) {
-    return res.status(200).send({ message: "You are logged in as " + req.user.email})
-  }
-  return res.status(200).send({ message: "You are not logged in. Enter your email and password to login."})
 });
 
-router.post("/signup", async (req, res) => {
-  try {
-    const { email, password, name } = req.body;
-    console.log(email);
-    const salt = randomBytes(32);
-    const passwordHashed = await argon2.hash(password, { salt });
-    await UserModel.create({
-      email: email,
-      password: passwordHashed,
-      name: name,
-    });
-    res.redirect('/auth/login')
-    // passport.authenticate('local')
-    // return res
-    //   .status(200)
-    //   .send({ message: "congrats you have made an account" });
-  } catch (e) {
-    return res.status(500).send(e);
-  }
+router.post('/login', async (req, res, next) => {
+  passport.authenticate('login', async (err, user, info) => {     try {
+      if(err || !user){
+        const error = new Error('An Error occured')
+        return next(error);
+      }
+      req.login(user, { session : false }, async (error) => {
+        if( error ) return next(error)
+        //We don't want to store the sensitive information such as the
+        //user password in the token so we pick only the email and id
+        const body = { _id : user._id, email : user.email };
+        //Sign the JWT token and populate the payload with the user email and id
+        const token = jwt.sign({ user : body },'top_secret');
+        //Send back the token to the user
+        return res.json({ token });
+      });     } catch (error) {
+      return next(error);
+    }
+  })(req, res, next);
 });
 
 router.get("/logout", (req: any, res) => {

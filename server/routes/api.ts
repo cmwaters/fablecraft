@@ -1,68 +1,89 @@
 import * as express from "express";
-import mongoose from "mongoose";
-import passport from "passport";
 const router = express.Router();
+import * as argon2 from "argon2";
+import { randomBytes } from "crypto";
 import { User, UserModel } from '../models/user'
 import { Story, StoryModel } from '../models/story';
 import { CardModel } from '../models/card';
 
-function ensureAuthenticated(req: any, res: any, next: any) {
-    if (req.isAuthenticated()) {
-        return next();
-    }
-    res.redirect("/auth/login")
-}
-
-function hasPermission(permissionLevel: string, userId: User, story: Story): boolean {
+// probably should move this to auth
+function hasPermission(permissionLevel: string, user: User, story: Story): boolean {
     switch(permissionLevel) {
         case "owner": 
-            if (story.owner === userId) {
+            if (story.owner._id == user._id) {
                 return true
             }
             break;
         case "author":
             for (let i = 0; i < story.authors.length; i++) {
-                if (story.authors[i] === userId) {
+                if (story.authors[i]._id == user._id) {
                     return true
                 }
             }
-            return hasPermission("owner", userId, story)
+            return hasPermission("owner", user, story)
         case "editor":
             for (let i = 0; i < story.editors.length; i++) {
-                if (story.editors[i] === userId) {
+                if (story.editors[i]._id == user._id) {
                     return true
                 }
             }
-            return hasPermission("author", userId, story)
+            return hasPermission("author", user, story)
         case "viewer":
             for (let i = 0; i < story.viewers.length; i++) {
-                if (story.viewers[i] === userId) {
+                if (story.viewers[i]._id == user.id) {
                     return true
                 }
             }
-            return hasPermission("editor", userId, story)
+            return hasPermission("editor", user, story)
     }
     
     return false
 }
 
-
-
-router.get("/me", ensureAuthenticated, (req: any, res) => {
-    res.json({ id: req.user._id, email: req.user.email });
+router.get("/me", (req: any, res) => {
+    res.json({ 
+        message: "user profile",
+        user: req.user,
+        token: req.query.token
+    });
 });
 
-router.delete("/me", ensureAuthenticated, (req: any, res) => {
+router.put("/me", async (req: any, res) => {
+    const { email, password, name } = req.body
+    try {
+        const salt = randomBytes(32);
+        const passwordHashed = await argon2.hash(password, { salt });
+        UserModel.findByIdAndUpdate(req.user._id, 
+        { 
+            email: email,
+            password: passwordHashed,
+            name: name,
+        })
+        res.json({
+            message: "successfully updated account",
+            user: req.user,
+        })
+    } catch(e) {
+        console.log(e)
+        res.json({
+            message: "error changing account details",
+            error: e
+        })
+    }
+})
+
+router.delete("/me", (req: any, res) => {
     UserModel.findByIdAndDelete(req.user._id)
     res.status(201).send({ message: "user deleted"})
 })
 
-router.get("/stories", ensureAuthenticated, async (req, res) => { 
-    const stories = await StoryModel.find({owner: req.user})
+// we should just abbreviate this call to showing only a few details of each story and a later call to load the actual story
+router.get("/stories", async (req, res) => { 
+    const stories = await StoryModel.find({owner: req.user._id})
     return res.status(200).send({ stories: stories})
 })
 
-router.post("/story", ensureAuthenticated, (req, res) => {
+router.post("/story", (req, res) => {
     const { title, description } = req.body
     if (title == null) {
         return res.status(200).send({ error: "title cannot be empty"})
@@ -70,36 +91,50 @@ router.post("/story", ensureAuthenticated, (req, res) => {
     StoryModel.create({
         title: title,
         description: description,
-        owner: req.user
+        owner: req.user._id,
     })
     return res.status(201).send({ message: "success. " + title + " created."})
 });
 
-router.delete("/story", ensureAuthenticated, (req, res) => {
+router.delete("/story/:id", async (req, res) => {
+    const id = req.params.id 
+    if (id !== undefined) {
+        await StoryModel.findById(id, (err, story: Story) => {
+            if (err) {
+                console.log(err)
+                return res.status(500).json({
+                    message: "unable to delete story",
+                    error: err
+                })
+            } else if (story === null) {
+                return res.json({message: "story with id: " + id + " does not exist"})
+            } else if (story.owner !== req.user._id) {
+                return res.json({message: "you don't have permissions to delete this story"})
+            } else {
+                StoryModel.deleteOne(story)
+                return res.status(201).send({message: "story deleted"})
+            }
+        })
+    }
+    return res.status(500).send({message: "no story id provided in params"})
+});
+
+router.put("/story/id:", (req, res) => {
 
 });
 
-router.put("/story", ensureAuthenticated, (req, res) => {
-
-});
-
-router.get("/story/id/:storyId/", ensureAuthenticated, async (req, res) => {
-    const story = await StoryModel.findById(req.params.storyId)
+router.get("/story/:id", async (req, res) => {
+    const story = await StoryModel.findById(req.params.id)
+    if (story === null) {
+        return res.status(200).send({ message: "story does not exist" })
+    }
+    if (!hasPermission("viewer", req.user as User, story)) {
+        console.log("user doesn't have permission: " + req.user._id)
+        return res.status(200).send({ message: "story does not exist" })
+    }
     return res.status(200).send({ story: story })
 });
-
-router.get("/story/title/:storyTitle/", ensureAuthenticated, async (req, res) => {
-    const allStories = await StoryModel.find({title: req.params.storyTitle})
-    let permissionedStories: Story[] = []
-    for (let story of allStories) {
-        if (hasPermission("viewer", req.user as User, story)) {
-            permissionedStories.push(story)
-        }
-    }
-    return res.status(200).send({ stories: permissionedStories })
-});
-
-router.post("/card", ensureAuthenticated, async (req, res) => {
+router.post("/card", async (req, res) => {
     let { text, depth, index, story } = req.body
     story = await StoryModel.findById(story)
     let result = hasPermission("author", req.user as User, story)

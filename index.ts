@@ -6,11 +6,9 @@ import * as bodyParser from 'body-parser';
 import "./server/models/user"
 import authRouter from './server/routes/auth';
 import apiRouter from './server/routes/api';
-// import * as http from 'http'
 import passport from 'passport';
-// import debug from 'debug';
-import flash from 'connect-flash'
 import path from 'path'
+import './server/auth/auth'
 let clientRouter = express.Router();
 
 dotenv.config()
@@ -30,16 +28,9 @@ app.use(express.static(path.join(__dirname, 'client')));
 
 app.use(bodyParser.json());
 app.use(express.json());
-app.use(session({ 
-  secret: process.env.SECRET || "fablecraft",
-  resave: true,
-  saveUninitialized: true
-}))
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(flash())
 app.use(passport.initialize())
 app.use(passport.session())
-
 
 clientRouter.get('/', (req, res, next) => {
   console.log("Starting client")
@@ -49,7 +40,8 @@ clientRouter.get('/', (req, res, next) => {
 //IMPORT ROUTES
 app.use('/', clientRouter)
 app.use('/auth', authRouter);
-app.use('/api', apiRouter);
+app.use('/api', passport.authenticate('jwt', { session : false }), apiRouter);
+// passport.authenticate('jwt', { session : false }),
 
 
 const PORT = process.env.PORT || 8080;
