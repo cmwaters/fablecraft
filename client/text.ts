@@ -40,7 +40,7 @@ export class TextBox {
         console.log(this.cursor)
         switch (key) {
             case "Backspace":
-                this.delete(1)
+                this.delete()
                 break;
             case "ArrowLeft":
                 this.left()
@@ -64,6 +64,12 @@ export class TextBox {
                 break;
             case "Shift":
                 break; //nop
+            case "Control":
+                break; //nop
+            case "Alt":
+                break; //nop
+            case "Meta":
+                break; //nop
             default:
                 this.insert(key)
         }
@@ -73,12 +79,16 @@ export class TextBox {
     // then checks for overflow and balances out the lines
     insert(str: string): void {
         for (let idx = 0; idx < str.length; idx++) {
-            this.insertSingle(str.charAt(idx))
+            this.insertChar(str.charAt(idx))
         }
         this.slidePointer()
     }
 
-    private insertSingle(char: string): void {
+    private insertChar(char: string): void {
+        if (char.length > 1) {
+            console.log("insertChar: more than one character was provided")
+            return 
+        }
         // can't start a line with a space or have two spaces in a row
         if (char === "" || this.cursor.column === 0 && char === " " || char === " " && this.line().content.charAt(this.cursor.column - 1) === " ") {
             return
@@ -134,6 +144,10 @@ export class TextBox {
         }
 
     }
+
+    insertWord(word: string): void {
+
+    }
     
     // delete takes the current cursor position and tries to remove the first x characters to the left
     // potentially overflowing into the line above
@@ -156,22 +170,42 @@ export class TextBox {
                 if (this.cursor.row === 0) {
                     return
                 }
-                
-                // we will delete the trailing space at the line above
-                let index = this.line().content.indexOf(" ")
-                // include the space when we bring the word up to the line above
-                let word = this.line().content.substr(0, index + 1)
-                this.line().content = this.line().content.slice(index + 1)
                 // jump to the end of the last line and continue to delete
                 this.left()
                 this.delete(x - i)
-                // insert the word from the previous line
-                this.insert(word)
-                this.shift(word.length * -1)
-                this.updateHeight()
             }
         }
+        let row = this.cursor.row
+        let column = this.cursor.column
+        this.pull()
+        // restore the cursor position
+        this.cursor.row = row
+        this.cursor.column = column
         this.slidePointer()
+    }
+
+    // pull is a function that takes the current line and tries to see if any of the line below can fit in it.
+    // This is done recursively. This function is mostly user in deletions and new lines. It does not restore the
+    // cursor position.
+    pull(): void {
+        // If the last line in the text box or the line below is empty then return -> no need to do anything
+        if (this.cursor.row + 1 === this.lines.length || this.lines[this.cursor.row + 1].content === "") {
+            return
+        }
+        let remainingWidth = this.box.width - this.widthMap[this.cursor.row][this.cursor.column]
+        this.down()
+        this.return()
+        let words = this.getWordsWithinWidth(remainingWidth)
+        if (words === undefined || words.length === 0) {
+            // no words can fit in the row above
+            return
+        }
+        this.line().content = this.line().content.slice(words.length)
+        this.up()
+        this.cursor.column = this.lineEnd() - 1
+        this.insert(words)
+        this.down()
+        this.pull()
     }
     
     // overflow checks to see if the current line that the cursor is at is overflowing.
@@ -295,7 +329,7 @@ export class TextBox {
     insertLine() {
         let pos = new Point(this.box.x, this.box.y + this.font.size)
         if (this.lines.length !== 0) {
-            pos = this.lines[this.lines.length - 1].point.add(new Point(0, this.font.size + this.lineSpacing))
+            pos = this.lines[this.cursor.row].point.add(new Point(0, this.font.size + this.lineSpacing))
         }
         // extract out the remaining part of this line (if there is any) to move into the next line
         let content = ""
@@ -316,9 +350,24 @@ export class TextBox {
         this.cursor.row++
         this.return()
         let widthSet = [0]
-        this.widthMap.push(widthSet)
-        this.lines.splice(this.cursor.row - 1, 0, newLine)
+        this.widthMap.splice(this.cursor.row, 0, widthSet)
+        this.lines.splice(this.cursor.row, 0, newLine)
         this.updateHeight()
+    }
+
+    // getWordsWithinWidth takes the current line and a width parameter and returns all the words
+    // that, starting from the left side are within this width. Used for deletions and new lines. 
+    private getWordsWithinWidth(width: number): string {
+        let words = this.line().content.split(" ")
+        let currentIndex = 0
+        let output = ""
+        for (let i = 0; i < words.length; i++) {
+            currentIndex += words[i].length + 1
+            if (this.widthMap[this.cursor.row][currentIndex] > width) {
+                return output
+            }
+            output += words[i] + " "
+        }
     }
 
     // slidePointer moves the pointer to the current cursor position

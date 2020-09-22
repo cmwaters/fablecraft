@@ -60,5 +60,5 @@ test('resize view', () => {
 test('traverse up and down cards', () => {
     view.keydown("Arrow Down")
     expect(view.activeCardIdx).toBe(1)
-    expect(view.cards[0][0].box.visible).toBe(false)
+    expect(view.cards[0][0].bar.visible).toBe(true)
 })

@@ -1,9 +1,9 @@
 import { TextBox } from './text'
 import { Point, Size, Path, Rectangle, Color, Project, Group } from 'paper'
-import ArrowDown from './icons/box-arrow-in-down.svg' 
-import ArrowUp from './icons/box-arrow-in-up.svg' 
-import Trash from './icons/trash.svg'
-import Share from './icons/share.svg'
+// import ArrowDown from './icons/box-arrow-in-down.svg' 
+// import ArrowUp from './icons/box-arrow-in-up.svg' 
+// import Trash from './icons/trash.svg'
+// import Share from './icons/share.svg'
 import { View } from './view'
 
 const defaultMargin = new Size(15, 15)
@@ -45,34 +45,34 @@ export class Card {
         this.bar.strokeColor = new Color(0.8, 0.8, 0.8, 1)
         this.bar.visible = false;
 
-        let icons = [
-            {img: ArrowDown, y: 3, func: () => {this.view.createBelow()}},
-            {img: ArrowUp, y: 8, func: () => {this.view.createAbove()}},
-            {img: Trash, y: 6, func: () => {this.view.deleteCard()}},
-            {img: Share, y: 6, func: () => {this.view.branch()}},
-        ]
+        // let icons = [
+        //     {img: ArrowDown, y: 3, func: () => {this.view.createBelow()}},
+        //     {img: ArrowUp, y: 8, func: () => {this.view.createAbove()}},
+        //     {img: Trash, y: 6, func: () => {this.view.deleteCard()}},
+        //     {img: Share, y: 6, func: () => {this.view.branch()}},
+        // ]
         this.icons = new Group()
         
-        for (let i = 0; i < icons.length; i++) {
-            this.project.importSVG(icons[i].img, {
-                onLoad: (item: paper.Item) => {
-                    item.scale(iconSize)
-                    item.position = new Point(pos.x + iconClearance + ((iconClearance + iconSize) * i) + iconSize / 2, 
-                    pos.y + this.text.box.height + (this.margin.height * 2) + icons[i].y + iconSize / 2)
-                    item.fillColor = new Color(0.8, 0.8, 0.8, 1)
-                    item.onMouseEnter = () => {
-                        item.fillColor = new Color(0.2, 0.2, 0.2, 1)
-                    }
-                    item.onMouseLeave = () => {
-                        item.fillColor = new Color(0.8, 0.8, 0.8, 1)
-                    }
-                    item.onClick = () => {
-                        icons[i].func()
-                    }
-                    this.icons.addChild(item)
-                }
-            })
-        }
+        // for (let i = 0; i < icons.length; i++) {
+        //     this.project.importSVG(icons[i].img, {
+        //         onLoad: (item: paper.Item) => {
+        //             item.scale(iconSize)
+        //             item.position = new Point(pos.x + iconClearance + ((iconClearance + iconSize) * i) + iconSize / 2, 
+        //             pos.y + this.text.box.height + (this.margin.height * 2) + icons[i].y + iconSize / 2)
+        //             item.fillColor = new Color(0.8, 0.8, 0.8, 1)
+        //             item.onMouseEnter = () => {
+        //                 item.fillColor = new Color(0.2, 0.2, 0.2, 1)
+        //             }
+        //             item.onMouseLeave = () => {
+        //                 item.fillColor = new Color(0.8, 0.8, 0.8, 1)
+        //             }
+        //             item.onClick = () => {
+        //                 icons[i].func()
+        //             }
+        //             this.icons.addChild(item)
+        //         }
+        //     })
+        // }
         this.icons.visible = false; 
 
     }
