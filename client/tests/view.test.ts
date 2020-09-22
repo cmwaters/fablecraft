@@ -57,6 +57,10 @@ test('resize view', () => {
     expect(view.card().position()).toStrictEqual(new Point(350, 140 + height + Config.view.padding.height))  
 })
 
+test('pull text below', () => {
+    
+})
+
 test('traverse up and down cards', () => {
     view.keydown("Arrow Down")
     expect(view.activeCardIdx).toBe(1)
