@@ -60,14 +60,13 @@ test('delete characters in text box', () => {
     expect(textBox.text()).toBe("multi text")
 })
 
-test('line should never start with a space', ()=> {
-    const textBox = new TextBox({
-        width: 100
-    })
-    fc.assert(
-        fc.property(fc.string(12), fc.string(12), fc.string(12), (a, b, c) => {
-            textBox.insert(a + " " + b + " " + c)
-            expect(textBox.lines[textBox.cursor.row].content[0]).not.toBe(" ")
-        })
-    )
+test('pull text below upwards', () => {
+    const textBox = setup("Hello ")
+    textBox.insertLine()
+    textBox.insert("World")
+    textBox.up()
+    expect(textBox.line().content).toBe("Hello ")
+    expect(textBox.text()).toBe("Hello World")
+    textBox.pull()
+    expect(textBox.line().content).toBe("Hello World")
 })

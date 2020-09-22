@@ -28,5 +28,3 @@ test('line should never start with a space', ()=> {
         })
     )
 })
-
-test('')
