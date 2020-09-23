@@ -192,15 +192,20 @@ export class TextBox {
         if (this.cursor.row + 1 === this.lines.length || this.lines[this.cursor.row + 1].content === "") {
             return
         }
+        // only pull when there is a space at the end of the line
+        if (this.lines[this.cursor.row].content.charAt(this.lineEnd() - 1) !== " ") {
+            return
+        }
         let remainingWidth = this.box.width - this.widthMap[this.cursor.row][this.cursor.column]
         this.down()
         this.return()
+        console.log("row: " + this.cursor.row + " column: " + this.cursor.column)
         let words = this.getWordsWithinWidth(remainingWidth)
         if (words === undefined || words.length === 0) {
             // no words can fit in the row above
             return
         }
-        this.line().content = this.line().content.slice(words.length)
+        this.line().content = this.line().content.slice(words.length + 1)
         this.up()
         this.cursor.column = this.lineEnd() - 1
         this.insert(words)

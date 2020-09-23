@@ -29,12 +29,10 @@ window.onload = () => {
         .then(function (response) {
             console.log(response.data.token);
             const token = response.data.token;
-            // Axios.get('/api/stories/', { params: { token: token }})
-            // "5f64b0fce3c7cf20ac86339e"
             Axios.get("/api/story/5f68b47773ea6658a5cf5617/", { params: { token: token } })
                 .then(function (response) {
                     console.log(response.data);
-                    let story = new Story(response.data.story.title, paper.project, response.data.story.cards);
+                    let story = new Story(response.data.story.title, paper.project, [{text: "Essentially the problem is that the Genesis State does not contain a header, though it does have a timestamp and an initial validator set. We should still be able to initialize from it - we can consider it height 0.", depth: 1, index: 1, parentIndex: null}]);
                 })
                 .catch(function (error) {
                     console.log(error);
