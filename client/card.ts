@@ -1,4 +1,4 @@
-import { TextBox } from './text'
+import { TextBox } from './archive/text'
 import { Point, Size, Path, Rectangle, Color, Project, Group } from 'paper'
 // import ArrowDown from './icons/box-arrow-in-down.svg' 
 // import ArrowUp from './icons/box-arrow-in-up.svg' 
