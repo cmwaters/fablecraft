@@ -1,79 +1,63 @@
-import { TextBox } from './archive/text'
-import { Point, Size, Path, Rectangle, Color, Project, Group } from 'paper'
-// import ArrowDown from './icons/box-arrow-in-down.svg' 
-// import ArrowUp from './icons/box-arrow-in-up.svg' 
-// import Trash from './icons/trash.svg'
-// import Share from './icons/share.svg'
+// import { TextBox } from './archive/text'
+// import { Point, Size, Path, Rectangle, Color, Project, Group } from 'paper'
+import ArrowDown from './icons/box-arrow-in-down.svg' 
+import ArrowUp from './icons/box-arrow-in-up.svg' 
+import Trash from './icons/trash.svg'
+import Share from './icons/share.svg'
 import { View } from './view'
+import Quill from 'quill';
+import { Vector, Size } from './types'
 
-const defaultMargin = new Size(15, 15)
-const defaultBarHeight = 30
-const iconClearance = 12
-const iconSize = 20
+// // const defaultMargin = new Size(15, 15)
+// const defaultBarHeight = 30
+// const iconClearance = 12
+// const iconSize = 20
 
 export class Card {
-    text: TextBox
-    box: paper.Path.Rectangle
-    bar: paper.Path.Line
-    // potentially margin can be just one number.
-    margin: paper.Size
-    icons: paper.Group
-    project: paper.Project
+    quill: Quill
+    margin: Size
     view: View
     
     // The following might not be necessary and managed by the view
     parent: Card | null = null
     children: Card[] = []
     
-    constructor(project: paper.Project, view: View, pos: paper.Point, width: number, content?: string, margin?: paper.Size) {
-        this.project = project
-        this.view = view
-        margin === undefined ? this.margin = defaultMargin: this.margin = margin
-        let rect = new Rectangle(pos, new Size(width, 2 * this.margin.height + defaultBarHeight))
-        this.box = new Path.Rectangle(rect, new Size(3, 3))
-        this.box.strokeColor = new Color('white')
-        this.box.fillColor = new Color("white")
-        // this.box.visible = false;
-        this.text = new TextBox({
-            position: new Point(pos.x + this.margin.width, pos.y + this.margin.height),
-            width: width - (2 * this.margin.width),
-            content: content
-        })
-        let height = this.text.box.height + (2 * this.margin.height)
-        this.box.bounds.height = height + defaultBarHeight
-        this.bar = new Path.Line(new Point(pos.x, pos.y + height), new Point(pos.x + width, pos.y + height))
-        this.bar.strokeColor = new Color(0.8, 0.8, 0.8, 1)
-        this.bar.visible = false;
+    constructor(view: View, pos: Vector, width: number, content?: string) {
+      const container = document.createElement("div")
+      container.style.position = "absolute"
+      container.style.left = 
+      container.style.width = width + "px"
+      container.style.position = "relative";
+      container.style.margin = "auto";
+      view.element.appendChild(container)
+      
+      const editor = document.createElement("div")
+      editor.style.height = "100px";
+      container.appendChild(editor)
+      
+      createToolbar(container)
+      
+      let quill = new Quill(editor, {
+        modules: {
+          toolbar: "#toolbar",
+        },
+        theme: 'snow'  // or 'bubble'
+      });
+      quill.setText(content)
+      
+      let bounds = quill.getBounds(0)
+      editor.style.height = (bounds.bottom + 12) + "px" 
 
-        // let icons = [
-        //     {img: ArrowDown, y: 3, func: () => {this.view.createBelow()}},
-        //     {img: ArrowUp, y: 8, func: () => {this.view.createAbove()}},
-        //     {img: Trash, y: 6, func: () => {this.view.deleteCard()}},
-        //     {img: Share, y: 6, func: () => {this.view.branch()}},
-        // ]
-        this.icons = new Group()
-        
-        // for (let i = 0; i < icons.length; i++) {
-        //     this.project.importSVG(icons[i].img, {
-        //         onLoad: (item: paper.Item) => {
-        //             item.scale(iconSize)
-        //             item.position = new Point(pos.x + iconClearance + ((iconClearance + iconSize) * i) + iconSize / 2, 
-        //             pos.y + this.text.box.height + (this.margin.height * 2) + icons[i].y + iconSize / 2)
-        //             item.fillColor = new Color(0.8, 0.8, 0.8, 1)
-        //             item.onMouseEnter = () => {
-        //                 item.fillColor = new Color(0.2, 0.2, 0.2, 1)
-        //             }
-        //             item.onMouseLeave = () => {
-        //                 item.fillColor = new Color(0.8, 0.8, 0.8, 1)
-        //             }
-        //             item.onClick = () => {
-        //                 icons[i].func()
-        //             }
-        //             this.icons.addChild(item)
-        //         }
-        //     })
-        // }
-        this.icons.visible = false; 
+      
+      quill.on('text-change', function(delta, oldDelta, source) {
+          let length = quill.getLength()
+          let bounds = quill.getBounds(length - 1)
+          console.log(bounds.height + bounds.top)
+          editor.style.height = (bounds.bottom + 12) + "px"
+      });
+      
+      editor.style.borderTop = "1px solid #ccc";
+      editor.style.borderBottom = "0px solid #ccc";
 
     }
     
@@ -161,5 +145,48 @@ export class Card {
         }
     }
 
+}
+
+function createCustomToolbar(): HTMLElement {
+  let toolbar = document.createElement('div')
+  toolbar.className = "custom-toolbar"
+  let customButtons = [
+    {svg: ArrowDown, func: () => { alert("Hello World")}},
+    {svg: ArrowUp, func: () => { alert("Hello World")}},
+    {svg: Share, func: () => { alert("Hello World")}},
+    {svg: Trash, func: () => { alert("Hello World")}},
+  ]
+  customButtons.forEach(button => {
+    let b = document.createElement('button')
+    b.innerHTML = button.svg
+    b.style.outline = "none";
+    b.onclick = button.func
+    toolbar.appendChild(b)
+  })
+  return toolbar
+}
+
+function createToolbar(parent: HTMLElement): void {
+  let toolbar = document.createElement("div")
+  toolbar.id = "toolbar"
+  toolbar.appendChild(createCustomToolbar())
+  let fontSize = document.createElement('select')
+  fontSize.className = "ql-header"
+  for (let idx = 1; idx <= 3; idx ++) {
+    let option = document.createElement('option')
+    option.value = idx.toString()
+    fontSize.appendChild(option)
+  }
+  let normal = document.createElement('option')
+  normal.selected = true;
+  fontSize.appendChild(normal)
+  toolbar.appendChild(fontSize)
+  let buttons = ['ql-bold', 'ql-italic', 'ql-underline']
+  buttons.forEach(type => {
+    let button = document.createElement('button')
+    button.className = type
+    toolbar.appendChild(button)
+  })
+  parent.appendChild(toolbar)
 }
 

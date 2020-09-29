@@ -9,19 +9,19 @@ export class View {
     location: paper.Point
     // camera: paper.Point
     cards: Card[][] = []
-    project: paper.Project
     padding: paper.Size
     margin: paper.Size
+    element: HTMLElement
     activeCardIdx: number = 0
     currentDepth: number = 0
     cardWidth: number = 0
     size: paper.Size
     shiftMode: boolean = false;
     
-    constructor(project: paper.Project, position: paper.Point, size: paper.Size, padding: paper.Size, margin: paper.Size, snippets: Snippet[]) {
+    constructor(element: HTMLElement, position: paper.Point, size: paper.Size, padding: paper.Size, margin: paper.Size, snippets: Snippet[]) {
         this.location = position;
+        this.element = element;
         this.size = size;
-        this.project = project
         this.padding = padding;
         this.margin = margin
         this.cardWidth = this.calculateCardWidth()
@@ -35,16 +35,8 @@ export class View {
         let rootCards: Card[] = []
         // let's assume a flat tree and keep everything on the same x margin
         for (let i = 0; i < snippets.length; i++) {
-            let newCard = new Card(this.project, this, new Point(cardX, cardY), this.cardWidth, snippets[i].text)
+            let newCard = new Card(this, new Point(cardX, cardY), this.cardWidth, snippets[i].text)
             cardY += newCard.box.bounds.height + this.padding.height
-            // newCard.box.onMouseEnter = () => {
-                
-            //     // alert("Hello World")
-            // }
-            // newCard.box.onClick = (e) => {
-            //     console.log("me x: " + e.clientX + " y: " + e.clientY)
-            //     this.focus(i)
-            // }
             rootCards.push(newCard)
         }
         this.cards.push(rootCards)

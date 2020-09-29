@@ -9,13 +9,11 @@ export class Story {
     description: string
     view: View
     snippets: Snippet[]
-    project: paper.Project
     
-    constructor(title: string, project: paper.Project, snippets: Snippet[]) {
+    constructor(title: string, snippets: Snippet[]) {
         this.title = title
         this.snippets = snippets
-        this.project = project
-        this.view = new View(this.project, new Point(0, 40), new Size(document.body.clientWidth, document.body.clientHeight), 
+        this.view = new View(new Point(0, 40), new Size(document.body.clientWidth, document.body.clientHeight), 
         defaultViewPadding, defaultViewMargin, snippets)
         
         document.onkeydown = (e) => {
