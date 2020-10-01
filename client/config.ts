@@ -1,14 +1,22 @@
-import { Size } from "paper"
+import { Size } from "./types"
 
 export const Config = {
-    cardWidth: {
-        min: 400,
-        max: 800
+    card: {
+      width: {
+          min: 400,
+          max: 800
+      },
+      toolbarHeight: 42
     },
     
+    
     view: {
-        margin: new Size(20, 20),
-        padding: new Size(20, 20)
+        margin: {width: 20, height: 20},
+        padding: {width: 20, height: 20}
+    },
+    
+    header: {
+      height: 50
     }
 
 }

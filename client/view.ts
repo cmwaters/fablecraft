@@ -1,42 +1,40 @@
 import { Card } from './card'
-import { Point } from 'paper'
+import { Size, Vector } from './types'
 import { Config} from './config'
 import { Snippet } from './story'
 
 const inverseScrollSpeed = 3
 
 export class View {
-    location: paper.Point
-    // camera: paper.Point
+    location: Vector
     cards: Card[][] = []
-    padding: paper.Size
-    margin: paper.Size
+    padding: Size
     element: HTMLElement
     activeCardIdx: number = 0
     currentDepth: number = 0
     cardWidth: number = 0
-    size: paper.Size
+    size: Size
     shiftMode: boolean = false;
     
-    constructor(element: HTMLElement, position: paper.Point, size: paper.Size, padding: paper.Size, margin: paper.Size, snippets: Snippet[]) {
-        this.location = position;
+    constructor(element: HTMLElement, snippets: Snippet[]) {
         this.element = element;
-        this.size = size;
-        this.padding = padding;
-        this.margin = margin
+        console.log(this.element.style.width)
         this.cardWidth = this.calculateCardWidth()
-        let cardX = (this.size.width - this.cardWidth) / 2 + this.location.x
-        let cardY = this.location.y + this.padding.height + this.margin.height
+        console.log(this.cardWidth)
+        let cardX = (this.element.clientWidth - this.cardWidth) / 2
+        let cardY = 30
+        console.log("x: " + cardX)
+        this.padding = Config.view.padding
         
         window.onmousewheel = (e: WheelEvent) => {
-            this.shift(new Point(-e.deltaX/inverseScrollSpeed, -e.deltaY/inverseScrollSpeed))
+            this.shift({x: -e.deltaX/inverseScrollSpeed, y: -e.deltaY/inverseScrollSpeed})
         }
         
         let rootCards: Card[] = []
         // let's assume a flat tree and keep everything on the same x margin
         for (let i = 0; i < snippets.length; i++) {
-            let newCard = new Card(this, new Point(cardX, cardY), this.cardWidth, snippets[i].text)
-            cardY += newCard.box.bounds.height + this.padding.height
+            let newCard = new Card(this, 0, {x: cardX, y: cardY}, this.cardWidth, snippets[i].text)
+            cardY += newCard.height() + this.padding.height
             rootCards.push(newCard)
         }
         this.cards.push(rootCards)
@@ -45,24 +43,17 @@ export class View {
             this.handleClick(e)
         } 
         
-        console.log(this.cards[0].length)
-        this.focus(0, 0)
-        console.log(this.size)
+        // console.log(this.cards[0].length)
+        // this.focus(0, 0)
+        // console.log(this.size)
     }
     
     keydown(key: string):void {
         console.log("key down: " + key)
-        if (this.card().textMode()) {
+        if (this.card().quill.hasFocus()) {
             console.log("Hello here")
             if (key === "Escape") {
-                this.card().text.deactivate()
-            } else {
-                let initialHeight = this.card().box.bounds.height
-                this.card().input(key)
-                let delta = this.card().box.bounds.height - initialHeight
-                if (delta !== 0) {
-                    this.slideBottom(delta)
-                }
+                this.card().quill.blur()
             }
         } else {
             switch (key) {
@@ -87,7 +78,7 @@ export class View {
                 case "Backspace":
                     this.deleteCard()
                 case "Enter":
-                    this.card().text.activate()
+                    this.card().quill.focus()
                     break;
                 default:
                     break; //nop
@@ -105,19 +96,19 @@ export class View {
         }
     }
     
-    resize(newSize: paper.Size): void {
-        this.size = newSize
-        this.cardWidth = this.calculateCardWidth()
-        console.log(this.location.y)
-        let y = this.location.y + this.margin.height + this.padding.height
-        for (let depth = 0; depth < this.cards.length; depth++) {
-            for (let card of this.cards[depth]) {
-                card.move(new Point((this.size.width - this.cardWidth) / 2 + this.location.x, y))
-                let height = card.resize(this.cardWidth)
-                y += (height + this.padding.height)
-            }
-        }
-    }
+    // resize(newSize: paper.Size): void {
+    //     this.size = newSize
+    //     this.cardWidth = this.calculateCardWidth()
+    //     console.log(this.location.y)
+    //     let y = this.location.y + this.margin.height + this.padding.height
+    //     for (let depth = 0; depth < this.cards.length; depth++) {
+    //         for (let card of this.cards[depth]) {
+    //             card.move(new Point((this.size.width - this.cardWidth) / 2 + this.location.x, y))
+    //             let height = card.resize(this.cardWidth)
+    //             y += (height + this.padding.height)
+    //         }
+    //     }
+    // }
     
     card(): Card {
         return this.cards[this.currentDepth][this.activeCardIdx]
@@ -126,6 +117,7 @@ export class View {
     focus(depth: number, cardIdx: number): void {
         console.log("focus on card at depth: " + depth + " and index: " + cardIdx)
         this.card().deactivate()
+        this.slideBottom(-Config.card.toolbarHeight)
         if (depth >= this.cards.length || depth < 0) {
             console.log("invalid depth: " + depth)
             return
@@ -138,6 +130,7 @@ export class View {
         this.activeCardIdx = cardIdx
         
         this.card().activate()
+        this.slideBottom(Config.card.toolbarHeight)
         this.center(this.currentDepth, this.activeCardIdx)
     }
     
@@ -146,7 +139,7 @@ export class View {
     }
     
     calculateCardWidth(): number {
-        return Math.min(Math.max(0.5 * this.size.width, Config.cardWidth.min), Config.cardWidth.max)
+        return Math.min(Math.max(0.5 * this.element.clientWidth, Config.card.width.min), Config.card.width.max)
     }
     
     up(): void {
@@ -156,10 +149,6 @@ export class View {
         }
         // else activate the card above
         this.focus(this.currentDepth, this.activeCardIdx - 1)
-        let card = this.card()
-        card.text.textEnd()
-        card.text.slidePointer()
-        card.text.activate()
     }
     
     down(): void {
@@ -169,10 +158,6 @@ export class View {
         }
         // else move to the card below and activate it
         this.focus(this.currentDepth, this.activeCardIdx + 1)
-        let card = this.card()
-        card.text.textStart()
-        card.text.slidePointer()
-        card.text.activate()
     }
 
     left(): void {
@@ -188,25 +173,28 @@ export class View {
     createAbove(): void {
         console.log("create above")
         let currentCard = this.card()
-        let newCard = new Card(this.project, this, currentCard.position(), this.calculateCardWidth())
+        let newCard = new Card(this, this.cards[0].length, currentCard.pos(), this.calculateCardWidth())
         this.cards[this.currentDepth].splice(this.activeCardIdx, 0, newCard)
-        this.slideBottom(newCard.size().height + this.padding.height)
+        this.slideBottom(newCard.height() + this.padding.height + Config.card.toolbarHeight)
         currentCard.deactivate()
         newCard.activate()
-        this.card().text.activate()
+        newCard.quill.focus()
     }
 
     createBelow(): void {
         console.log("create below")
         let currentCard = this.card()
         currentCard.deactivate()
-        let newPos = currentCard.position().add(new Point(0, currentCard.size().height + this.padding.height))
-        let newCard = new Card(this.project, this, newPos, this.calculateCardWidth())
-        this.slideBottom(newCard.size().height + this.padding.height)
+        let pos = currentCard.pos()
+        console.log(currentCard.height())
+        console.log(pos.y + currentCard.height() + this.padding.height)
+        let newPos = {x: pos.x, y: pos.y + currentCard.height() + this.padding.height}
+        let newCard = new Card(this, this.cards[0].length, newPos, this.cardWidth)
+        this.slideBottom(newCard.height() + this.padding.height)
         this.cards[this.currentDepth].splice(this.activeCardIdx + 1, 0, newCard)
         this.activeCardIdx += 1
-        this.card().activate()
-        this.card().text.activate()
+        newCard.activate()
+        newCard.quill.focus()
     }
     
     branch(): void {
@@ -216,7 +204,7 @@ export class View {
     // deletes the currently active card
     deleteCard(): void {
         console.log("deleting card")
-        let height = this.card().size().height
+        let height = this.card().height()
         console.log(height + this.padding.height)
         this.card().remove()
         this.cards[this.currentDepth].splice(this.activeCardIdx, 1)
@@ -235,22 +223,22 @@ export class View {
     // handleClick runs the relevant logic when a click occurs inside the view. Mostly this involves passing it down
     // to the relevant card
     handleClick(e: MouseEvent): void {
-        console.log("x: " + e.clientX + " y: " + e.clientY)
-        let clickPoint = new Point(e.clientX, e.clientY)
-        for (let depth = 0; depth < this.cards.length; depth++) {
-            for (let idx = 0; idx < this.cards[depth].length; idx++) {
-                if (this.cards[depth][idx].box.bounds.contains(clickPoint) && !this.cards[depth][idx].icons.contains(clickPoint)) {
-                    this.focus(depth, idx)
-                    this.cards[depth][idx].handleClick(clickPoint)
-                }
-            }
-        }
+        // console.log("x: " + e.clientX + " y: " + e.clientY)
+        // let clickPoint = new Point(e.clientX, e.clientY)
+        // for (let depth = 0; depth < this.cards.length; depth++) {
+        //     for (let idx = 0; idx < this.cards[depth].length; idx++) {
+        //         if (this.cards[depth][idx].box.bounds.contains(clickPoint) && !this.cards[depth][idx].icons.contains(clickPoint)) {
+        //             this.focus(depth, idx)
+        //             this.cards[depth][idx].handleClick(clickPoint)
+        //         }
+        //     }
+        // }
     }
     
     // shift shifts the entire view by a delta vector. This is primarily
     // used to traverse along the tree an focus on different cards.
     // does not change the current depth and index
-    shift(delta: paper.Point): void {
+    shift(delta: Vector): void {
         for (let depth = 0; depth < this.cards.length; depth++) {
             for (let idx = 0; idx < this.cards[depth].length; idx++) {
                 this.cards[depth][idx].translate(delta)
@@ -265,7 +253,7 @@ export class View {
             return
         }
         for (let i = this.activeCardIdx + 1; i < this.cards[this.currentDepth].length; i++) {
-            this.cards[this.currentDepth][i].translate(new Point(0, delta))
+            this.cards[this.currentDepth][i].translate({x: 0, y: delta})
         }
     }
 }
