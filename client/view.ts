@@ -1,9 +1,10 @@
 import { Card } from './card'
-import { Size, Vector } from './types'
+import { Size, Vector, Geometry } from './types'
 import { Config} from './config'
 import { Snippet } from './story'
 
-const inverseScrollSpeed = 3
+let g = Geometry
+const inverseScrollSpeed = 2
 
 export class View {
     location: Vector
@@ -27,25 +28,35 @@ export class View {
         this.padding = Config.view.padding
         
         window.onmousewheel = (e: WheelEvent) => {
-            this.shift({x: -e.deltaX/inverseScrollSpeed, y: -e.deltaY/inverseScrollSpeed})
+            if (this.shiftMode) {
+                this.shift({x: -e.deltaY/inverseScrollSpeed, y: -e.deltaX/inverseScrollSpeed})
+            } else {
+                this.shift({x: -e.deltaX/inverseScrollSpeed, y: -e.deltaY/inverseScrollSpeed})
+            }
         }
         
         let rootCards: Card[] = []
         // let's assume a flat tree and keep everything on the same x margin
         for (let i = 0; i < snippets.length; i++) {
+            console.log(cardY)
             let newCard = new Card(this, 0, {x: cardX, y: cardY}, this.cardWidth, snippets[i].text)
+            console.log("pos: " + newCard.pos().y)
+            newCard.deactivate()
+            console.log(newCard.height())
             cardY += newCard.height() + this.padding.height
             rootCards.push(newCard)
         }
         this.cards.push(rootCards)
         
-        document.onclick = (e: MouseEvent) => {
+        element.onclick = (e: MouseEvent) => {
             this.handleClick(e)
         } 
         
-        // console.log(this.cards[0].length)
-        // this.focus(0, 0)
-        // console.log(this.size)
+        console.log(this.cards[0].length)
+        
+        this.card().activate()
+        this.slideBottom(Config.card.toolbarHeight)
+        this.center(this.currentDepth, this.activeCardIdx)
     }
     
     keydown(key: string):void {
@@ -135,7 +146,9 @@ export class View {
     }
     
     center(depth: number, cardIdx: number): void {
-    
+        let currentPos = g.add(this.cards[depth][cardIdx].pos(), g.center({width: this.cardWidth, height: this.cards[depth][cardIdx].height()}))
+        let diff = g.subtract({x: this.element.clientWidth/2, y: this.element.clientHeight/2}, currentPos)
+        this.shift(diff)
     }
     
     calculateCardWidth(): number {
@@ -223,16 +236,16 @@ export class View {
     // handleClick runs the relevant logic when a click occurs inside the view. Mostly this involves passing it down
     // to the relevant card
     handleClick(e: MouseEvent): void {
-        // console.log("x: " + e.clientX + " y: " + e.clientY)
-        // let clickPoint = new Point(e.clientX, e.clientY)
-        // for (let depth = 0; depth < this.cards.length; depth++) {
-        //     for (let idx = 0; idx < this.cards[depth].length; idx++) {
-        //         if (this.cards[depth][idx].box.bounds.contains(clickPoint) && !this.cards[depth][idx].icons.contains(clickPoint)) {
-        //             this.focus(depth, idx)
-        //             this.cards[depth][idx].handleClick(clickPoint)
-        //         }
-        //     }
-        // }
+        console.log("x: " + e.clientX + " y: " + e.clientY)
+        let clickPoint = new Point(e.clientX, e.clientY)
+        for (let depth = 0; depth < this.cards.length; depth++) {
+            for (let idx = 0; idx < this.cards[depth].length; idx++) {
+                if (this.cards[depth][idx].box.bounds.contains(clickPoint) && !this.cards[depth][idx].icons.contains(clickPoint)) {
+                    this.focus(depth, idx)
+                    this.cards[depth][idx].handleClick(clickPoint)
+                }
+            }
+        }
     }
     
     // shift shifts the entire view by a delta vector. This is primarily

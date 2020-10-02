@@ -60,11 +60,15 @@ export class Card {
       editor.style.height = (bounds.bottom + 12) + "px" 
       
       quill.on('text-change', function(delta, oldDelta, source) {
+          let existingHeight = editor.offsetHeight
+          console.log(existingHeight)
           let length = quill.getLength()
           let bounds = quill.getBounds(length - 1)
-          console.log(bounds.height + bounds.top)
+          let heightDiff = bounds.bottom + 12 - existingHeight
           editor.style.height = (bounds.bottom + 12) + "px"
-      });
+          console.log("height diff: " + heightDiff)
+          this.view.slideBottom(heightDiff)
+      }.bind(this));
       
       editor.style.borderTop = "1px solid #ccc";
       editor.style.borderBottom = "0px solid #ccc";
@@ -119,7 +123,7 @@ export class Card {
     }
     
     height(): number {
-      return this.element.clientHeight
+      return this.element.offsetHeight
     }
     
     pos(): Vector {
@@ -128,13 +132,13 @@ export class Card {
 
     activate(): void {
         this.quill.enable()
-        this.editor.style.border = "1px solid #ccc"
-        this.editor.style.borderBottom = "none"
+        this.editor.style.borderColor = "#ccc"
+        // this.editor.style.borderBottom = "none"
         this.toolbar.style.display = "block";
     }
 
     deactivate(): void {
-      this.editor.style.border = "none"
+      this.editor.style.borderColor = "#fff"
       this.toolbar.style.display = "none";
       this.quill.blur()
       this.quill.enable(false)
@@ -167,17 +171,17 @@ export class Card {
       let toolbar = document.createElement("div")
       toolbar.id = "toolbar" + this.cardID
       toolbar.appendChild(this.createCustomToolbar())
-      let fontSize = document.createElement('select')
-      fontSize.className = "ql-header"
-      for (let idx = 1; idx <= 3; idx ++) {
-        let option = document.createElement('option')
-        option.value = idx.toString()
-        fontSize.appendChild(option)
-      }
-      let normal = document.createElement('option')
-      normal.selected = true;
-      fontSize.appendChild(normal)
-      toolbar.appendChild(fontSize)
+      // let fontSize = document.createElement('select')
+      // fontSize.className = "ql-header"
+      // for (let idx = 1; idx <= 3; idx ++) {
+      //   let option = document.createElement('option')
+      //   option.value = idx.toString()
+      //   fontSize.appendChild(option)
+      // }
+      // let normal = document.createElement('option')
+      // normal.selected = true;
+      // fontSize.appendChild(normal)
+      // toolbar.appendChild(fontSize)
       let buttons = ['ql-bold', 'ql-italic', 'ql-underline']
       buttons.forEach(type => {
         let button = document.createElement('button')

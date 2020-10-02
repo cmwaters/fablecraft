@@ -1,6 +1,7 @@
 import { Point, Size } from 'paper'
 import { View } from './view'
 import { Config } from './config'
+import { view } from 'paper/dist/paper-core'
 
 const defaultViewMargin = new Size(20, 20)
 const defaultViewPadding = new Size(20, 20)
@@ -25,6 +26,7 @@ export class Story {
         document.body.appendChild(viewElement)
         viewElement.id = "view"
         viewElement.style.width = "100%";//window.innerWidth + "px"
+        viewElement.style.height = "calc(100% - " + Config.header.height + "px)"
         viewElement.style.position = "relative"
         this.view = new View(viewElement, snippets)
         
