@@ -11,8 +11,8 @@ export const Config = {
     
     
     view: {
-        margin: {width: 20, height: 20},
-        padding: {width: 20, height: 20}
+        margin: {width: 60, height: 20},
+        branchGap: 40
     },
     
     header: {

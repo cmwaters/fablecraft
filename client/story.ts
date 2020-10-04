@@ -37,6 +37,11 @@ export class Story {
         document.onkeyup = (e) => {
             this.view.keyup(e.key)
         }
+
+        window.onresize = (e) => {
+            console.log("resizing")
+            this.view.resize()
+        }
         
         // automatically resize to the entire screen. When we have multiple views we will
         // need to change this.

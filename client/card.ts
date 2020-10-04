@@ -14,7 +14,7 @@ import { Vector, Size } from './types'
 // const iconSize = 20
 
 export class Card {
-    cardID: number
+    // cardID: number
     quill: Quill;
     view: View;
     element: HTMLElement
@@ -24,13 +24,14 @@ export class Card {
     private position: Vector
     
     // The following might not be necessary and managed by the view
-    parent: Card | null = null
-    children: Card[] = []
+    parentIdx: number | null = null
+    firstChildIdx: number | null = null
+    childrenCount: number = 0
     
-    constructor(view: View, id: number, pos: Vector, width: number, content?: string) {
-      this.cardID = id
+    constructor(view: View, pos: Vector, width: number, content?: string) {
+      // this.cardID = id
       const container = document.createElement("div")
-      container.id = "card" + this.cardID
+      // container.id = "card" + this.cardID
       container.style.position = "absolute"
       container.style.left = pos.x + "px"
       container.style.top = pos.y + "px"
@@ -154,7 +155,7 @@ export class Card {
       let customButtons = [
         {svg: ArrowDown, func: () => { this.view.createBelow() }},
         {svg: ArrowUp, func: () => { this.view.createAbove() }},
-        {svg: Share, func: () => { alert("Hello World")}},
+        {svg: Share, func: () => { this.view.branch() }},
         {svg: Trash, func: () => { this.view.deleteCard() }},
       ]
       customButtons.forEach(button => {
@@ -169,7 +170,7 @@ export class Card {
     
     createToolbar(parent: HTMLElement): HTMLElement {
       let toolbar = document.createElement("div")
-      toolbar.id = "toolbar" + this.cardID
+      // toolbar.id = "toolbar" + this.cardID
       toolbar.appendChild(this.createCustomToolbar())
       // let fontSize = document.createElement('select')
       // fontSize.className = "ql-header"
