@@ -3,12 +3,12 @@ import express from 'express';
 import mongoose from 'mongoose';
 import session from 'express-session';
 import * as bodyParser from 'body-parser';
-import "./server/models/user"
-import authRouter from './server/routes/auth';
-import apiRouter from './server/routes/api';
+import "./models/user"
+import authRouter from './routes/auth';
+import apiRouter from './routes/api';
 import passport from 'passport';
 import path from 'path'
-import './server/auth/auth'
+import './auth/auth'
 let clientRouter = express.Router();
 
 dotenv.config()

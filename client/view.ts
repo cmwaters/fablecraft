@@ -27,6 +27,8 @@ export class View {
         let cardX = (this.element.clientWidth - this.cardWidth) / 2
         let cardY = 30
         console.log("x: " + cardX)
+        console.log("width: " + this.cardWidth)
+        console.log("center: " + this.element.offsetWidth/2 + " y: " + this.element.offsetHeight/2)
         this.margin = Config.view.margin
         
         window.onmousewheel = (e: WheelEvent) => {
@@ -101,6 +103,7 @@ export class View {
                     break
                 case "Backspace":
                     this.deleteCard()
+                    break;
                 case "Enter":
                     setTimeout(() => {
                         this.currentCard.quill.focus()
@@ -130,7 +133,7 @@ export class View {
     
     // focus deactivates the previous card and activates a new card also centering it's position
     focus(depth: number, cardIdx: number): void {
-        console.log("focus on card at depth: " + depth + " and index: " + cardIdx)
+        
         this.currentCard.deactivate()
         this.slideBottom(-Config.card.toolbarHeight)
         if (depth >= this.cards.length || depth < 0) {
@@ -147,19 +150,23 @@ export class View {
         this.currentCard.activate()
         this.slideBottom(Config.card.toolbarHeight)
         this.center(this.currentDepth, this.currentIndex)
+        console.log("focus on card at depth: " + depth + " and index: " + cardIdx + " with pos: " + g.string(this.currentCard.centerPos()) + " and height: " + this.currentCard.height())
+        console.log(this.getState())
     }
     
     // center moves the view such that the target card is in the center of that view
     center(depth: number, cardIdx: number): void {
         if (this.movementInterval === null) {
+            console.log("moving towards, x: " + this.element.offsetWidth/2 + " y: " + this.element.offsetHeight/2)
             this.movementInterval = setInterval(() => {
-                let currentPos = g.add(this.cards[depth][cardIdx].pos(), g.center({width: this.cardWidth, height: this.cards[depth][cardIdx].height()}))
-                console.log("card position: " + g.string(currentPos))
-                let diff = g.subtract({x: this.element.clientWidth/2, y: this.element.clientHeight/2}, currentPos)
+                let currentPos =  this.cards[depth][cardIdx].centerPos() //g.add(this.cards[depth][cardIdx].pos(), g.center({width: this.cardWidth, height: this.cards[depth][cardIdx].height()}))
+                console.log(this.cards[depth][cardIdx].centerPos())
+                let diff = g.subtract({x: this.element.offsetWidth/2, y: this.element.offsetHeight/2}, currentPos)
                 
                 // console.log("diff" + diff)
                 if (Math.abs(diff.x) < 5 && Math.abs(diff.y) < 5) {
                     this.shift(diff)
+                    console.log("final pos: " + g.string(this.cards[depth][cardIdx].centerPos()))
                     clearInterval(this.movementInterval)
                     this.movementInterval = null;
                 } else {
@@ -214,21 +221,23 @@ export class View {
     createAbove(): void {
         console.log("create above")
         let pIdx = this.currentCard.parentIdx
-        let newCard = new Card(this, this.currentCard.pos(), this.calculateCardWidth())
+        this.currentCard.deactivate()
+        this.slideBottom(-Config.card.toolbarHeight)
+        
+        let newCard = new Card(this, g.copy(this.currentCard.pos()), this.calculateCardWidth())
         this.cards[this.currentDepth].splice(this.currentIndex, 0, newCard)
         this.slideBottom(newCard.height() + this.margin.height + Config.card.toolbarHeight)
-        this.currentCard.deactivate()
         if (pIdx !== null) {
-            this.currentCard.parentIdx = pIdx
+            newCard.parentIdx = pIdx
             // update the first child and child count parameters of the parent card
             if (this.currentIndex < this.cards[this.currentDepth -1][pIdx].firstChildIdx) {
                 this.cards[this.currentDepth -1][pIdx].firstChildIdx = this.currentIndex
             }
             this.cards[this.currentDepth - 1][pIdx].childrenCount++
         }
-        this.center(this.currentDepth, this.currentIndex)
         newCard.activate()
         newCard.quill.focus()
+        this.center(this.currentDepth, this.currentIndex)
         this.currentCard = newCard
     }
 
@@ -237,21 +246,24 @@ export class View {
     createBelow(): void {
         console.log("create below")
         let pIdx = this.currentCard.parentIdx
-        let pos = this.currentCard.pos()
-        console.log(this.currentCard.height())
-        console.log(pos.y + this.currentCard.height() + this.margin.height)
-        let newPos = {x: pos.x, y: pos.y + this.currentCard.height() + this.margin.height}
+        let newPos = g.add(this.currentCard.pos(), {x: 0, y: this.currentCard.height() + this.margin.height})
+        this.currentCard.deactivate()
+        this.slideBottom(-Config.card.toolbarHeight)
+        
         let newCard = new Card(this, newPos, this.cardWidth)
-        this.slideBottom(newCard.height() + this.margin.height)
-        this.cards[this.currentDepth].splice(this.currentIndex + 1, 0, newCard)
-        this.focus(this.currentDepth, this.currentIndex + 1)
+        this.slideBottom(newCard.height() + this.margin.height + Config.card.toolbarHeight)
+        this.currentIndex++
+        this.cards[this.currentDepth].splice(this.currentIndex, 0, newCard)
         // if the previous card had a parent we add this card as a new child of that same parent
         if (pIdx !== null) {
-            newCard.parentIdx = pIdx
-            // increase the children count of the parent
-            this.cards[this.currentDepth - 1][pIdx].childrenCount++
-        }
+          newCard.parentIdx = pIdx
+          // increase the children count of the parent
+          this.cards[this.currentDepth - 1][pIdx].childrenCount++
+        } 
+        newCard.activate()
         newCard.quill.focus()
+        this.center(this.currentDepth, this.currentIndex)
+        this.currentCard = newCard
     }
     
     branch(): void {
@@ -259,11 +271,9 @@ export class View {
         let pIdx = this.currentIndex
         // this.currentCard.deactivate()
         if (this.currentCard.firstChildIdx === null) {
-            console.log("here 1")
             // this card doesn't have any children yet
             if (this.cards.length === this.currentDepth + 1) {
                 // this is the first new card of this depth
-                console.log("here 2")
                 let pos = g.add(this.currentCard.pos(), {x: this.cardWidth + this.margin.width, y: 0})
                 console.log("pos: " + pos.x)
                 this.cards.push([new Card(this, pos, this.cardWidth)])
@@ -273,7 +283,6 @@ export class View {
                 this.currentCard.parentIdx = pIdx
                 this.currentCard.quill.focus()
             } else {
-                console.log("here 3")
                 // we have to find where to insert the card
                 let idx = this.childInsertionIndex()
                 let pos = g.add(this.currentCard.pos(), {x: this.cardWidth + this.margin.width, y: 0})
@@ -312,13 +321,15 @@ export class View {
         this.currentIndex--
         this.slideBottom(- (height + this.margin.height))
         // TODO: add a case for when it was the last card
-        if (this.cards.length === 1) {
+        if (this.cards[this.currentDepth].length === 1) {
             this.currentIndex = 0
         }
-        if (this.currentIndex < this.cards.length - 1) {
-            this.currentIndex++
-        }
+        // if (this.currentIndex < this.cards.length - 1) {
+        //     this.currentIndex++
+        // }
+        this.currentCard = this.cards[this.currentDepth][this.currentIndex]
         this.currentCard.activate()
+        this.center(this.currentDepth, this.currentIndex)
     }
     
     // handleClick runs the relevant logic when a click occurs inside the view. Mostly this involves passing it down
@@ -343,7 +354,7 @@ export class View {
     shift(delta: Vector): void {
         for (let depth = 0; depth < this.cards.length; depth++) {
             for (let idx = 0; idx < this.cards[depth].length; idx++) {
-                this.cards[depth][idx].translate(delta)
+                this.cards[depth][idx].translate(g.copy(delta))
             }
         }
     }
@@ -363,4 +374,16 @@ export class View {
 
 
     }
+    
+    getState(): string {
+      let str = ""
+      for (let depth = 0; depth < this.cards.length; depth++) {
+        for (let idx = 0; idx < this.cards[depth].length; idx++) {
+            str += "\n"
+            str += "cards at depth: " + depth + " and index: " + idx + "\n"
+            str += this.cards[depth][idx].string()
+        }
+      }
+      return str
+    } 
 }

@@ -37,5 +37,9 @@ export namespace Geometry {
   export function round(vec: Vector, dp: number = 0): Vector {
     return {x: Math.round(vec.x), y: Math.round(vec.y)}
   }
+  
+  export function copy(vec: Vector): Vector {
+    return {x: vec.x, y: vec.y}
+  }
 
 }

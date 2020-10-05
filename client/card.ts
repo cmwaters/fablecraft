@@ -6,7 +6,9 @@ import Trash from './icons/trash.svg'
 import Share from './icons/share.svg'
 import { View } from './view'
 import Quill from 'quill';
-import { Vector, Size } from './types'
+import { Vector, Size, Geometry } from './types'
+
+const g = Geometry
 
 // // const defaultMargin = new Size(15, 15)
 // const defaultBarHeight = 30
@@ -20,8 +22,6 @@ export class Card {
     element: HTMLElement
     toolbar: HTMLElement
     editor: HTMLElement
-
-    private position: Vector
     
     // The following might not be necessary and managed by the view
     parentIdx: number | null = null
@@ -36,13 +36,12 @@ export class Card {
       container.style.left = pos.x + "px"
       container.style.top = pos.y + "px"
       container.style.width = width + "px"
+      container.style.zIndex = "1";
       this.element = container
       this.view = view
       this.view.element.appendChild(container)
-      this.position = pos
       
       const editor = document.createElement("div")
-      editor.style.height = "100px";
       container.appendChild(editor)
       
       this.toolbar = this.createToolbar(container)
@@ -79,26 +78,6 @@ export class Card {
 
     }
     
-    // // input handles keyboard inputs directed to this card
-    // input(char: string): void {
-    //     if (this.text.text() === "" && char == "Backspace") {
-    //         this.view.deleteCard()
-    //     } else if (this.text.cursor.row === 0 && char === "ArrowUp") {
-    //         // move up to the next card if we have reached the top of this
-    //         this.view.up()
-    //     } else if (this.text.lastLine() && char === "ArrowDown") {
-    //         // move down to the card below if we have reached the bottom of this
-    //         this.view.down()
-    //     } else {
-    //         this.text.input(char)
-    //         if (this.text.box.height + (2 * this.margin.height) + defaultBarHeight !== this.box.bounds.height ) {
-    //             this.box.bounds.height = this.text.box.height + (2 * this.margin.height) + defaultBarHeight
-    //             this.bar.position.y = this.box.position.y + (this.box.bounds.height/2) - defaultBarHeight
-    //             this.icons.position.y = this.bar.position.y + this.icons.bounds.height / 2 + 3
-    //         }
-    //     }
-    // }
-    
     // resize changes the width of the current card which may result in a reshuffling of the 
     // text and a new height which is returned
     // resize(newWidth: number): number {
@@ -113,14 +92,11 @@ export class Card {
     move(newPos: Vector): void {
       this.element.style.left = newPos.x + "px"
       this.element.style.top = newPos.y + "px"
-      this.position = newPos
     }
     
     translate(delta: Vector): void {
-        this.element.style.left = (parseInt(this.element.style.left, 10) + delta.x) + "px"
-        this.element.style.top = (parseInt(this.element.style.top, 10) + delta.y) + "px"
-        this.position.x += delta.x
-        this.position.y += delta.y
+        this.element.style.left = (this.element.offsetLeft + delta.x) + "px"
+        this.element.style.top = (this.element.offsetTop + delta.y) + "px"
     }
     
     height(): number {
@@ -128,7 +104,15 @@ export class Card {
     }
     
     pos(): Vector {
-      return this.position
+      return {x: this.element.offsetLeft, y: this.element.offsetTop}
+    }
+    
+    centerPos(): Vector {
+      return g.add(this.pos(), g.center({width: this.element.offsetWidth, height: this.element.offsetHeight}))
+    }
+    
+    string(): string {
+      return "pos, " + g.string(this.pos()) + ", height: " + this.height() + " width: " + this.element.offsetWidth
     }
 
     activate(): void {

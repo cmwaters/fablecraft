@@ -4,7 +4,7 @@ export const Config = {
     card: {
       width: {
           min: 400,
-          max: 800
+          max: 600
       },
       toolbarHeight: 42
     },
@@ -16,7 +16,7 @@ export const Config = {
     },
     
     header: {
-      height: 50
+      height: 80
     }
 
 }

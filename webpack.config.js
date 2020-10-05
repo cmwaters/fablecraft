@@ -5,7 +5,7 @@ module.exports = {
 	mode: process.env.MODE,
 	watch: false,
 	entry: {
-		fablecraft: "./client/fablecraft.ts",
+		fablecraft: "./client/fablecraft.ts"
 	},
 	output: {
 		filename: "[name].js",

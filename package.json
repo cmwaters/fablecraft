@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "test": "jest",
-    "nodemon": "nodemon dist/index.js",
+    "nodemon": "nodemon dist/server/index.js",
     "build-server": "tsc",
     "build-client": "webpack",
     "build-dev": "concurrently --kill-others-on-fail \"tsc --watch --preserveWatchOutput\" \"webpack --watch\"",

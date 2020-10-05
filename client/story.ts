@@ -17,9 +17,13 @@ export class Story {
         this.snippets = snippets
         // we start with just a single view but later on we might want to encompass multiple views
         let headerElement = document.createElement('div')
+        headerElement.style.position = "absolute"
         headerElement.id = "header"
         headerElement.style.height = Config.header.height + "px"
+        headerElement.style.width = "100%";
         headerElement.innerHTML = "<h1>" + this.title + "</h1>"
+        headerElement.style.backgroundColor = "#fff"
+        headerElement.style.zIndex = "10";
         document.body.appendChild(headerElement)
         
         let viewElement = document.createElement('div')

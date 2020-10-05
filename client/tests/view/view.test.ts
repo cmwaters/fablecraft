@@ -1,8 +1,8 @@
-import { View } from '../view';
-import { Snippet } from '../story'
-import { Config } from '../config'
+import { View } from '../../view';
+import { Snippet } from '../../story'
+import { Config } from '../../config'
 import { Point, Size, PaperScope } from 'paper';
-import { StrGen, NumGen } from '../libs/rand'
+import { LoremIpsum } from "lorem-ipsum";
 // import * as fc from 'fast-check'
 
 let view: View
