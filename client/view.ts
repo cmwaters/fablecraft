@@ -422,7 +422,10 @@ export class View {
                 let card = this.cards[depth][idx];
                 let size = { width: this.cardWidth, height: card.height() };
                 if (g.inside(card.pos(), size, clickPoint)) {
-                    this.focus(depth, idx);
+                    if (!this.cards[depth][idx].quill.hasFocus()) {
+                        this.focus(depth, idx);
+                    }
+                    break
                 }
             }
         }
