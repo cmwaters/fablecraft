@@ -61,12 +61,10 @@ export class Card {
       
       quill.on('text-change', function(delta, oldDelta, source) {
           let existingHeight = editor.offsetHeight
-          console.log(existingHeight)
           let length = quill.getLength()
           let bounds = quill.getBounds(length - 1)
           let heightDiff = bounds.bottom + 12 - existingHeight
           editor.style.height = (bounds.bottom + 12) + "px"
-          console.log("height diff: " + heightDiff)
           this.view.slideBottom(heightDiff)
       }.bind(this));
       
@@ -140,7 +138,7 @@ export class Card {
         {svg: ArrowDown, func: () => { this.view.createBelow() }},
         {svg: ArrowUp, func: () => { this.view.createAbove() }},
         {svg: Share, func: () => { this.view.branch() }},
-        {svg: Trash, func: () => { this.view.deleteCard() }},
+        {svg: Trash, func: () => { this.view.deleteCardAndReorganize() }},
       ]
       customButtons.forEach(button => {
         let b = document.createElement('button')
