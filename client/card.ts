@@ -131,7 +131,7 @@ export class Card {
         this.element.parentNode.removeChild(this.element)
     }
     
-    createCustomToolbar(): HTMLElement {
+    createViewToolbar(): HTMLElement {
       let toolbar = document.createElement('div')
       toolbar.className = "custom-toolbar"
       let customButtons = [
@@ -152,25 +152,44 @@ export class Card {
     
     createToolbar(parent: HTMLElement): HTMLElement {
       let toolbar = document.createElement("div")
-      // toolbar.id = "toolbar" + this.cardID
-      toolbar.appendChild(this.createCustomToolbar())
-      // let fontSize = document.createElement('select')
-      // fontSize.className = "ql-header"
-      // for (let idx = 1; idx <= 3; idx ++) {
-      //   let option = document.createElement('option')
-      //   option.value = idx.toString()
-      //   fontSize.appendChild(option)
-      // }
-      // let normal = document.createElement('option')
-      // normal.selected = true;
-      // fontSize.appendChild(normal)
-      // toolbar.appendChild(fontSize)
-      let buttons = ['ql-bold', 'ql-italic', 'ql-underline']
-      buttons.forEach(type => {
+
+      toolbar.appendChild(this.createViewToolbar())
+
+      let module = document.createElement('div')
+      module.className = "custom-toolbar"
+      let blockButtons = [
+          {class: 'ql-image', value: null},
+          {class: 'ql-blockquote', value: null},
+          {class: 'ql-code-block', value: null},
+          {class: 'ql-list', value: "ordered"}, 
+          {class: 'ql-list', value: "bullet"}
+      ]
+      blockButtons.forEach(type => { 
+        let b = document.createElement('button')
+        b.className = type.class
+        if (type.value !== null) {
+          b.value = type.value
+        }
+        module.appendChild(b)
+      })
+      toolbar.appendChild(module)
+
+      for (let idx = 1; idx < 3; idx++) {
+        let button = document.createElement('button')
+        button.className = 'ql-header'
+        button.value = idx.toString()
+        toolbar.appendChild(button)
+      }
+
+      let textButtons = ['ql-bold', 'ql-italic', 'ql-underline', 'ql-strike']
+      textButtons.forEach(type => {
         let button = document.createElement('button')
         button.className = type
         toolbar.appendChild(button)
       })
+
+
+
       parent.appendChild(toolbar)
       return toolbar
     }
