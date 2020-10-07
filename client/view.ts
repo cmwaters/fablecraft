@@ -75,8 +75,17 @@ export class View {
         console.log("key down: " + key);
         if (this.currentCard.quill.hasFocus()) {
             console.log("Hello here");
-            if (key === "Escape") {
-                this.currentCard.quill.blur();
+            switch (key) {
+                case "Escape":
+                    this.currentCard.quill.blur();
+                    break;
+                case "Backspace":
+                    if (this.currentCard.quill.getText(0, 2) === "\n") {
+                        this.deleteCardAndReorganize();
+                    }
+                    break;
+                default:
+                    break;
             }
         } else {
             switch (key) {
@@ -166,7 +175,11 @@ export class View {
                 " with pos: " +
                 g.string(this.currentCard.centerPos()) +
                 " and height: " +
-                this.currentCard.height() + " with " + this.currentCard.childrenCount + " children starting at " + this.currentCard.firstChildIdx
+                this.currentCard.height() +
+                " with " +
+                this.currentCard.childrenCount +
+                " children starting at " +
+                this.currentCard.firstChildIdx
         );
         console.log(this.getState());
     }
@@ -253,7 +266,7 @@ export class View {
                 this.cards[this.currentDepth - 1][pIdx].firstChildIdx = this.currentIndex;
             }
             this.cards[this.currentDepth - 1][pIdx].childrenCount++;
-            this.changeChildrenIndices(1)
+            this.changeChildrenIndices(1);
         }
         newCard.activate();
         newCard.quill.focus();
@@ -282,7 +295,7 @@ export class View {
             newCard.parentIdx = pIdx;
             // increase the children count of the parent
             this.cards[this.currentDepth - 1][pIdx].childrenCount++;
-            this.changeChildrenIndices(1)
+            this.changeChildrenIndices(1);
         }
         newCard.activate();
         newCard.quill.focus();
@@ -313,6 +326,7 @@ export class View {
                 this.focus(this.currentDepth + 1, 0);
                 this.currentCard.parentIdx = pIdx;
                 this.currentCard.quill.focus();
+                console.log("branch 5");
             } else {
                 console.log("branch 3");
                 // we have to find where to insert the card
@@ -333,8 +347,8 @@ export class View {
         } else {
             // this card already has children therefore append a new card at the bottom
             console.log("branch 4 " + this.currentCard.childrenCount);
-            this.right()
-            this.createBelow()
+            this.right();
+            this.createBelow();
         }
     }
 
@@ -363,7 +377,7 @@ export class View {
             return;
         }
         // delete card
-        this.deleteCard()
+        this.deleteCard();
 
         // slide cards up to remove gap
         this.currentIndex--;
@@ -379,7 +393,7 @@ export class View {
             this.slideBottom(Config.card.toolbarHeight);
         } else if (this.currentIndex < 0) {
             /// unless we are at the top we always focus on the card above
-            console.log("Here")
+            console.log("Here");
             this.currentIndex = 0;
             this.cards[this.currentDepth][this.currentIndex].translate({
                 x: 0,
@@ -393,11 +407,13 @@ export class View {
 
     // deleteCard simply deletes the current card. It does not move any other cards around
     private deleteCard(): void {
-        let pIdx = this.currentCard.parentIdx
+        let pIdx = this.currentCard.parentIdx;
         this.currentCard.remove();
         this.cards[this.currentDepth].splice(this.currentIndex, 1);
         if (pIdx !== null) {
-            console.log("decrementing child count at " + pIdx + " from " + this.cards[this.currentDepth - 1][pIdx].childrenCount);
+            console.log(
+                "decrementing child count at " + pIdx + " from " + this.cards[this.currentDepth - 1][pIdx].childrenCount
+            );
             this.cards[this.currentDepth - 1][pIdx].childrenCount--;
             // check if we are deleting the first child of the parent
             if (this.cards[this.currentDepth - 1][pIdx].firstChildIdx === this.currentIndex) {
@@ -408,8 +424,14 @@ export class View {
                     this.cards[this.currentDepth - 1][pIdx].firstChildIdx = null;
                 }
             }
-            this.changeChildrenIndices(-1)
+            this.changeChildrenIndices(-1);
         }
+    }
+
+    // createParent makes a new parent card for the current active card - Injecting itself in the column to the left, or
+    // making a new one if be. It takes over parentage.
+    createParent() {
+        console.log("Creating parent");
     }
 
     // handleClick runs the relevant logic when a click occurs inside the view. Mostly this involves passing it down
@@ -425,7 +447,7 @@ export class View {
                     if (!this.cards[depth][idx].quill.hasFocus()) {
                         this.focus(depth, idx);
                     }
-                    break
+                    break;
                 }
             }
         }
@@ -436,13 +458,14 @@ export class View {
     //
     // TODO: potentially merge children count increments here.
     changeChildrenIndices(delta: number) {
-        let pIdx = this.currentCard.parentIdx
-        if (pIdx !== null) { // this should never be the case but for our sanity
-            for (let idx = pIdx; idx < this.cards[this.currentDepth -1].length; idx++) {
+        let pIdx = this.currentCard.parentIdx;
+        if (pIdx !== null) {
+            // this should never be the case but for our sanity
+            for (let idx = pIdx; idx < this.cards[this.currentDepth - 1].length; idx++) {
                 if (this.cards[this.currentDepth - 1][idx].firstChildIdx !== null) {
-                    this.cards[this.currentDepth - 1][idx].firstChildIdx += delta
+                    this.cards[this.currentDepth - 1][idx].firstChildIdx += delta;
                 }
-            } 
+            }
         }
     }
 

@@ -2,8 +2,10 @@
 // import { Point, Size, Path, Rectangle, Color, Project, Group } from 'paper'
 import ArrowDown from './icons/box-arrow-in-down.svg' 
 import ArrowUp from './icons/box-arrow-in-up.svg' 
+import ArrowRight from './icons/box-arrow-right.svg'
+import ArrowLeft from './icons/box-arrow-left.svg'
 import Trash from './icons/trash.svg'
-import Share from './icons/share.svg'
+
 import { View } from './view'
 import Quill from 'quill';
 import { Vector, Size, Geometry } from './types'
@@ -137,7 +139,8 @@ export class Card {
       let customButtons = [
         {svg: ArrowDown, func: () => { this.view.createBelow() }},
         {svg: ArrowUp, func: () => { this.view.createAbove() }},
-        {svg: Share, func: () => { this.view.branch() }},
+        {svg: ArrowLeft, func: () => { this.view.createParent() }}
+        {svg: ArrowRight, func: () => { this.view.branch() }},
         {svg: Trash, func: () => { this.view.deleteCardAndReorganize() }},
       ]
       customButtons.forEach(button => {
