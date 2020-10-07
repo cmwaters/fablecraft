@@ -118,7 +118,6 @@ export class Card {
     activate(): void {
         this.quill.enable()
         this.editor.style.borderColor = "#ccc"
-        // this.editor.style.borderBottom = "none"
         this.toolbar.style.display = "block";
     }
 
@@ -127,6 +126,18 @@ export class Card {
       this.toolbar.style.display = "none";
       this.quill.blur()
       this.quill.enable(false)
+    }
+
+    focus(): void {
+      this.editor.style.borderColor = "#888"
+      this.toolbar.style.borderColor = "#888"
+      this.quill.focus()
+    }
+
+    blur(): void {
+      this.editor.style.borderColor = "#ccc"
+      this.toolbar.style.borderColor = "#ccc"
+      this.quill.blur()
     }
     
     remove(): void {
@@ -139,7 +150,7 @@ export class Card {
       let customButtons = [
         {svg: ArrowDown, func: () => { this.view.createBelow() }},
         {svg: ArrowUp, func: () => { this.view.createAbove() }},
-        {svg: ArrowLeft, func: () => { this.view.createParent() }}
+        {svg: ArrowLeft, func: () => { this.view.createParent() }},
         {svg: ArrowRight, func: () => { this.view.branch() }},
         {svg: Trash, func: () => { this.view.deleteCardAndReorganize() }},
       ]

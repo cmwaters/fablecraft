@@ -59,9 +59,9 @@ export class View {
         }
         this.cards.push(rootCards);
 
-        // element.onclick = (e: MouseEvent) => {
-        //     this.handleClick(e);
-        // };
+        element.onclick = (e: MouseEvent) => {
+            this.handleClick(e);
+        };
 
         console.log(this.cards[0].length);
 
@@ -75,10 +75,9 @@ export class View {
     keydown(key: string): void {
         console.log("key down: " + key);
         if (this.currentCard.quill.hasFocus()) {
-            console.log("Hello here");
             switch (key) {
                 case "Escape":
-                    this.currentCard.quill.blur();
+                    this.currentCard.blur();
                     break;
                 case "Backspace":
                     if (this.currentCard.quill.getText(0, 2) === "\n") {
@@ -108,7 +107,11 @@ export class View {
                     }
                     break;
                 case "ArrowLeft":
-                    this.left();
+                    if (this.shiftMode) {
+                        this.createParent();
+                    } else {
+                        this.left();
+                    }
                     break;
                 case "ArrowRight":
                     if (this.shiftMode) {
@@ -117,6 +120,7 @@ export class View {
                         this.right();
                     }
                     break;
+                case "Delete":
                 case "Backspace":
                     this.deleteCardAndReorganize();
                     break;
@@ -124,6 +128,7 @@ export class View {
                     setTimeout(() => {
                         let lastIdx = this.currentCard.quill.getLength() - 1;
                         this.currentCard.quill.setSelection(lastIdx, 0);
+                        this.currentCard.focus()
                     }, 100);
                     break;
                 default:
@@ -270,7 +275,7 @@ export class View {
             this.changeChildrenIndices(1);
         }
         newCard.activate();
-        newCard.quill.focus();
+        newCard.focus();
         this.center(this.currentDepth, this.currentIndex);
         this.currentCard = newCard;
     }
@@ -299,7 +304,7 @@ export class View {
             this.changeChildrenIndices(1);
         }
         newCard.activate();
-        newCard.quill.focus();
+        newCard.focus();
         this.center(this.currentDepth, this.currentIndex);
         this.currentCard = newCard;
     }
@@ -326,7 +331,7 @@ export class View {
                 this.currentCard.childrenCount++;
                 this.focus(this.currentDepth + 1, 0);
                 this.currentCard.parentIdx = pIdx;
-                this.currentCard.quill.focus();
+                this.currentCard.focus();
                 console.log("branch 5");
             } else {
                 console.log("branch 3");
@@ -342,7 +347,7 @@ export class View {
                 this.currentCard.childrenCount++;
                 this.focus(this.currentDepth + 1, idx);
                 this.currentCard.parentIdx = pIdx;
-                this.currentCard.quill.focus();
+                this.currentCard.focus();
                 // TODO: We will need to check if we are not colliding with the children cards from other parents either above us or below
             }
         } else {
@@ -438,8 +443,8 @@ export class View {
     // handleClick runs the relevant logic when a click occurs inside the view. Mostly this involves passing it down
     // to the relevant card
     handleClick(e: MouseEvent): void {
-        if (this.listeningToClick === false) { 
-            return
+        if (this.listeningToClick === false) {
+            return;
         }
         console.log("x: " + e.clientX + " y: " + e.clientY);
         let clickPoint = { x: e.clientX, y: e.clientY };
@@ -448,9 +453,19 @@ export class View {
                 let card = this.cards[depth][idx];
                 let size = { width: this.cardWidth, height: card.height() };
                 if (g.inside(card.pos(), size, clickPoint)) {
-                    console.log("clicked on card " + idx + " card pos " + g.string(card.pos()) + " height " + size.height + " and click point " + g.string(clickPoint))
+                    console.log(
+                        "clicked on card " +
+                            idx +
+                            " card pos " +
+                            g.string(card.pos()) +
+                            " height " +
+                            size.height +
+                            " and click point " +
+                            g.string(clickPoint)
+                    );
                     if (!this.cards[depth][idx].quill.hasFocus()) {
                         this.focus(depth, idx);
+                        this.currentCard.focus()
                     }
                     break;
                 }
@@ -462,12 +477,12 @@ export class View {
     // whilst the view is moving. Is to be used only when the view is moving.
     private pauseHandleClick(): void {
         if (this.listeningToClick === false) {
-            return
+            return;
         }
-        this.listeningToClick = false
+        this.listeningToClick = false;
         setTimeout(() => {
-            this.listeningToClick = true
-        }, 200)
+            this.listeningToClick = true;
+        }, 200);
     }
 
     // changeChildrenIndices loops through all the parents below the current parent and shifts the first child indexes
@@ -490,7 +505,7 @@ export class View {
     // used to traverse along the tree an focus on different cards.
     // does not change the current depth and index
     shift(delta: Vector): void {
-        this.pauseHandleClick()
+        this.pauseHandleClick();
         for (let depth = 0; depth < this.cards.length; depth++) {
             for (let idx = 0; idx < this.cards[depth].length; idx++) {
                 this.cards[depth][idx].translate(g.copy(delta));
@@ -500,7 +515,7 @@ export class View {
 
     // slides the rest of the cards in the current column by delta (used for inserting or deleting or changing heights)
     slideBottom(delta: number): void {
-        this.pauseHandleClick()
+        this.pauseHandleClick();
         // if it is the last card then we have nothing to slide down
         if (this.currentIndex === this.cards[this.currentDepth].length - 1) {
             return;
