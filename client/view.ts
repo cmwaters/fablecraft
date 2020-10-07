@@ -17,6 +17,7 @@ export class View {
     size: Size;
     shiftMode: boolean = false;
     movementInterval: NodeJS.Timeout | null = null;
+    listeningToClick: boolean = true;
     currentCard: Card | null = null;
 
     constructor(element: HTMLElement, snippets: Snippet[]) {
@@ -58,9 +59,9 @@ export class View {
         }
         this.cards.push(rootCards);
 
-        element.onclick = (e: MouseEvent) => {
-            this.handleClick(e);
-        };
+        // element.onclick = (e: MouseEvent) => {
+        //     this.handleClick(e);
+        // };
 
         console.log(this.cards[0].length);
 
@@ -437,6 +438,9 @@ export class View {
     // handleClick runs the relevant logic when a click occurs inside the view. Mostly this involves passing it down
     // to the relevant card
     handleClick(e: MouseEvent): void {
+        if (this.listeningToClick === false) { 
+            return
+        }
         console.log("x: " + e.clientX + " y: " + e.clientY);
         let clickPoint = { x: e.clientX, y: e.clientY };
         for (let depth = 0; depth < this.cards.length; depth++) {
@@ -444,6 +448,7 @@ export class View {
                 let card = this.cards[depth][idx];
                 let size = { width: this.cardWidth, height: card.height() };
                 if (g.inside(card.pos(), size, clickPoint)) {
+                    console.log("clicked on card " + idx + " card pos " + g.string(card.pos()) + " height " + size.height + " and click point " + g.string(clickPoint))
                     if (!this.cards[depth][idx].quill.hasFocus()) {
                         this.focus(depth, idx);
                     }
@@ -453,14 +458,26 @@ export class View {
         }
     }
 
+    // pauseHandleClick gives a buffer in between click times to stop the user from accidentally clicking another button
+    // whilst the view is moving. Is to be used only when the view is moving.
+    private pauseHandleClick(): void {
+        if (this.listeningToClick === false) {
+            return
+        }
+        this.listeningToClick = false
+        setTimeout(() => {
+            this.listeningToClick = true
+        }, 200)
+    }
+
     // changeChildrenIndices loops through all the parents below the current parent and shifts the first child indexes
     // by delta. A positive delta means there has been an insertion, a negative delta means there has been a deletion.
     //
-    // TODO: potentially merge children count increments here.
+    // TODO: potentially merge childrenCount increment here.
     changeChildrenIndices(delta: number) {
         let pIdx = this.currentCard.parentIdx;
+        // this should never be the case that the parent index is not null but for our sanity
         if (pIdx !== null) {
-            // this should never be the case but for our sanity
             for (let idx = pIdx; idx < this.cards[this.currentDepth - 1].length; idx++) {
                 if (this.cards[this.currentDepth - 1][idx].firstChildIdx !== null) {
                     this.cards[this.currentDepth - 1][idx].firstChildIdx += delta;
@@ -473,6 +490,7 @@ export class View {
     // used to traverse along the tree an focus on different cards.
     // does not change the current depth and index
     shift(delta: Vector): void {
+        this.pauseHandleClick()
         for (let depth = 0; depth < this.cards.length; depth++) {
             for (let idx = 0; idx < this.cards[depth].length; idx++) {
                 this.cards[depth][idx].translate(g.copy(delta));
@@ -482,6 +500,7 @@ export class View {
 
     // slides the rest of the cards in the current column by delta (used for inserting or deleting or changing heights)
     slideBottom(delta: number): void {
+        this.pauseHandleClick()
         // if it is the last card then we have nothing to slide down
         if (this.currentIndex === this.cards[this.currentDepth].length - 1) {
             return;

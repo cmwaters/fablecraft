@@ -30,7 +30,7 @@ export class Story {
         document.body.appendChild(viewElement)
         viewElement.id = "view"
         viewElement.style.width = "100%";//window.innerWidth + "px"
-        viewElement.style.height = "calc(100% - " + Config.header.height + "px)"
+        viewElement.style.height = "100vh"
         viewElement.style.position = "relative"
         this.view = new View(viewElement, snippets)
         
