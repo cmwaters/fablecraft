@@ -372,7 +372,7 @@ export class View {
 
     // deletes the currently active card and reorganizes the remaining cards
     deleteCardAndReorganize(): void {
-        console.log("deleting card");
+        console.log("deleting card at " + this.currentDepth + " and " + this.currentIndex);
         let height = this.currentCard.height();
         let pIdx = this.currentCard.parentIdx;
 
@@ -382,7 +382,8 @@ export class View {
             this.currentCard.quill.setText("");
             return;
         }
-        // delete card
+        // delete all children first and then this card
+        this.recursivelyDeleteChildren()
         this.deleteCard();
 
         // slide cards up to remove gap
@@ -391,6 +392,7 @@ export class View {
 
         // If we are deleting the last card in this column. We must focus back to the parent
         if (this.cards[this.currentDepth].length === 0) {
+            console.log("last card")
             if (pIdx === null) {
                 alert("panic: current depth is not the root depth but the card has no parent index");
             }
@@ -399,13 +401,13 @@ export class View {
             this.slideBottom(Config.card.toolbarHeight);
         } else if (this.currentIndex < 0) {
             /// unless we are at the top we always focus on the card above
-            console.log("Here");
             this.currentIndex = 0;
             this.cards[this.currentDepth][this.currentIndex].translate({
                 x: 0,
                 y: -Config.card.toolbarHeight,
             });
         }
+
         this.currentCard = this.cards[this.currentDepth][this.currentIndex];
         this.currentCard.activate();
         this.center(this.currentDepth, this.currentIndex);
@@ -421,16 +423,34 @@ export class View {
                 "decrementing child count at " + pIdx + " from " + this.cards[this.currentDepth - 1][pIdx].childrenCount
             );
             this.cards[this.currentDepth - 1][pIdx].childrenCount--;
-            // check if we are deleting the first child of the parent
-            if (this.cards[this.currentDepth - 1][pIdx].firstChildIdx === this.currentIndex) {
-                if (this.cards[this.currentDepth - 1][pIdx].childrenCount !== 0) {
-                    this.cards[this.currentDepth - 1][pIdx].firstChildIdx++;
-                } else {
-                    // no more children left
-                    this.cards[this.currentDepth - 1][pIdx].firstChildIdx = null;
-                }
+
+            // check if we are deleting the last remaining child of the parent
+            if (this.cards[this.currentDepth - 1][pIdx].childrenCount === 0) {
+                this.cards[this.currentDepth - 1][pIdx].firstChildIdx = null;
             }
+
             this.changeChildrenIndices(-1);
+        }
+    }
+
+    private recursivelyDeleteChildren(): void {
+        if (this.currentCard.firstChildIdx !== null) {
+            let returnPos = {depth: this.currentDepth, index: this.currentIndex}
+            console.log("deleting " + this.currentCard.childrenCount + " children starting at index: " + this.currentCard.firstChildIdx)
+            console.log(returnPos)
+            this.currentDepth++
+            // loop though and delete all children
+            while (this.cards[returnPos.depth][returnPos.index].firstChildIdx !== null) {
+                this.currentIndex = this.cards[returnPos.depth][returnPos.index].firstChildIdx
+                this.currentCard = this.cards[this.currentDepth][this.currentIndex]
+                this.deleteCardAndReorganize()
+            }
+
+            // restore the current position
+            this.currentDepth = returnPos.depth
+            this.currentIndex = returnPos.index
+            this.slideBottom(-Config.card.toolbarHeight);
+            console.log("restore depth " + this.currentDepth)
         }
     }
 
@@ -493,7 +513,7 @@ export class View {
         let pIdx = this.currentCard.parentIdx;
         // this should never be the case that the parent index is not null but for our sanity
         if (pIdx !== null) {
-            for (let idx = pIdx; idx < this.cards[this.currentDepth - 1].length; idx++) {
+            for (let idx = pIdx + 1; idx < this.cards[this.currentDepth - 1].length; idx++) {
                 if (this.cards[this.currentDepth - 1][idx].firstChildIdx !== null) {
                     this.cards[this.currentDepth - 1][idx].firstChildIdx += delta;
                 }
@@ -515,6 +535,7 @@ export class View {
 
     // slides the rest of the cards in the current column by delta (used for inserting or deleting or changing heights)
     slideBottom(delta: number): void {
+        console.log("slideBottom at " + this.currentDepth)
         this.pauseHandleClick();
         // if it is the last card then we have nothing to slide down
         if (this.currentIndex === this.cards[this.currentDepth].length - 1) {
