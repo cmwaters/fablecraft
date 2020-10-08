@@ -43,3 +43,10 @@ export namespace Geometry {
   }
 
 }
+
+// XXX: Used for testing
+export function panic(condition: boolean, msg: string): void {
+  if (condition) {
+    alert(msg)
+  }
+}

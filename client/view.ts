@@ -1,7 +1,7 @@
 import { Card } from "./card";
 import { Size, Vector, Geometry } from "./types";
 import { Config } from "./config";
-import { Snippet } from "./story";
+import { Node } from "./story";
 
 let g = Geometry;
 const inverseScrollSpeed = 2;
@@ -20,7 +20,8 @@ export class View {
     listeningToClick: boolean = true;
     currentCard: Card | null = null;
 
-    constructor(element: HTMLElement, snippets: Snippet[]) {
+    // note that the view struct itself doesn't store the node data but passes them on to the respective cards to handle
+    constructor(element: HTMLElement, nodes: Node[]) {
         this.element = element;
         console.log(this.element.style.width);
         this.cardWidth = this.calculateCardWidth();
@@ -48,9 +49,9 @@ export class View {
 
         let rootCards: Card[] = [];
         // let's assume a flat tree and keep everything on the same x margin
-        for (let i = 0; i < snippets.length; i++) {
+        for (let i = 0; i < nodes.length; i++) {
             console.log(cardY);
-            let newCard = new Card(this, { x: cardX, y: cardY }, this.cardWidth, snippets[i].text);
+            let newCard = new Card(this, { x: cardX, y: cardY }, this.cardWidth, nodes[i]);
             console.log("pos: " + newCard.pos().y);
             newCard.deactivate();
             console.log(newCard.height());
@@ -262,7 +263,8 @@ export class View {
         this.currentCard.deactivate();
         this.slideBottom(-Config.card.toolbarHeight);
 
-        let newCard = new Card(this, g.copy(this.currentCard.pos()), this.calculateCardWidth());
+        let newNode = new Node({text: "", depth: this.currentDepth, index: this.currentIndex, parentIndex: pIdx})
+        let newCard = new Card(this, g.copy(this.currentCard.pos()), this.calculateCardWidth(), newNode);
         this.cards[this.currentDepth].splice(this.currentIndex, 0, newCard);
         this.slideBottom(newCard.height() + this.margin.height + Config.card.toolbarHeight);
         if (pIdx !== null) {
@@ -292,7 +294,8 @@ export class View {
         this.currentCard.deactivate();
         this.slideBottom(-Config.card.toolbarHeight);
 
-        let newCard = new Card(this, newPos, this.cardWidth);
+        let newNode = new Node({text: "", depth: this.currentDepth, index: this.currentIndex + 1, parentIndex: pIdx})
+        let newCard = new Card(this, newPos, this.cardWidth, newNode);
         this.slideBottom(newCard.height() + this.margin.height + Config.card.toolbarHeight);
         this.currentIndex++;
         this.cards[this.currentDepth].splice(this.currentIndex, 0, newCard);
@@ -326,7 +329,8 @@ export class View {
                     y: 0,
                 });
                 console.log("pos: " + pos.x);
-                this.cards.push([new Card(this, pos, this.cardWidth)]);
+                let newNode = new Node({text: "", depth: this.currentDepth + 1, index: 0, parentIndex: pIdx})
+                this.cards.push([new Card(this, pos, this.cardWidth, newNode)]);
                 this.currentCard.firstChildIdx = 0;
                 this.currentCard.childrenCount++;
                 this.focus(this.currentDepth + 1, 0);
@@ -342,7 +346,8 @@ export class View {
                     y: 0,
                 });
                 console.log("pos: " + pos.x);
-                this.cards[this.currentDepth + 1].splice(idx, 0, new Card(this, pos, this.cardWidth));
+                let newNode = new Node({text: "", depth: this.currentDepth + 1, index: idx, parentIndex: pIdx})
+                this.cards[this.currentDepth + 1].splice(idx, 0, new Card(this, pos, this.cardWidth, newNode));
                 this.currentCard.firstChildIdx = idx;
                 this.currentCard.childrenCount++;
                 this.focus(this.currentDepth + 1, idx);

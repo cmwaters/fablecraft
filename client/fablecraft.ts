@@ -29,16 +29,6 @@ window.onload = () => {
         });
 };
 
-export function getTextWidth(text: string, font: Font): number {
-    // re-use canvas object for better performance
-    var canvas = <HTMLCanvasElement>document.createElement("canvas");
-    var context = canvas.getContext("2d");
-    if (context === null) return 0;
-    context.font = fontString(font);
-    var metrics = context.measureText(text);
-    return metrics.width;
-}
-
 type Font = {
     family: string;
     size: number;

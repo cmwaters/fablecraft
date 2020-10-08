@@ -6,9 +6,10 @@ import ArrowRight from './icons/box-arrow-right.svg'
 import ArrowLeft from './icons/box-arrow-left.svg'
 import Trash from './icons/trash.svg'
 
+import { Node } from './story'
 import { View } from './view'
-import Quill from 'quill';
-import { Vector, Size, Geometry } from './types'
+import { Quill, DeltaOperation } from 'quill';
+import { Vector, Geometry } from './types'
 
 const g = Geometry
 
@@ -21,6 +22,7 @@ export class Card {
     // cardID: number
     quill: Quill;
     view: View;
+    node: Node
     element: HTMLElement
     toolbar: HTMLElement
     editor: HTMLElement
@@ -30,8 +32,8 @@ export class Card {
     firstChildIdx: number | null = null
     childrenCount: number = 0
     
-    constructor(view: View, pos: Vector, width: number, content?: string) {
-      // this.cardID = id
+    constructor(view: View, pos: Vector, width: number, node: Node) {
+      this.node = node
       const container = document.createElement("div")
       // container.id = "card" + this.cardID
       container.style.position = "absolute"
@@ -54,21 +56,34 @@ export class Card {
         },
         theme: 'snow'  // or 'bubble'
       });
-      if (content !== undefined) {
-        quill.setText(content)
+      if (this.node.text !== "") {
+        quill.setText(this.node.text)
       }
       
       let bounds = quill.getBounds(quill.getLength() - 1)
       editor.style.height = (bounds.bottom + 12) + "px" 
       
       quill.on('text-change', function(delta, oldDelta, source) {
+          // update height if need be
           let existingHeight = editor.offsetHeight
           let length = quill.getLength()
           let bounds = quill.getBounds(length - 1)
           let heightDiff = bounds.bottom + 12 - existingHeight
           editor.style.height = (bounds.bottom + 12) + "px"
           this.view.slideBottom(heightDiff)
+
+          // update snippet
+          console.log(delta)
+          delta.forEach((op: DeltaOperation, index: number): void => { 
+            console.log(op)
+          })
+
       }.bind(this));
+
+      node.addEvent(function(text: string) {
+        // update the text in the quill text box
+        quill.setText(text)
+      })
       
       editor.style.borderTop = "1px solid #ccc";
       editor.style.borderBottom = "0px solid #ccc";
@@ -80,14 +95,14 @@ export class Card {
     
     // resize changes the width of the current card which may result in a reshuffling of the 
     // text and a new height which is returned
-    // resize(newWidth: number): number {
+    resize(newWidth: number): void {
     //     this.box.bounds.width = newWidth
     //     this.bar.bounds.width = newWidth
     //     this.box.bounds.height = this.text.resize(newWidth - (2 * this.margin.width)) + (2 * this.margin.height) + defaultBarHeight
     //     this.bar.position.y = this.box.position.y + (this.box.bounds.height/2) - defaultBarHeight
     //     this.icons.position.y = this.bar.position.y + this.icons.bounds.height / 2 + 3
     //     return this.box.bounds.height
-    // }
+    }
 
     move(newPos: Vector): void {
       this.element.style.left = newPos.x + "px"
