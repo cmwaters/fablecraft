@@ -8,36 +8,39 @@ import { CardModel } from '../models/card';
 
 // probably should move this to auth
 function hasPermission(permissionLevel: string, user: User, story: Story): boolean {
+    // cascade through each of the permission groups
     switch(permissionLevel) {
         case "owner": 
             if (story.owner._id == user._id) {
                 return true
             }
-            break;
         case "author":
-            for (let i = 0; i < story.authors.length; i++) {
-                if (story.authors[i]._id == user._id) {
-                    return true
+            if (story.authors !== undefined ) {
+                for (let i = 0; i < story.authors.length; i++) {
+                    if (story.authors[i]._id == user._id) {
+                        return true
+                    }
                 }
             }
-            return hasPermission("owner", user, story)
         case "editor":
-            for (let i = 0; i < story.editors.length; i++) {
-                if (story.editors[i]._id == user._id) {
-                    return true
+            if (story.editors !== undefined) {
+                for (let i = 0; i < story.editors.length; i++) {
+                    if (story.editors[i]._id == user._id) {
+                        return true
+                    }
                 }
             }
-            return hasPermission("author", user, story)
         case "viewer":
+            if (story.viewers !== undefined) {
             for (let i = 0; i < story.viewers.length; i++) {
                 if (story.viewers[i]._id == user.id) {
                     return true
                 }
             }
-            return hasPermission("editor", user, story)
+        }
+        default:
+            return false
     }
-    
-    return false
 }
 
 router.get("/me", (req: any, res) => {
@@ -89,21 +92,29 @@ router.get("/stories", async (req, res) => {
 
 router.post("/story", (req, res) => {
     const { title, description } = req.body
+    if (req.user === undefined) {
+        return res.status(200).send({message: "error: user not found"})
+    }
     if (title == null) {
         return res.status(200).send({ error: "title cannot be empty"})
     }
+    let user = req.user as User // assert user interface
     StoryModel.create({
         title: title,
         description: description,
-        owner: req.user._id,
+        owner: user._id,
     })
     return res.status(201).send({ message: "success. " + title + " created."})
 });
 
 router.delete("/story/:id", async (req, res) => {
     const id = req.params.id 
+    if (req.user === undefined) {
+        return res.status(200).send({message: "error: user not found"})
+    }
     if (id !== undefined) {
         await StoryModel.findById(id, (err, story: Story) => {
+            let user = req.user as User // assert User interface
             if (err) {
                 console.log(err)
                 return res.status(500).json({
@@ -112,7 +123,7 @@ router.delete("/story/:id", async (req, res) => {
                 })
             } else if (story === null) {
                 return res.json({message: "story with id: " + id + " does not exist"})
-            } else if (story.owner !== req.user._id) {
+            } else if (story.owner !== user._id) {
                 return res.json({message: "you don't have permissions to delete this story"})
             } else {
                 StoryModel.deleteOne(story)
@@ -137,11 +148,15 @@ router.put("/story/:id:", async (req, res) => {
 
 router.get("/story/:id", async (req, res) => {
     const story = await StoryModel.findById(req.params.id)
+    if (req.user === undefined) {
+        return res.status(200).send({message: "error: user not found"})
+    }
     if (story === null) {
         return res.status(200).send({ message: "story does not exist" })
     }
     if (!hasPermission("viewer", req.user as User, story)) {
-        console.log("user doesn't have permission: " + req.user._id)
+        let user = req.user as User
+        console.log("user doesn't have permission: " + user._id)
         return res.status(200).send({ message: "story does not exist" })
     }
     return res.status(200).send({ story: story })

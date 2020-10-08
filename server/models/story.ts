@@ -5,12 +5,13 @@ import { Card, CardSchema } from "./card";
 import { User } from "./user";
 export interface Story extends mongoose.Document {
   title: string;
-  description?: string;
-  cards: Card[];
   owner: User;
-  authors: User[];
-  editors: User[];
-  viewers: User[];
+
+  description?: string;
+  cards?: Card[];
+  authors?: User[];
+  editors?: User[];
+  viewers?: User[];
 }
 
 const StorySchema = new mongoose.Schema({
