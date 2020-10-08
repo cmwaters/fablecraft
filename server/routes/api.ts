@@ -79,7 +79,11 @@ router.delete("/me", (req: any, res) => {
 
 // we should just abbreviate this call to showing only a few details of each story and a later call to load the actual story
 router.get("/stories", async (req, res) => { 
-    const stories = await StoryModel.find({owner: req.user._id})
+    if (req.user === undefined) {
+        return res.status(200).send({message: "error: user not found"})
+    }
+    let user = req.user as User
+    const stories = await StoryModel.find({owner: user._id})
     return res.status(200).send({ stories: stories})
 })
 
@@ -119,7 +123,15 @@ router.delete("/story/:id", async (req, res) => {
     return res.status(500).send({message: "no story id provided in params"})
 });
 
-router.put("/story/id:", (req, res) => {
+router.put("/story/:id:", async (req, res) => {
+    let { title, description } = req.body
+    StoryModel.findByIdAndUpdate({id: req.params.id}, {title: title, description: description}, (err, result) => {
+        if (err) {
+            res.status(500).send({message: err})
+        } else {
+            res.status(200).send({message: result})
+        }
+    })
 
 });
 
@@ -134,9 +146,14 @@ router.get("/story/:id", async (req, res) => {
     }
     return res.status(200).send({ story: story })
 });
-router.post("/card", async (req, res) => {
-    let { text, depth, index, story } = req.body
-    story = await StoryModel.findById(story)
+
+// create a card
+router.post("/story/:id/card", async (req, res) => {
+    let { text, depth, index, parentIndex } = req.body
+    let story = await StoryModel.findById(req.params.id)
+    if (story === null) {
+        return res.status(200).send({ message: "story not found."})
+    }
     let result = hasPermission("author", req.user as User, story)
     if (result !== null) {
         return res.status(401).send({ message: result })
@@ -150,6 +167,36 @@ router.post("/card", async (req, res) => {
     })
     newCard.save()
     return res.status(201).send({ message: "success. created card." })
+})
+
+// delete a card
+router.delete("/story/:id/card", async (req, res) => {
+    let { text, depth, index, parentIndex } = req.body
+    let story = await StoryModel.findById(req.params.id)
+    if (story === null) {
+        return res.status(200).send({ message: "story not found."})
+    }
+    let result = hasPermission("author", req.user as User, story)
+    if (result !== null) {
+        return res.status(401).send({ message: result })
+    }
+
+    console.log("delete card at index " + index)
+})
+
+// edit a card
+router.put("/story/:id/card", async (req, res) => {
+    let { text, depth, index, parentIndex } = req.body
+    let story = await StoryModel.findById(req.params.id)
+    if (story === null) {
+        return res.status(200).send({ message: "story not found."})
+    }
+    let result = hasPermission("author", req.user as User, story)
+    if (result !== null) {
+        return res.status(401).send({ message: result })
+    }
+
+    console.log("edit card at index " + index)
 })
 
 export default router;
