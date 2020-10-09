@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 const User = mongoose.model("User");
+const Story = mongoose.model("Story");
 
 export interface Card extends mongoose.Document {
   text: string;
@@ -7,6 +8,7 @@ export interface Card extends mongoose.Document {
   index: number;
   parentIndex: number | null;
   owner: typeof User;
+  story: typeof Story;
 }
 
 export const CardSchema = new mongoose.Schema({
@@ -30,6 +32,11 @@ export const CardSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
+  story: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Story",
+    required: true
+  }
 });
 
 export const CardModel = mongoose.model<Card>("Card", CardSchema);

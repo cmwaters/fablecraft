@@ -10,26 +10,6 @@ import { CardModel } from '../models/card';
 function hasPermission(permissionLevel: string, user: User, story: Story): boolean {
     // cascade through each of the permission groups
     switch(permissionLevel) {
-        case "owner": 
-            if (story.owner._id == user._id) {
-                return true
-            }
-        case "author":
-            if (story.authors !== undefined ) {
-                for (let i = 0; i < story.authors.length; i++) {
-                    if (story.authors[i]._id == user._id) {
-                        return true
-                    }
-                }
-            }
-        case "editor":
-            if (story.editors !== undefined) {
-                for (let i = 0; i < story.editors.length; i++) {
-                    if (story.editors[i]._id == user._id) {
-                        return true
-                    }
-                }
-            }
         case "viewer":
             if (story.viewers !== undefined) {
             for (let i = 0; i < story.viewers.length; i++) {
@@ -38,6 +18,26 @@ function hasPermission(permissionLevel: string, user: User, story: Story): boole
                 }
             }
         }
+        case "editor":
+            if (story.editors !== undefined) {
+                for (let i = 0; i < story.editors.length; i++) {
+                    if (story.editors[i]._id == user._id) {
+                        return true
+                    }
+                }
+            }
+        case "author":
+        if (story.authors !== undefined ) {
+            for (let i = 0; i < story.authors.length; i++) {
+                if (story.authors[i]._id == user._id) {
+                    return true
+                }
+            }
+        }
+        case "owner": 
+            if (story.owner._id == user._id) {
+                return true
+            }
         default:
             return false
     }
@@ -95,7 +95,7 @@ router.post("/story", (req, res) => {
     if (req.user === undefined) {
         return res.status(200).send({message: "error: user not found"})
     }
-    if (title == null) {
+    if (title == null || title === "") {
         return res.status(200).send({ error: "title cannot be empty"})
     }
     let user = req.user as User // assert user interface
@@ -103,8 +103,12 @@ router.post("/story", (req, res) => {
         title: title,
         description: description,
         owner: user._id,
+    }, function(err: any, story: any) {
+        if (err) {
+            return res.status(201).send({ message: "error: " + err })
+        }
+        return res.status(201).send({ message: "success. " + story.title + " created."})
     })
-    return res.status(201).send({ message: "success. " + title + " created."})
 });
 
 router.delete("/story/:id", async (req, res) => {
@@ -134,7 +138,7 @@ router.delete("/story/:id", async (req, res) => {
     return res.status(500).send({message: "no story id provided in params"})
 });
 
-router.put("/story/:id:", async (req, res) => {
+router.put("/story/:id", async (req, res) => {
     let { title, description } = req.body
     StoryModel.findByIdAndUpdate({id: req.params.id}, {title: title, description: description}, (err, result) => {
         if (err) {
@@ -164,24 +168,35 @@ router.get("/story/:id", async (req, res) => {
 
 // create a card
 router.post("/story/:id/card", async (req, res) => {
+    console.log("received new card request")
+    console.log(req.body)
     let { text, depth, index, parentIndex } = req.body
+    console.log(text)
     let story = await StoryModel.findById(req.params.id)
     if (story === null) {
         return res.status(200).send({ message: "story not found."})
     }
-    let result = hasPermission("author", req.user as User, story)
-    if (result !== null) {
-        return res.status(401).send({ message: result })
+    if (!hasPermission("author", req.user as User, story)) {
+        return res.status(200).send({ message: "user does not have permission" })
     }
-    const newCard = new CardModel({
+    if (depth === undefined || index === undefined) {
+        return res.status(200).send({ message: "no depth and/or index defined for card"})
+    }
+    let user = req.user as User
+    CardModel.create({
         text: text,
         depth: depth,
         index: index,
-        owner: req.user,
+        parentIndex: parentIndex,
+        owner: user,
         story: story
+    }, function (err: any, card: any) {
+        if (err) {
+            return res.status(201).send({ message: "error: " + err })
+        }
+        return res.status(201).send({ message: "success. created card." })
     })
-    newCard.save()
-    return res.status(201).send({ message: "success. created card." })
+    
 })
 
 // delete a card
@@ -191,9 +206,8 @@ router.delete("/story/:id/card", async (req, res) => {
     if (story === null) {
         return res.status(200).send({ message: "story not found."})
     }
-    let result = hasPermission("author", req.user as User, story)
-    if (result !== null) {
-        return res.status(401).send({ message: result })
+    if (!hasPermission("author", req.user as User, story)) {
+        return res.status(401).send({ message: "user does not have permission" })
     }
 
     console.log("delete card at index " + index)
@@ -206,9 +220,8 @@ router.put("/story/:id/card", async (req, res) => {
     if (story === null) {
         return res.status(200).send({ message: "story not found."})
     }
-    let result = hasPermission("author", req.user as User, story)
-    if (result !== null) {
-        return res.status(401).send({ message: result })
+    if (!hasPermission("author", req.user as User, story)) {
+        return res.status(401).send({ message: "user does not have permission" })
     }
 
     console.log("edit card at index " + index)

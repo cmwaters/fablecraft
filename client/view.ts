@@ -1,7 +1,7 @@
 import { Card } from "./card";
 import { Size, Vector, Geometry } from "./types";
 import { Config } from "./config";
-import { Node } from "./story";
+import { Story, Node } from "./story";
 
 let g = Geometry;
 const inverseScrollSpeed = 2;
@@ -19,13 +19,15 @@ export class View {
     movementInterval: NodeJS.Timeout | null = null;
     listeningToClick: boolean = true;
     currentCard: Card | null = null;
+    story: Story;
 
     // note that the view struct itself doesn't store the node data but passes them on to the respective cards to handle
-    constructor(element: HTMLElement, nodes: Node[]) {
+    constructor(element: HTMLElement, nodes: Node[], story: Story) {
         this.element = element;
         console.log(this.element.style.width);
         this.cardWidth = this.calculateCardWidth();
         console.log(this.cardWidth);
+        this.story = story;
         let cardX = (this.element.clientWidth - this.cardWidth) / 2;
         let cardY = 30;
         console.log("x: " + cardX);
@@ -129,7 +131,7 @@ export class View {
                     setTimeout(() => {
                         let lastIdx = this.currentCard.quill.getLength() - 1;
                         this.currentCard.quill.setSelection(lastIdx, 0);
-                        this.currentCard.focus()
+                        this.currentCard.focus();
                     }, 100);
                     break;
                 default:
@@ -263,7 +265,7 @@ export class View {
         this.currentCard.deactivate();
         this.slideBottom(-Config.card.toolbarHeight);
 
-        let newNode = new Node({text: "", depth: this.currentDepth, index: this.currentIndex, parentIndex: pIdx})
+        let newNode = new Node({ text: "", depth: this.currentDepth, index: this.currentIndex, parentIndex: pIdx });
         let newCard = new Card(this, g.copy(this.currentCard.pos()), this.calculateCardWidth(), newNode);
         this.cards[this.currentDepth].splice(this.currentIndex, 0, newCard);
         this.slideBottom(newCard.height() + this.margin.height + Config.card.toolbarHeight);
@@ -294,7 +296,7 @@ export class View {
         this.currentCard.deactivate();
         this.slideBottom(-Config.card.toolbarHeight);
 
-        let newNode = new Node({text: "", depth: this.currentDepth, index: this.currentIndex + 1, parentIndex: pIdx})
+        let newNode = new Node({ text: "", depth: this.currentDepth, index: this.currentIndex + 1, parentIndex: pIdx });
         let newCard = new Card(this, newPos, this.cardWidth, newNode);
         this.slideBottom(newCard.height() + this.margin.height + Config.card.toolbarHeight);
         this.currentIndex++;
@@ -329,7 +331,8 @@ export class View {
                     y: 0,
                 });
                 console.log("pos: " + pos.x);
-                let newNode = new Node({text: "", depth: this.currentDepth + 1, index: 0, parentIndex: pIdx})
+                let newNode = new Node({ text: "", depth: this.currentDepth + 1, index: 0, parentIndex: pIdx });
+                this.story.insert(newNode);
                 this.cards.push([new Card(this, pos, this.cardWidth, newNode)]);
                 this.currentCard.firstChildIdx = 0;
                 this.currentCard.childrenCount++;
@@ -346,7 +349,7 @@ export class View {
                     y: 0,
                 });
                 console.log("pos: " + pos.x);
-                let newNode = new Node({text: "", depth: this.currentDepth + 1, index: idx, parentIndex: pIdx})
+                let newNode = new Node({ text: "", depth: this.currentDepth + 1, index: idx, parentIndex: pIdx });
                 this.cards[this.currentDepth + 1].splice(idx, 0, new Card(this, pos, this.cardWidth, newNode));
                 this.currentCard.firstChildIdx = idx;
                 this.currentCard.childrenCount++;
@@ -388,7 +391,7 @@ export class View {
             return;
         }
         // delete all children first and then this card
-        this.recursivelyDeleteChildren()
+        this.recursivelyDeleteChildren();
         this.deleteCard();
 
         // slide cards up to remove gap
@@ -397,7 +400,7 @@ export class View {
 
         // If we are deleting the last card in this column. We must focus back to the parent
         if (this.cards[this.currentDepth].length === 0) {
-            console.log("last card")
+            console.log("last card");
             if (pIdx === null) {
                 alert("panic: current depth is not the root depth but the card has no parent index");
             }
@@ -440,22 +443,27 @@ export class View {
 
     private recursivelyDeleteChildren(): void {
         if (this.currentCard.firstChildIdx !== null) {
-            let returnPos = {depth: this.currentDepth, index: this.currentIndex}
-            console.log("deleting " + this.currentCard.childrenCount + " children starting at index: " + this.currentCard.firstChildIdx)
-            console.log(returnPos)
-            this.currentDepth++
+            let returnPos = { depth: this.currentDepth, index: this.currentIndex };
+            console.log(
+                "deleting " +
+                    this.currentCard.childrenCount +
+                    " children starting at index: " +
+                    this.currentCard.firstChildIdx
+            );
+            console.log(returnPos);
+            this.currentDepth++;
             // loop though and delete all children
             while (this.cards[returnPos.depth][returnPos.index].firstChildIdx !== null) {
-                this.currentIndex = this.cards[returnPos.depth][returnPos.index].firstChildIdx
-                this.currentCard = this.cards[this.currentDepth][this.currentIndex]
-                this.deleteCardAndReorganize()
+                this.currentIndex = this.cards[returnPos.depth][returnPos.index].firstChildIdx;
+                this.currentCard = this.cards[this.currentDepth][this.currentIndex];
+                this.deleteCardAndReorganize();
             }
 
             // restore the current position
-            this.currentDepth = returnPos.depth
-            this.currentIndex = returnPos.index
+            this.currentDepth = returnPos.depth;
+            this.currentIndex = returnPos.index;
             this.slideBottom(-Config.card.toolbarHeight);
-            console.log("restore depth " + this.currentDepth)
+            console.log("restore depth " + this.currentDepth);
         }
     }
 
@@ -490,7 +498,7 @@ export class View {
                     );
                     if (!this.cards[depth][idx].quill.hasFocus()) {
                         this.focus(depth, idx);
-                        this.currentCard.focus()
+                        this.currentCard.focus();
                     }
                     break;
                 }
@@ -540,7 +548,7 @@ export class View {
 
     // slides the rest of the cards in the current column by delta (used for inserting or deleting or changing heights)
     slideBottom(delta: number): void {
-        console.log("slideBottom at " + this.currentDepth)
+        console.log("slideBottom at " + this.currentDepth);
         this.pauseHandleClick();
         // if it is the last card then we have nothing to slide down
         if (this.currentIndex === this.cards[this.currentDepth].length - 1) {

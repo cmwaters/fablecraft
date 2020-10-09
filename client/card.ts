@@ -8,7 +8,8 @@ import Trash from './icons/trash.svg'
 
 import { Node } from './story'
 import { View } from './view'
-import { Quill, DeltaOperation } from 'quill';
+import { DeltaOperation } from 'quill';
+import Quill from 'quill'
 import { Vector, Geometry } from './types'
 
 const g = Geometry

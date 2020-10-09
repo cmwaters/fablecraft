@@ -9,6 +9,9 @@ window.onload = () => {
         email: "test",
         password: "test",
     };
+
+    let id = ""
+    
     // strictly used for testing create a user if we don't already have one
     Axios.post("/auth/login", loginData)
         .then(function (response) {
@@ -18,11 +21,21 @@ window.onload = () => {
                 .then(function (response) {
                     console.log(response.data.stories);
                     let storyInfo = response.data.stories[0];
-                    new Story(storyInfo.title, storyInfo.cards);
+                    id = storyInfo._id
+                    console.log("id: " + id)
+                    new Story(storyInfo.title, storyInfo.cards, token, storyInfo._id);
+                    Axios.get("/api/story/" + id, { params: { token: token } })
+                        .then(function (response) {
+                            console.log(response.data.story);
+                        })
+                        .catch(function (error) {
+                            console.log(error);
+                        });
                 })
                 .catch(function (error) {
                     console.log(error);
                 });
+                
         })
         .catch(function (error) {
             console.log(error);

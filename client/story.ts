@@ -1,5 +1,6 @@
 import { View } from './view'
 import { Config } from './config'
+import Axios from 'axios'
 
 const defaultSaveTime = 1000 // every second
 
@@ -7,16 +8,21 @@ export class Story {
 
     title: string
     description: string
+    token: string
+    id: string
     view: View
     // splitView: View
 
     // Story manages nodes in a serialized array although the individual views turn them into more of a tree
     nodes: Node[] = []
+    depthSizes: number[] = []
     saveInterval: number = defaultSaveTime
     header: HTMLElement // todo (eventually this should become its own class)
     
-    constructor(title: string, nodes: NodeData[]) {
+    constructor(title: string, nodes: NodeData[], token: string, id: string) {
         this.title = title
+        this.token = token
+        this.id = id
         
         for (let i = 0; i < nodes.length; i++) {
             this.nodes.push(new Node(nodes[i]))
@@ -29,7 +35,7 @@ export class Story {
 
         // we start with just a single view but later on we might want to encompass multiple views
         let mainViewElement = this.setupElements()
-        this.view = new View(mainViewElement, this.nodes)
+        this.view = new View(mainViewElement, this.nodes, this)
         
         // set up key press listeners (in the future we will split them based on what view is active)
         document.onkeydown = (e) => {
@@ -46,13 +52,26 @@ export class Story {
 
     }
 
-    node = {
-        insert(node: Node): void {
-            for (let i = 0; i < this.nodes.length; i++) {
-                
-            }
-        } 
+    insert(node: Node): void {
+        console.log("inserting node to server")
+        console.log(this.token)
+        let idx = this.getNodePos(node.depth, node.index)
+        this.nodes.splice(idx, 0, node)
+        Axios.get("/api/story/" + this.id, { params: { token: this.token } })
+            .then(function (response) {
+                console.log(response.data.story);
+            })
+            .catch(function (error) {
+                console.log(error);
+            });
 
+        Axios.post("/api/story/" + this.id +  "/card", node.data(), { params: { token: this.token }})
+            .then(function (response) {
+                console.log(response.data);
+            })
+            .catch(function (error) {
+                console.log(error);
+            });
     }
 
     // checkTree checks that the tree is valid. Technically we shouldn't have to do this if it is our own trusted server
@@ -72,6 +91,7 @@ export class Story {
             }
 
             if (node.depth === depth + 1) {
+                this.depthSizes.push(node.index)
                 depth++
                 index = 0
             }
@@ -86,9 +106,20 @@ export class Story {
 
         }
 
-        return null
+        this.depthSizes.push(this.nodes[this.nodes.length -1].index)
 
+        return null
     }
+
+    private getNodePos(depth: number, index: number): number {
+        let pos = 0;
+        for (let i = 0; i < depth; i++) {
+            pos += this.depthSizes[i]
+        }
+        return pos + index
+    }
+
+    
 
     // splits the view into two even views so that the user can see two different parts of the tree at once
     split(): void {
@@ -134,7 +165,7 @@ export class Node {
     depth: number
     index: number
     parentIndex: number | null
-    events: Function[]
+    events: Function[] = []
 
     constructor(n: NodeData) {
         this.text = n.text
@@ -150,6 +181,10 @@ export class Node {
     // smarter delta that represents the changes (similar to quill)
     addEvent(func: (text: string) => void): void {
         this.events.push(func)
+    }
+
+    data(): NodeData {
+        return {text: this.text, depth: this.depth, index: this.index, parentIndex: this.parentIndex}
     }
 
 }
