@@ -22,7 +22,7 @@ export class View {
     story: Story;
 
     // note that the view struct itself doesn't store the node data but passes them on to the respective cards to handle
-    constructor(element: HTMLElement, nodes: Node[], story: Story) {
+    constructor(element: HTMLElement, nodes: Node[][], story: Story) {
         this.element = element;
         console.log(this.element.style.width);
         this.cardWidth = this.calculateCardWidth();
@@ -49,18 +49,22 @@ export class View {
             }
         };
 
-        let rootCards: Card[] = [];
         // let's assume a flat tree and keep everything on the same x margin
-        for (let i = 0; i < nodes.length; i++) {
-            console.log(cardY);
-            let newCard = new Card(this, { x: cardX, y: cardY }, this.cardWidth, nodes[i]);
-            console.log("pos: " + newCard.pos().y);
-            newCard.deactivate();
-            console.log(newCard.height());
-            cardY += newCard.height() + this.margin.height;
-            rootCards.push(newCard);
+        for (let depth = 0; depth < nodes.length; depth++) {
+          let cardColumn: Card[] = [];
+          for (let index = 0; index < nodes[depth].length; index++) {
+              console.log(cardY);
+              let newCard = new Card(this, { x: cardX, y: cardY }, this.cardWidth, nodes[depth][index]);
+              console.log("pos: " + newCard.pos().y);
+              newCard.deactivate();
+              console.log(newCard.height());
+              cardY += newCard.height() + this.margin.height;
+              cardColumn.push(newCard);
+          }
+          this.cards.push(cardColumn);
+          cardX += this.cardWidth + this.margin.width
         }
-        this.cards.push(rootCards);
+        
 
         element.onclick = (e: MouseEvent) => {
             this.handleClick(e);

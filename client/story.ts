@@ -13,25 +13,28 @@ export class Story {
     view: View
     // splitView: View
 
-    // Story manages nodes in a serialized array although the individual views turn them into more of a tree
-    nodes: Node[] = []
+    nodes: Node[][] = []
     depthSizes: number[] = []
     saveInterval: number = defaultSaveTime
     header: HTMLElement // todo (eventually this should become its own class)
     
-    constructor(title: string, nodes: NodeData[], token: string, id: string) {
+    constructor(title: string, nodes: NodeData[][], token: string, id: string) {
         this.title = title
         this.token = token
         this.id = id
         
-        for (let i = 0; i < nodes.length; i++) {
-            this.nodes.push(new Node(nodes[i]))
+        for (let depth = 0; depth < nodes.length; depth++) {
+          let nodeColumn: Node[] = [] 
+          for (let index = 0; index < nodes[depth].length; index++) {
+            nodeColumn.push(new Node(nodes[depth][index]))
+          }
+          this.nodes.push(nodeColumn)
         }
         
-        let err = this.checkTree()
-        if (err !== null) {
+        // let err = this.checkTree()
+        // if (err !== null) {
             // TODO: deal with corrupted data
-        }
+        // }
 
         // we start with just a single view but later on we might want to encompass multiple views
         let mainViewElement = this.setupElements()
@@ -55,8 +58,7 @@ export class Story {
     insert(node: Node): void {
         console.log("inserting node to server")
         console.log(this.token)
-        let idx = this.getNodePos(node.depth, node.index)
-        this.nodes.splice(idx, 0, node)
+        this.nodes[node.depth].splice(node.index, 0, node)
         Axios.get("/api/story/" + this.id, { params: { token: this.token } })
             .then(function (response) {
                 console.log(response.data.story);
@@ -76,50 +78,40 @@ export class Story {
 
     // checkTree checks that the tree is valid. Technically we shouldn't have to do this if it is our own trusted server
     // and it is correct but during development this check will be good for my sanity
-    checkTree(): string | null {
-        let depth = 0;
-        let index = 0;
-        for (let i = 0; i < this.nodes.length; i++) { 
-            let node = this.nodes[i]
+    // checkTree(): string | null {
+    //     for (let depth = 0; depth < this.nodes.length) {
+    //       for (let i = 0; i < this.nodes.length; i++) { 
+    //           let node = this.nodes[i]
+  
+    //           if (i === 0 && node.depth !== 0) {
+    //               return "no root node, first node has non zero depth"
+    //           }
+  
+    //           if (node.depth < depth || node.depth > depth + 1) {
+    //               return "non incrementing depth, expected " + depth + " or 1 more but got " + node.depth
+    //           }
+  
+    //           if (node.depth === depth + 1) {
+    //               this.depthSizes.push(node.index)
+    //               depth++
+    //               index = 0
+    //           }
+  
+    //           if (node.index !== index) {
+    //               return "expecting node at " + index + " but instead the next node has an index of " + node.index
+    //           }
+  
+    //           if (node.depth !== 0 && node.parentIndex === null) {
+    //               return "orphan child node at depth " + node.depth + " and index " + node.index
+    //           }
+  
+    //       }
+    //     }
 
-            if (i === 0 && node.depth !== 0) {
-                return "no root node, first node has non zero depth"
-            }
+    //     this.depthSizes.push(this.nodes[this.nodes.length -1].index)
 
-            if (node.depth < depth || node.depth > depth + 1) {
-                return "non incrementing depth, expected " + depth + " or 1 more but got " + node.depth
-            }
-
-            if (node.depth === depth + 1) {
-                this.depthSizes.push(node.index)
-                depth++
-                index = 0
-            }
-
-            if (node.index !== index) {
-                return "expecting node at " + index + " but instead the next node has an index of " + node.index
-            }
-
-            if (node.depth !== 0 && node.parentIndex === null) {
-                return "orphan child node at depth " + node.depth + " and index " + node.index
-            }
-
-        }
-
-        this.depthSizes.push(this.nodes[this.nodes.length -1].index)
-
-        return null
-    }
-
-    private getNodePos(depth: number, index: number): number {
-        let pos = 0;
-        for (let i = 0; i < depth; i++) {
-            pos += this.depthSizes[i]
-        }
-        return pos + index
-    }
-
-    
+    //     return null
+    // }
 
     // splits the view into two even views so that the user can see two different parts of the tree at once
     split(): void {

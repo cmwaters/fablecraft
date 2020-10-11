@@ -1,6 +1,4 @@
 import mongoose from "mongoose";
-// const Card = mongoose.model("Card");
-// const User = mongoose.model("User");
 import { Card, CardSchema } from "./card";
 import { User } from "./user";
 export interface Story extends mongoose.Document {
@@ -8,10 +6,11 @@ export interface Story extends mongoose.Document {
   owner: User;
 
   description?: string;
-  cards?: Card[];
+  cards?: Card[][];
   authors?: User[];
   editors?: User[];
   viewers?: User[];
+  
 }
 
 const StorySchema = new mongoose.Schema({
@@ -20,7 +19,7 @@ const StorySchema = new mongoose.Schema({
     required: true,
   },
   description: String,
-  cards: [CardSchema],
+  cards: [[CardSchema]],
   owner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",

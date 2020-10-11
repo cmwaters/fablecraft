@@ -6,7 +6,7 @@ export interface Card extends mongoose.Document {
   text: string;
   depth: number;
   index: number;
-  parentIndex: number | null;
+  parentIndex: number;
   owner: typeof User;
   story: typeof Story;
 }
@@ -32,11 +32,6 @@ export const CardSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
-  story: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Story",
-    required: true
-  }
 });
 
 export const CardModel = mongoose.model<Card>("Card", CardSchema);

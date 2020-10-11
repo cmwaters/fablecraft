@@ -8,7 +8,8 @@ import authRouter from './routes/auth';
 import apiRouter from './routes/api';
 import passport from 'passport';
 import path from 'path'
-import './auth/auth'
+
+import './serivces/auth'
 let clientRouter = express.Router();
 
 dotenv.config()

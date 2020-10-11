@@ -5,6 +5,7 @@ import { randomBytes } from "crypto";
 import { User, UserModel } from '../models/user'
 import { Story, StoryModel } from '../models/story';
 import { CardModel } from '../models/card';
+import { StoryTree } from '../serivces/tree'
 
 // probably should move this to auth
 function hasPermission(permissionLevel: string, user: User, story: Story): boolean {
@@ -189,10 +190,15 @@ router.post("/story/:id/card", async (req, res) => {
         index: index,
         parentIndex: parentIndex,
         owner: user,
-        story: story
     }, function (err: any, card: any) {
         if (err) {
             return res.status(201).send({ message: "error: " + err })
+        }
+        if (story !== null) {
+          let err = StoryTree.insertCard(story, card)
+          if (err !== "") {
+            return res.status(201).send({ message: "error: " + err })
+          }
         }
         return res.status(201).send({ message: "success. created card." })
     })
