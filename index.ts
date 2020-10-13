@@ -9,7 +9,7 @@ import apiRouter from './routes/api';
 import passport from 'passport';
 import path from 'path'
 
-import './serivces/auth'
+import './services/auth'
 let clientRouter = express.Router();
 
 dotenv.config()

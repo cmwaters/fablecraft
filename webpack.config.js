@@ -9,7 +9,7 @@ module.exports = {
 	},
 	output: {
 		filename: "[name].js",
-		path: __dirname + "/dist/client",
+		path: __dirname + "/build/client",
 	},
 	resolve: {
 		extensions: [".tsx", ".ts", ".js", ".json"],

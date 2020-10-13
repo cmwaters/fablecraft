@@ -22,7 +22,7 @@ export class View {
     story: Story;
 
     // note that the view struct itself doesn't store the node data but passes them on to the respective cards to handle
-    constructor(element: HTMLElement, nodes: Node[][], story: Story) {
+    constructor(element: HTMLElement, story: Story) {
         this.element = element;
         console.log(this.element.style.width);
         this.cardWidth = this.calculateCardWidth();
@@ -49,17 +49,18 @@ export class View {
             }
         };
 
-        // let's assume a flat tree and keep everything on the same x margin
-        for (let depth = 0; depth < nodes.length; depth++) {
+        let nodeIndex = 0
+        for (let i = 0; i < this.story.depthSizes.length; i++) {
           let cardColumn: Card[] = [];
-          for (let index = 0; index < nodes[depth].length; index++) {
-              console.log(cardY);
-              let newCard = new Card(this, { x: cardX, y: cardY }, this.cardWidth, nodes[depth][index]);
-              console.log("pos: " + newCard.pos().y);
+          for (let index = 0; index < this.story.depthSizes[i]; index++) {
+              // console.log(cardY);
+              let newCard = new Card(this, { x: cardX, y: cardY }, this.cardWidth, this.story.nodes[nodeIndex]);
+              // console.log("pos: " + newCard.pos().y);
               newCard.deactivate();
-              console.log(newCard.height());
+              // console.log(newCard.height());
               cardY += newCard.height() + this.margin.height;
               cardColumn.push(newCard);
+              nodeIndex++
           }
           this.cards.push(cardColumn);
           cardX += this.cardWidth + this.margin.width
