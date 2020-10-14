@@ -12,6 +12,10 @@ export class TitleMessage implements MessageI {
     story.title = this.title
     return null
   }
+
+  hasPermission(perm: PermissionGroup): boolean {
+    return (perm == PermissionGroup.Owner || perm == PermissionGroup.Author)
+  }
 }
 
 export class DescriptionMessage implements MessageI {
@@ -23,6 +27,10 @@ export class DescriptionMessage implements MessageI {
     story.description = this.description
     return null
   }
+  
+  hasPermission(perm: PermissionGroup): boolean {
+    return (perm == PermissionGroup.Owner || perm == PermissionGroup.Author)
+  }
 }
 export class AddUserMessage implements MessageI {
   constructor(public userID: string, public permission: PermissionGroup) {
@@ -30,39 +38,51 @@ export class AddUserMessage implements MessageI {
     this.permission = permission
   }
   
-  // TODO: In the future we should check whether the user is already part of that permission group
   update(story: Story): MessageError | null {
     UserModel.findById(this.userID, (err: any, user: User) => {
       if (err) {
         return { reason: "cannot add user " + this.userID + " because " + err }
       }
       switch (this.permission) {
-        case 0: // Owner
+        case PermissionGroup.Owner: // Owner
           return { reason: "cannot add a owner to a story. Ownership can only change."}
-        case 1: // Author
+        case PermissionGroup.Author: // Author
           if (story.authors === undefined) {
             story.authors = [user]
           } else {
             story.authors.push(user)
           }
-        case 2: // Editor
+          break
+        case PermissionGroup.Editor: // Editor
           if (story.editors === undefined) {
             story.editors = [user]
           } else {
             story.editors.push(user)
           }
-        case 3: // Viewer
+          break
+        case PermissionGroup.Viewer: // Viewer
           if (story.viewers === undefined) {
             story.viewers = [user]
           } else {
             story.viewers.push(user)
           }
+          break
         default: 
           return { reason: "unknown permission " + this.permission + " for adding a user"}
       }
     })
-    
     return null
+  }
+  
+  hasPermission(perm: PermissionGroup): boolean {
+    switch (perm) {
+      case PermissionGroup.Owner:
+        return true
+      case PermissionGroup.Author:
+        return (perm < this.permission) // can only add editors and viewers
+      default:
+        return false
+    }
   }
 }
 
@@ -74,5 +94,16 @@ export class RemoveUserMessage implements MessageI {
 
   update(story: Story): MessageError | null {
     return null
+  }
+  
+  hasPermission(perm: PermissionGroup): boolean {
+    switch (perm) {
+      case PermissionGroup.Owner:
+        return true
+      case PermissionGroup.Author:
+        return (perm < this.permission) // can only add editors and viewers
+      default:
+        return false
+    }
   }
 }

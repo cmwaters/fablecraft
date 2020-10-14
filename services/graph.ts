@@ -1,127 +1,221 @@
-
-import { Story } from './../models/story'
-import { Card } from './../models/card'
-import { User } from './../models/user'
-import { MessageSet } from '../messages/messages'
+import { Story, StoryModel } from "./../models/story";
+import { Card, CardModel } from "./../models/card";
+import { User } from "./../models/user";
+import { MessageSet, MessageI, PermissionGroup } from "../messages/messages";
 
 export type GraphError = {
-  reason: string
-}
+	reason: string;
+};
 
 export namespace StoryGraph {
+	// EXPORTED FUNCTIONS
 
-  // EXPORTED FUNCTIONS
-  
-  export function serializeGraph(story: Story): { cards: Card[], err: GraphError | null } {
-    return { cards: [], err: null }
-  }
-  
-  export function newGraph(user: User, title: string, description?: string): GraphError | null {
-    // let story = new StoryModel({
-    //   title: title,
-    //   description: description,
-    //   owner: user._id,
-    // });
-    // CardModel.create({
-    //   text: "",
-    //   story: story,
-    //   depth: 0,
-    //   index: 0,
-    // }, (err: any, card: Card) => {
-    //   if (err) {
-    //     return res.status(200)
-    //   }
-    // });
-    // story.rootCard = rootCard;
-    // story.;
-    // return res
-    //   .status(201)
-    //   .send({ message: "success. " + story.title + " created." });
-  
-    return null
-  } 
-  
-  export function processMessages(msgs: MessageSet): GraphError | null {
-    
-  
-    return null
-  }
+	export function serializeGraph(
+		story: Story
+	): { cards: Card[]; err: GraphError | null } {
+		return { cards: [], err: null };
+	}
 
-  // inserts a card into the tree, it verifies the card and thus returns an error as a string if there is something wrong
-  // export function insertCard(story: Story, card: Card): string {
-  //   // is the first card in the story
-  //   if (story.cards === undefined) {
-  //     if (card.depth !== 0 || card.index !== 0) {
-  //       return "this is the first card in the story. Expected depth and index to be 0. Got " + card.depth + " and " + card.index
-  //     }
-  //     story.cards = [[card]]
-  //     story.save()
-  //     return ""
-  //   } 
-    
-  //   // check card index is valid
-  //   if (card.index < 0 || card.depth) {
-  //     return "expected a non negative index and/or depth value: got depth: " + card.depth + ", index: " + card.index
-  //   }
-    
-  //   // check depth doesn't exceed story length
-  //   if (card.depth > story.cards.length) {
-  //     return "card depth is more than one greater than the story depth. Got " + card.depth
-  //   }
-    
-  //   // inserting card at a new depth
-  //   if (card.depth >= story.cards.length ) {
-  //     if (card.index !== 0) {
-  //       return "inserting card at a new depth, thus expecting index to be 0. Got " + card.index
-  //     }
-  //     story.cards.push([card])
-  //   }
-      
-  //   // check index doesn't exceed maximum index at that depth
-  //   if (card.index > story.cards[card.depth].length) {
-  //     return "card index is more than one greater than the maximum index at that depth. Got " + card.index
-  //   }
-    
-  //   // inserting a card where there is already a card at that index in which case we must push everything down
-  //   story.cards[card.depth].splice(card.index, 0, card)
-    
-  //   // shift the index of all cards below by one
-  //   shiftIndex(story, card.depth, card.index + 1)
-  //   story.save()
-    
-  //   return ""
-  // }
-  
-  // export function deleteCard(story: Story, card: Card): string {
-  //   return ""
-  // }
-  
-  // export function moveCard(story: Story, card: Card, newDepth: number, newIndex: number): string {
-  //   return ""
-  // }
-  
-  // export function getCard(story: Story, depth: number, index: number, text?: string): Card {
-    
-  // }
-  
-  
-  // // PRIVATE FUNCTIONS
-  
-  // function shiftIndex(story: Story, depth: number, index: number): void {
-  //   if (story.cards == undefined) { return }
-  //   for (let idx = index; idx < story.cards[depth].length; idx++ ) {
-  //     story.cards[depth][idx].index = idx
-  //     // check if this is not the final depth, in which case we need to update the parent index
-  //     if (depth < story.cards.length - 1) { 
-  //       for (let idx = 0; idx < story.cards[depth + 1].length; idx++ ) {
-  //         if (story.cards[depth + 1][idx].parentIndex >= index) {
-  //           story.cards[depth + 1][idx].parentIndex++
-  //           story.cards[depth + 1][idx].save()
-  //         }
-  //       }
-  //     }
-  //     story.cards[depth][idx].save()
-  //   }
-  // }
+	export function createStory(
+		user: User,
+		title: string,
+		description?: string
+	): GraphError | null {
+		if (title === undefined || title === "") {
+			return { reason: "empty title" };
+		}
 
+		let story = new StoryModel({
+			title: title,
+			owner: user._id,
+		});
+
+		let card = new CardModel({
+			text: "",
+			story: story,
+			depth: 0,
+			index: 0,
+		});
+
+		story.rootCard = card;
+		if (description !== undefined || description !== "") {
+			story.description = description;
+		}
+
+		story.save((err: any, story: Story) => {
+			if (err) {
+				return { reason: "unable to save story because: " + err };
+			}
+		});
+
+		card.save((err: any, card: Card) => {
+			if (err) {
+				return { reason: "unable to save root card of story because: " + err };
+			}
+		});
+
+		return null;
+	}
+
+	export async function deleteStory(
+		user: User,
+		storyId: string
+	): Promise<GraphError | null> {
+		await StoryModel.findById(storyId, (err, story: Story) => {
+			if (err) {
+				return { reason: "unable to find story because: " + err };
+			} else if (story === null) {
+				return { reason: "story with id: " + storyId + " does not exist" };
+			} else if (story.owner !== user._id) {
+				return { reason: "you don't have permissions to delete this story" };
+			} else {
+				StoryModel.deleteOne(story, (err) => {
+					if (err) {
+						return {
+							reason:
+								"unable to delete story with id " +
+								storyId +
+								" because: " +
+								err,
+						};
+					}
+					return null;
+				});
+			}
+		});
+		return null;
+	}
+
+	export async function editStory(
+		user: User,
+		storyId: string,
+		messages: MessageI[]
+	): Promise<GraphError | null> {
+		await StoryModel.findById(storyId, (dbErr: any, story: Story) => {
+			if (dbErr) {
+				return {
+					reason:
+						"error: story of id " +
+						storyId +
+						" can not be found, err: " +
+						dbErr,
+				};
+			}
+			let perm = getPermission("viewer", user, story);
+			if (perm == PermissionGroup.None) {
+				return { reason: "error: user has no permissions for this story" };
+			}
+			let err = StoryGraph.processMessages({
+				userPerm: perm,
+				story: story,
+				messages: messages,
+			});
+			if (err) {
+				return err;
+			}
+			return null;
+		});
+		return null;
+	}
+
+	export async function findStory(
+		user: User,
+		storyId: string
+	): Promise<{ story: Story | null; err: GraphError | null }> {
+		await StoryModel.findById(storyId, (err: any, story: Story) => {
+			if (err) {
+				return {
+					story: null,
+					err: { reason: "failed to find story because: " + err },
+				};
+			}
+			if (story === null) {
+				return { story: null, err: { reason: "story does not exist" } };
+			}
+			if (getPermission("viewer", user, story) == PermissionGroup.None) {
+				return { story: null, err: { reason: "story does not exist" } };
+			}
+			return { story: story, err: null };
+		});
+		return { story: null, err: { reason: "why are we here" } };
+	}
+
+	export function processMessages(msgs: MessageSet): GraphError | null {
+		if (msgs === undefined || msgs.messages.length === 0) {
+			return { reason: "empty message set" };
+		}
+
+		// first check that the user has permission to complete all the operations provided
+		for (let index = 0; index < msgs.messages.length; index++) {
+			let msg = msgs.messages[index];
+			if (!msg.hasPermission(msgs.userPerm)) {
+				return {
+					reason:
+						"user does not have permission for " +
+						msg.constructor.name +
+						" at pos " +
+						index,
+				};
+			}
+		}
+
+		// now run these updates to story
+		for (let index = 0; index < msgs.messages.length; index++) {
+			let msg = msgs.messages[index];
+			let err = msg.update(msgs.story);
+			if (err) {
+				return {
+					reason:
+						"unable to execute all messages. Failed at " +
+						msg.constructor.name +
+						" at pos " +
+						index +
+						" because: " +
+						err,
+				};
+			}
+		}
+
+		return null;
+	}
+
+	export function getPermission(
+		permissionLevel: string,
+		user: User,
+		story: Story
+	): PermissionGroup {
+		// cascade through each of the permission groups
+		switch (permissionLevel) {
+			case "viewer":
+				if (story.viewers !== undefined) {
+					for (let i = 0; i < story.viewers.length; i++) {
+						if (story.viewers[i]._id == user.id) {
+							return PermissionGroup.Viewer;
+						}
+					}
+				}
+			case "editor":
+				if (story.editors !== undefined) {
+					for (let i = 0; i < story.editors.length; i++) {
+						if (story.editors[i]._id == user._id) {
+							return PermissionGroup.Editor;
+						}
+					}
+				}
+			case "author":
+				if (story.authors !== undefined) {
+					for (let i = 0; i < story.authors.length; i++) {
+						if (story.authors[i]._id == user._id) {
+							return PermissionGroup.Author;
+						}
+					}
+				}
+			case "owner":
+				if (story.owner._id == user._id) {
+					return PermissionGroup.Owner;
+				}
+			default:
+				return PermissionGroup.None;
+		}
+	}
 }
