@@ -219,3 +219,13 @@ export namespace StoryGraph {
 		}
 	}
 }
+
+
+
+// export function userStories(user: User): Promise<{stories: Story[] | null, err: GraphError | null}> {
+//   if (user.stories === undefined) {
+//     return { stories: null, err: null};
+//   }
+  
+//   for (story of user.stories)
+// }

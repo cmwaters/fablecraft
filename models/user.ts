@@ -1,9 +1,11 @@
 import mongoose from "mongoose";
+import { Story } from './story'
 
 export interface User extends mongoose.Document {
   email: string;
   password: string;
   name?: string;
+  stories?: Story[]
 }
 
 export const UserSchema = new mongoose.Schema({
@@ -19,6 +21,10 @@ export const UserSchema = new mongoose.Schema({
     required: true,
   },
   name: String,
+  stories: [{
+    type: mongoose.SchemaTypes.ObjectId,
+    ref: "Story"
+  }]
 });
 
 export const UserModel = mongoose.model<User>("User", UserSchema);

@@ -49,8 +49,12 @@ router.get("/stories", async (req, res) => {
 		return res.status(200).send({ message: "error: user not found" });
 	}
 	let user = req.user as User;
-	const stories = await StoryModel.find({ owner: user._id });
-	return res.status(200).send({ stories: stories });
+	if (user.stories === undefined) {
+		return res
+			.status(200)
+			.send({ message: "user does not currently have any stories" });
+	}
+	return res.status(200).send({ stories: user.stories });
 });
 
 router.post("/story", (req, res) => {
