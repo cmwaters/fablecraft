@@ -14,7 +14,7 @@ let clientRouter = express.Router();
 
 dotenv.config()
 
-const app = express();
+export const app = express();
 
 mongoose.connect(process.env.DATABASE_URL || "mongodb://localhost/fablecraft", { useNewUrlParser: true, useUnifiedTopology: true});
 const db = mongoose.connection;
@@ -36,6 +36,10 @@ app.use(passport.session())
 clientRouter.get('/', (req, res, next) => {
   console.log("Starting client")
   res.render('index')
+})
+
+clientRouter.get('/test', (req, res, next) => {
+  res.status(200).send({message: "test successful"})
 })
 
 //IMPORT ROUTES
