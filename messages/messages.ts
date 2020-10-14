@@ -6,7 +6,7 @@ export type MessageSet = {
   // what is the permissions of the user that sent this permission set
   userPerm: PermissionGroup
   // what is the story that these messages should be associated with
-  storyId: string,
+  story: Story,
   // the messages themselves
   messages: MessageI[]
 }
@@ -18,12 +18,14 @@ export type MessageError = {
 
 export type MessageI = {
   update(story: Story): MessageError | null
+  hasPermission(permLevel: PermissionGroup): boolean
 }
 
 export enum PermissionGroup {
-  Owner,
+  Owner = 1,
   Author,
   Editor,
-  Viewer
+  Viewer,
+  None
 }
 

@@ -1,4 +1,4 @@
-import { MessageI, MessageError } from './messages'
+import { MessageI, MessageError, PermissionGroup } from './messages'
 import { Story } from '../models/story'
 import { Card, CardModel } from '../models/card'
 
@@ -65,5 +65,9 @@ export class InsertBelowCardMessage implements MessageI {
     })
     
     return null
+  }
+  
+  hasPermission(perm: PermissionGroup): boolean {
+    return (perm == PermissionGroup.Owner || perm == PermissionGroup.Author)
   }
 }
