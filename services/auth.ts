@@ -3,27 +3,32 @@ import * as LocalStrategy from "passport-local";
 import * as argon2 from "argon2";
 import { Strategy, ExtractJwt } from 'passport-jwt'
 import { randomBytes } from "crypto";
-import { UserModel} from '../models/user'
+import { User, UserModel} from '../models/user'
 
 
-//Create a passport middleware to handle user registration
+// Create a passport middleware to handle user registration
 passport.use('signup', new LocalStrategy.Strategy({
   usernameField : 'email',
   passwordField : 'password'
 }, async (email, password, done) => {
+    // make sure an account of the same email doesn't already exist
+    await UserModel.findOne({ email: email}, (err: any, res: User | null) => {
+      if (res) {
+        return done(null, false, { message: "User already exists"})
+      }
+    })
     try {
       const salt = randomBytes(32);
       const passwordHashed = await argon2.hash(password, { salt });
-      await UserModel.create({
-        email: email,
-        password: passwordHashed,
-      });
       //Save the information provided by the user to the the database
-      const user = await UserModel.create({ email, password });
+      const user = await UserModel.create({ 
+        email: email, 
+        password: passwordHashed 
+      });
       //Send the user information to the next middleware
       return done(null, user);
     } catch (error) {
-      done(error);
+      return done(error);
     }
 }));
 

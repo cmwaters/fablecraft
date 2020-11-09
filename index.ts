@@ -12,11 +12,11 @@ import path from 'path'
 import './services/auth'
 let clientRouter = express.Router();
 
-dotenv.config()
+dotenv.config({ path: `.env.${process.env.NODE_ENV}` })
 
 export const app = express();
 
-mongoose.connect(process.env.DATABASE_URL || "mongodb://localhost/fablecraft", { useNewUrlParser: true, useUnifiedTopology: true});
+mongoose.connect(process.env.DATABASE_URL!, { useNewUrlParser: true, useUnifiedTopology: true});
 const db = mongoose.connection;
 db.on('error', (error) => console.error(error));
 db.once('open', () => {
@@ -52,7 +52,7 @@ app.use('/api', passport.authenticate('jwt', { session : false }), apiRouter);
 const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, () => {
-  console.log('Fablecraft server listening on port ' + PORT) 
+  console.log('Fablecraft server listening on port ' + PORT + ' in ' + process.env.NODE_ENV + ' mode') 
 })
 
 // /**
