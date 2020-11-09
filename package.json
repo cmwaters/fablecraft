@@ -4,13 +4,13 @@
   "description": "",
   "private": true,
   "scripts": {
-    "test": "mocha",
-    "nodemon": "nodemon dist/server/index.js",
+    "test": "mocha --timeout 10000",
+    "nodemon": "nodemon build/index.js",
     "build-server": "tsc",
     "build-client": "webpack",
     "build-dev": "concurrently --kill-others-on-fail \"tsc --watch --preserveWatchOutput\" \"webpack --watch\"",
     "build": "concurrently --kill-others-on-fail \"npm run build-server\" \"npm run build-client\"",
-    "start": "node dist/index.js",
+    "start": "node build/index.js",
     "lint": "eslint -c .eslintrc.js --ext .ts",
     "fix": "eslint --fix .eslintrc.js --ext .ts"
   },

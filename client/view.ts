@@ -7,18 +7,18 @@ let g = Geometry;
 const inverseScrollSpeed = 2;
 
 export class View {
-    location: Vector;
+    // location: Vector; represents where the view is (not currently used)
     cards: Card[][] = [];
     margin: Size;
     element: HTMLElement;
     currentIndex: number = 0;
     currentDepth: number = 0;
     cardWidth: number = 0;
-    size: Size;
+    // size: Size; represents the size of the view. Currently not used
     shiftMode: boolean = false;
     movementInterval: NodeJS.Timeout | null = null;
     listeningToClick: boolean = true;
-    currentCard: Card | null = null;
+    currentCard: Card;
     story: Story;
 
     // note that the view struct itself doesn't store the node data but passes them on to the respective cards to handle
@@ -51,19 +51,19 @@ export class View {
 
         let nodeIndex = 0
         for (let i = 0; i < this.story.depthSizes.length; i++) {
-          let cardColumn: Card[] = [];
-          for (let index = 0; index < this.story.depthSizes[i]; index++) {
-              // console.log(cardY);
-              let newCard = new Card(this, { x: cardX, y: cardY }, this.cardWidth, this.story.nodes[nodeIndex]);
-              // console.log("pos: " + newCard.pos().y);
-              newCard.deactivate();
-              // console.log(newCard.height());
-              cardY += newCard.height() + this.margin.height;
-              cardColumn.push(newCard);
-              nodeIndex++
-          }
-          this.cards.push(cardColumn);
-          cardX += this.cardWidth + this.margin.width
+            let cardColumn: Card[] = [];
+            for (let index = 0; index < this.story.depthSizes[i]; index++) {
+                // console.log(cardY);
+                let newCard = new Card(this, { x: cardX, y: cardY }, this.cardWidth, this.story.nodes[nodeIndex]);
+                // console.log("pos: " + newCard.pos().y);
+                newCard.deactivate();
+                // console.log(newCard.height());
+                cardY += newCard.height() + this.margin.height;
+                cardColumn.push(newCard);
+                nodeIndex++
+            }
+            this.cards.push(cardColumn);
+            cardX += this.cardWidth + this.margin.width
         }
         
 
@@ -251,7 +251,7 @@ export class View {
 
     left(): void {
         console.log("go left");
-        if (this.currentCard.parentIdx !== null) {
+        if (this.currentCard!.parentIdx !== null) {
             this.focus(this.currentDepth - 1, this.currentCard.parentIdx);
         }
     }
@@ -324,7 +324,6 @@ export class View {
     branch(): void {
         console.log("branch");
         let pIdx = this.currentIndex;
-        // this.currentCard.deactivate()
         if (this.currentCard.firstChildIdx === null) {
             // this card doesn't have any children yet
             console.log("branch 1");

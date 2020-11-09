@@ -10,5 +10,5 @@
     "moduleResolution": "node",
     "esModuleInterop": true
   },
-  "include": ["messages", "models", "routes", "scripts", "services", "index.ts", "tests"]
+  "include": ["messages", "models", "routes", "scripts", "services", "index.ts"]
 }

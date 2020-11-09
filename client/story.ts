@@ -17,10 +17,11 @@ export class Story {
     nodes: Node[] = []
     depthSizes: number[] = []
     saveInterval: number = defaultSaveTime
-    header: HTMLElement // todo (eventually this should become its own class)
+    // header: HTMLElement // todo (eventually this should become its own class)
     
-    constructor(title: string, nodes: NodeData[], token: string, id: string) {
+    constructor(title: string, description: string, nodes: NodeData[], token: string, id: string) {
         this.title = title
+        this.description = description
         this.token = token
         this.id = id
         
@@ -46,7 +47,7 @@ export class Story {
             this.view.keyup(e.key)
         }
 
-        window.onresize = (e) => {
+        window.onresize = () => {
             this.view.resize()
         }
 

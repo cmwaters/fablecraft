@@ -1,15 +1,12 @@
 import * as express from "express";
 import passport from "passport";
-import * as LocalStrategy from "passport-local";
-import * as argon2 from "argon2";
 const router = express.Router();
-import mongoose from 'mongoose';
 import jwt from  'jsonwebtoken'
 
 
 router.post("/signup", passport.authenticate('signup', { session : false }), async (req, res) => {
   return res.json({
-    message: "Signup succesful",
+    message: "Signup successful",
     user: req.user
   })
 });

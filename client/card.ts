@@ -1,9 +1,13 @@
-// import { TextBox } from './archive/text'
-// import { Point, Size, Path, Rectangle, Color, Project, Group } from 'paper'
+
+// @ts-ignore
 import ArrowDown from './icons/box-arrow-in-down.svg' 
+// @ts-ignore
 import ArrowUp from './icons/box-arrow-in-up.svg' 
+// @ts-ignore
 import ArrowRight from './icons/box-arrow-right.svg'
+// @ts-ignore
 import ArrowLeft from './icons/box-arrow-left.svg'
+// @ts-ignore
 import Trash from './icons/trash.svg'
 
 import { Node } from './story'
@@ -64,7 +68,7 @@ export class Card {
       let bounds = quill.getBounds(quill.getLength() - 1)
       editor.style.height = (bounds.bottom + 12) + "px" 
       
-      quill.on('text-change', function(delta, oldDelta, source) {
+      quill.on('text-change', function(delta: any) {
           // update height if need be
           let existingHeight = editor.offsetHeight
           let length = quill.getLength()
@@ -157,7 +161,7 @@ export class Card {
     }
     
     remove(): void {
-        this.element.parentNode.removeChild(this.element)
+        this.element.parentNode!.removeChild(this.element)
     }
     
     createViewToolbar(): HTMLElement {

@@ -23,7 +23,7 @@ window.onload = () => {
                     let storyInfo = response.data.stories[0];
                     id = storyInfo._id
                     console.log("id: " + id)
-                    new Story(storyInfo.title, storyInfo.cards, token, storyInfo._id);
+                    new Story(storyInfo.title, "", storyInfo.cards, token, storyInfo._id);
                     Axios.get("/api/story/" + id, { params: { token: token } })
                         .then(function (response) {
                             console.log(response.data.story);
