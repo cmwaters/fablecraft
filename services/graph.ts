@@ -7,6 +7,7 @@ export type GraphError = {
 	reason: string;
 };
 
+// perhaps this could just be tacked on to the user interface
 export namespace StoryGraph {
 	// EXPORTED FUNCTIONS
 
@@ -54,7 +55,7 @@ export namespace StoryGraph {
 			}
 		});
 
-		return null;
+		return null
 	}
 
 	export async function deleteStory(
