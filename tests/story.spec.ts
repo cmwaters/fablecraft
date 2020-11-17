@@ -4,6 +4,7 @@ import chaiHttp from "chai-http";
 import * as dotenv from 'dotenv'
 import * as argon2 from "argon2";
 import { UserModel } from "../models/user"
+import { Story } from "../models/story"
 let should = chai.should();
 dotenv.config({ path: `config/.env.${process.env.NODE_ENV}` })
 import { app } from "../index";
@@ -12,7 +13,7 @@ import { expect } from "chai"
 chai.use(chaiHttp);
 describe("Story", () => {
     let token = ""
-    before((done) => {
+    beforeAll((done) => {
         setupUserAndToken().then((value: string) => {
             if (value === "") {
                 console.log("empty token")
@@ -21,12 +22,13 @@ describe("Story", () => {
             done()
         })
     })
-
-    // FIXME: we are not waiting for the result of saving the story before returning 
+    let storyId = null
+    
     it("can create stories", done => {
         let story = { 
             title: "Test Story"
         }
+        console.log(token)
         chai
             .request(app)
             .post("/api/story")
@@ -40,29 +42,25 @@ describe("Story", () => {
                     .get("/api/stories")
                     .query({token: token})
                     .end((err, res) => {
-                        console.log(res)
+                        // console.log(res)
                         res.should.have.status(200)
                         res.body.should.have.property("stories")
                         res.body.stories.should.have.length(1)
+                        storyId = res.body.stories[0]._id
                         done();
                     })
                 
             });
     });
 
-    // it("can show how many stories a user has", done => {
+    // TODO: Change title and description
+    // it("allows the user to change the name and description of a story", done => {
     //     chai
     //         .request(app)
-    //         .get("/api/stories")
+    //         .put("/api/story/" + storyId)
     //         .query({token: token})
-    //         .end((err, res) => {
-    //             console.log(res)
-    //             res.should.have.status(200)
-    //             res.body.should.have.property("stories")
-    //             res.body.stories.should.have.length(1)
-    //             done();
-    //         })
-    // })
+    //         .send({})
+    // });
 });
 
 async function setupUserAndToken(): Promise<string> {

@@ -4,8 +4,8 @@ import { Story } from './story'
 export interface User extends mongoose.Document {
   email: string;
   password: string;
-  name?: string;
-  stories?: Story[]
+  name: string;
+  stories: Story[]
 }
 
 export const UserSchema = new mongoose.Schema({

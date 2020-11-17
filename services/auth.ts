@@ -4,6 +4,7 @@ import * as argon2 from "argon2";
 import { Strategy, ExtractJwt } from 'passport-jwt'
 import { randomBytes } from "crypto";
 import { User, UserModel} from '../models/user'
+import { DocumentQuery } from "mongoose";
 
 
 // Create a passport middleware to handle user registration
@@ -23,7 +24,9 @@ passport.use('signup', new LocalStrategy.Strategy({
       //Save the information provided by the user to the the database
       const user = await UserModel.create({ 
         email: email, 
-        password: passwordHashed 
+        password: passwordHashed,
+        name: "",
+        stories: [],
       });
       //Send the user information to the next middleware
       return done(null, user);
@@ -66,8 +69,13 @@ passport.use('jwt', new Strategy({
 }, async (token: any, done: Function) => {
   try {
     //Pass the user details to the next middleware
-    console.log("valid token " + token.user)
-    return done(null, token.user);
+    UserModel.findById(token.user._id, (err, user) => {
+      if (err) {
+        done(err)
+      } else {
+        done(null, user)
+      }
+    })
   } catch (error) {
     done(error);
   }

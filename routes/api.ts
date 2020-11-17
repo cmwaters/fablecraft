@@ -4,8 +4,9 @@ import * as argon2 from "argon2";
 import { randomBytes } from "crypto";
 import { User, UserModel } from "../models/user";
 import { Story, StoryModel } from "../models/story";
-import { StoryGraph } from "../services/graph";
+import { StoryGraph, GraphError } from "../services/graph";
 import { MessageI, MessageError, PermissionGroup } from "../messages/messages";
+import { use } from "chai";
 
 router.get("/me", (req: any, res) => {
 	res.json({
@@ -48,26 +49,34 @@ router.get("/stories", async (req, res) => {
 	if (req.user === undefined) {
 		return res.status(200).send({ message: "error: user not found" });
 	}
-	let user = req.user as User;
-	if (user.stories === undefined) {
-		return res
-			.status(200)
-			.send({ message: "user does not currently have any stories" });
-	}
-	return res.status(200).send({ stories: user.stories });
+	return res.status(200).send({ message: "success", stories: (req.user as User).stories})
 });
 
-router.post("/story", (req, res) => {
+router.post("/story", async (req, res) => {
 	const { title, description } = req.body;
 	if (req.user === undefined) {
 		return res.status(200).send({ message: "error: user not found" });
 	}
-	let err = StoryGraph.createStory(req.user as User, title, description);
-	if (err) {
-		return res.status(200).send({ message: err });
-	}
-	return res.status(201).send({ message: "success. " + title + " created." });
+	StoryGraph.createStory(req.user as User, title, description).then((value: GraphError | Story) => {
+		if ((value as Story).title === undefined) {
+			return res.status(200).send({ message: value });
+		} else {
+			const story = value as Story;
+			return res.status(201).send({ message: "success. " + story.title + " created.", story: story});
+		}
+	});
 });
+
+// should be able to edit title and description
+router.put("/story/:id", async (req, res) => {
+	const { title, description } = req.body;
+	if (title !== undefined) {
+		StoryGraph.editTitle(title)
+	}
+	if (description !== undefined) {
+		StoryGraph.editDescription(description)
+	}
+})
 
 router.delete("/story/:id", async (req, res) => {
 	const id = req.params.id;

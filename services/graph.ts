@@ -1,6 +1,6 @@
 import { Story, StoryModel } from "./../models/story";
 import { Card, CardModel } from "./../models/card";
-import { User } from "./../models/user";
+import { User, UserModel } from "./../models/user";
 import { MessageSet, MessageI, PermissionGroup } from "../messages/messages";
 
 export type GraphError = {
@@ -17,11 +17,11 @@ export namespace StoryGraph {
 		return { cards: [], err: null };
 	}
 
-	export function createStory(
+	export async function createStory(
 		user: User,
 		title: string,
 		description?: string
-	): GraphError | null {
+	): Promise<GraphError | Story> {
 		if (title === undefined || title === "") {
 			return { reason: "empty title" };
 		}
@@ -43,19 +43,32 @@ export namespace StoryGraph {
 			story.description = description;
 		}
 
-		story.save((err: any, story: Story) => {
+		await story.save((err: any, story: Story) => {
 			if (err) {
 				return { reason: "unable to save story because: " + err };
 			}
 		});
 
-		card.save((err: any, card: Card) => {
+		await card.save((err: any, card: Card) => {
 			if (err) {
 				return { reason: "unable to save root card of story because: " + err };
 			}
 		});
 
-		return null
+		// add story to user
+		let stories = user.stories
+		if (stories == undefined) {
+			stories = [story]
+		} else {
+			stories.push(story);
+		}
+		await UserModel.findByIdAndUpdate(user._id, {stories: stories}, (err: any, res: User|null) => {
+			if (err) {
+				return { reason: "unable to update user with new story because " + err }
+			}
+		})
+
+		return story
 	}
 
 	export async function deleteStory(
@@ -117,6 +130,14 @@ export namespace StoryGraph {
 			return null;
 		});
 		return null;
+	}
+
+	export async function editTitle(newTitle: string) {
+
+	}
+
+	export async function editDescription(newDescription: string) {
+
 	}
 
 	export async function findStory(
@@ -221,12 +242,3 @@ export namespace StoryGraph {
 	}
 }
 
-
-
-// export function userStories(user: User): Promise<{stories: Story[] | null, err: GraphError | null}> {
-//   if (user.stories === undefined) {
-//     return { stories: null, err: null};
-//   }
-  
-//   for (story of user.stories)
-// }
