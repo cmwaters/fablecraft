@@ -13,7 +13,7 @@ import { expect } from "chai"
 chai.use(chaiHttp);
 describe("Story", () => {
     let token = ""
-    beforeAll((done) => {
+    before((done) => {
         setupUserAndToken().then((value: string) => {
             if (value === "") {
                 console.log("empty token")
@@ -36,7 +36,10 @@ describe("Story", () => {
             .send(story)
             .end((err, res) => {
                 res.should.have.status(201);
+                res.body.should.have.property("message")
+                res.body.should.have.property("story")
                 res.body.message.should.equals("success. Test Story created.");
+                res.body.story.title.should.equals("Test Story")
                 chai
                     .request(app)
                     .get("/api/stories")
@@ -52,15 +55,9 @@ describe("Story", () => {
                 
             });
     });
+    console.log(storyId);
 
-    // TODO: Change title and description
-    // it("allows the user to change the name and description of a story", done => {
-    //     chai
-    //         .request(app)
-    //         .put("/api/story/" + storyId)
-    //         .query({token: token})
-    //         .send({})
-    // });
+    
 });
 
 async function setupUserAndToken(): Promise<string> {

@@ -4,9 +4,8 @@ import * as argon2 from "argon2";
 import { randomBytes } from "crypto";
 import { User, UserModel } from "../models/user";
 import { Story, StoryModel } from "../models/story";
-import { StoryGraph, GraphError } from "../services/graph";
+import { StoryCraft, GraphError } from "../services/graph";
 import { MessageI, MessageError, PermissionGroup } from "../messages/messages";
-import { use } from "chai";
 
 router.get("/me", (req: any, res) => {
 	res.json({
@@ -57,7 +56,7 @@ router.post("/story", async (req, res) => {
 	if (req.user === undefined) {
 		return res.status(200).send({ message: "error: user not found" });
 	}
-	StoryGraph.createStory(req.user as User, title, description).then((value: GraphError | Story) => {
+	StoryCraft.create(req.user as User, title, description).then((value: GraphError | Story) => {
 		if ((value as Story).title === undefined) {
 			return res.status(200).send({ message: value });
 		} else {
@@ -67,24 +66,13 @@ router.post("/story", async (req, res) => {
 	});
 });
 
-// should be able to edit title and description
-router.put("/story/:id", async (req, res) => {
-	const { title, description } = req.body;
-	if (title !== undefined) {
-		StoryGraph.editTitle(title)
-	}
-	if (description !== undefined) {
-		StoryGraph.editDescription(description)
-	}
-})
-
 router.delete("/story/:id", async (req, res) => {
 	const id = req.params.id;
 	if (req.user === undefined) {
 		return res.status(200).send({ message: "error: user not found" });
 	}
 	if (id !== undefined) {
-		let err = StoryGraph.deleteStory(req.user as User, id);
+		let err = StoryCraft.remove(req.user as User, id);
 	}
 	return res.status(500).send({ message: "no story id provided in params" });
 });
@@ -94,7 +82,7 @@ router.post("/story/:id", async (req, res) => {
 	if (req.user === undefined) {
 		return res.status(200).send({ message: "error: user not found" });
 	}
-	let err = await StoryGraph.editStory(req.user as User, req.params.id, msgs);
+	let err = await StoryCraft.edit(req.user as User, req.params.id, msgs);
 	if (err) {
 		return { message: "failed to process msgs because " + err };
 	}
@@ -107,7 +95,7 @@ router.get("/story/:id", async (req, res) => {
 	if (req.user === undefined) {
 		return res.status(200).send({ message: "error: user not found" });
 	}
-	let results = await StoryGraph.findStory(req.user as User, req.params.id);
+	let results = await StoryCraft.find(req.user as User, req.params.id);
 	if (results.err) {
 		return res.status(200).send({ message: results.err });
 	}

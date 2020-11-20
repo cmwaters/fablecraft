@@ -1,3 +1,4 @@
+import { PermissionGroup } from "messages/messages";
 import mongoose from "mongoose";
 import { Card, CardSchema } from "./card";
 import { User } from "./user";
@@ -10,6 +11,8 @@ export interface Story extends mongoose.Document {
 	authors?: User[];
 	editors?: User[];
 	viewers?: User[];
+
+	getPermission(user: User): PermissionGroup
 }
 
 const StorySchema = new mongoose.Schema({
@@ -46,5 +49,27 @@ const StorySchema = new mongoose.Schema({
 		},
 	],
 });
+
+StorySchema.methods.getPermission = function(user: User): PermissionGroup {
+	if (user._id === this.owner) {
+		return PermissionGroup.Owner
+	}
+	for (let author of this.authors) {
+		if (user._id === author) {
+			return PermissionGroup.Author
+		}
+	}
+	for (let editor of this.editors) {
+		if (user._id === editor) {
+			return PermissionGroup.Editor
+		}
+	}
+	for (let viewer of this.viewers) {
+		if (user._id === viewer) {
+			return PermissionGroup.Viewer
+		}
+	}
+	return PermissionGroup.None
+}
 
 export const StoryModel = mongoose.model<Story>("Story", StorySchema);

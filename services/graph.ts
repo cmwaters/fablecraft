@@ -8,7 +8,7 @@ export type GraphError = {
 };
 
 // perhaps this could just be tacked on to the user interface
-export namespace StoryGraph {
+export namespace StoryCraft {
 	// EXPORTED FUNCTIONS
 
 	export function serializeGraph(
@@ -17,7 +17,7 @@ export namespace StoryGraph {
 		return { cards: [], err: null };
 	}
 
-	export async function createStory(
+	export async function create(
 		user: User,
 		title: string,
 		description?: string
@@ -71,7 +71,7 @@ export namespace StoryGraph {
 		return story
 	}
 
-	export async function deleteStory(
+	export async function remove(
 		user: User,
 		storyId: string
 	): Promise<GraphError | null> {
@@ -100,7 +100,7 @@ export namespace StoryGraph {
 		return null;
 	}
 
-	export async function editStory(
+	export async function edit(
 		user: User,
 		storyId: string,
 		messages: MessageI[]
@@ -119,7 +119,7 @@ export namespace StoryGraph {
 			if (perm == PermissionGroup.None) {
 				return { reason: "error: user has no permissions for this story" };
 			}
-			let err = StoryGraph.processMessages({
+			let err = StoryCraft.processMessages({
 				userPerm: perm,
 				story: story,
 				messages: messages,
@@ -132,15 +132,7 @@ export namespace StoryGraph {
 		return null;
 	}
 
-	export async function editTitle(newTitle: string) {
-
-	}
-
-	export async function editDescription(newDescription: string) {
-
-	}
-
-	export async function findStory(
+	export async function find(
 		user: User,
 		storyId: string
 	): Promise<{ story: Story | null; err: GraphError | null }> {
