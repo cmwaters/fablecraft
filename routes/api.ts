@@ -57,8 +57,10 @@ router.post("/story", async (req, res) => {
 		return res.status(200).send({ message: "error: user not found" });
 	}
 	StoryCraft.create(req.user as User, title, description).then((value: GraphError | Story) => {
-		if ((value as Story).title === undefined) {
-			return res.status(200).send({ message: value });
+		if ((value as GraphError) !== null) {
+			console.log("here")
+			console.log(value as GraphError)
+			return res.status(200).send({ error: (value as GraphError).reason });
 		} else {
 			const story = value as Story;
 			return res.status(201).send({ message: "success. " + story.title + " created.", story: story});

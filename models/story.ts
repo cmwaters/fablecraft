@@ -1,4 +1,4 @@
-import { PermissionGroup } from "messages/messages";
+import { PermissionGroup } from "../messages/messages";
 import mongoose from "mongoose";
 import { Card, CardSchema } from "./card";
 import { User } from "./user";
