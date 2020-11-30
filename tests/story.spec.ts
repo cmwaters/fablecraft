@@ -10,7 +10,7 @@ import { setupUserAndToken, clearUsers, clearStoriesAndCards } from "./test_util
 
 chai.use(chaiHttp);
 // NOTE: all tests within the describe are dependent on one another 
-describe("Story", () => {
+describe.only("Story", () => {
     let token = ""
     before((done) => {
         clearUsers()
@@ -25,7 +25,8 @@ describe("Story", () => {
     
     it("can create stories", done => {
         let story = { 
-            title: "Test Story"
+            title: "Test Story",
+            description: "A story about tests"
         }
         chai
             .request(app)
@@ -37,7 +38,8 @@ describe("Story", () => {
                 res.body.should.have.property("message")
                 res.body.should.have.property("story")
                 res.body.message.should.equals("success. Test Story created.");
-                res.body.story.title.should.equals("Test Story")
+                res.body.story.title.should.equals(story.title)
+                res.body.story.description.should.equals(story.description)
                 storyId = res.body.story._id
                 chai
                     .request(app)
@@ -47,8 +49,7 @@ describe("Story", () => {
                         res.should.have.status(200)
                         res.body.should.have.property("stories")
                         res.body.stories.should.have.length(1)
-                        console.log(res.body.stories)
-                        expect(res.body.stories[0]._id).to.equal(storyId)
+                        res.body.stories[0].should.equals(storyId)
                         done();
                     });
                 
@@ -80,11 +81,18 @@ describe("Story", () => {
             });
     })
 
-    // it("can retrieve existing stories", done => {
-
-    // })
-    console.log(storyId);
-
+    it("can retrieve existing stories", done => {
+        chai
+            .request(app)
+            .get("/api/story/" + storyId)
+            .query({ token: token })
+            .end((err, res) => {
+                res.should.have.status(200);
+                res.body.should.have.property("story")
+                res.body.story.title.should.equals("Test Story");
+                done()
+            });
+    })
     
 });
 

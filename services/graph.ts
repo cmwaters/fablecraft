@@ -21,9 +21,10 @@ export namespace StoryCraft {
 		user: User,
 		title: string,
 		description?: string
-	): Promise<GraphError | Story> {
+	): Promise<Story> {
+		console.log(title)
 		if (title === undefined || title === "") {
-			return { reason: "empty title" };
+			return Promise.reject("empty title");
 		}
 
 		let story = new StoryModel({
@@ -32,7 +33,7 @@ export namespace StoryCraft {
 		});
 
 		let card = new CardModel({
-			text: "",
+			text: story._id,
 			story: story,
 			depth: 0,
 			index: 0,
@@ -43,45 +44,34 @@ export namespace StoryCraft {
 			story.description = description;
 		}
 
-		await story.save((err: any, story: Story) => {
-			if (err) {
-				return { reason: "unable to save story because: " + err };
-			}
+		await card.save().catch((err: any) => {
+			return Promise.reject("unable to save root card of story because: " + err);
 		});
 
-		await card.save((err: any, card: Card) => {
-			if (err) {
-				return { reason: "unable to save root card of story because: " + err };
-			}
-		});
+		await story.save().catch((err: any) => {
+			return Promise.reject("unable to save story because: " + err);
+		})		
 
 		// add story to user
-		let stories = user.stories
-		if (stories == undefined) {
-			stories = [story]
-		} else {
-			stories.push(story);
-		}
-		await UserModel.findByIdAndUpdate(user._id, {stories: stories}, (err: any, res: User|null) => {
-			if (err) {
-				return { reason: "unable to update user with new story because " + err }
-			}
+		const stories = user.stories.concat(story);
+		await UserModel.findByIdAndUpdate(user._id, {stories: stories}).catch((err: any) => {
+			return Promise.reject("unable to update user with new story because " + err)
 		})
 
-		return story
+		return Promise.resolve(story)
 	}
 
 	export async function remove(
 		user: User,
 		storyId: string
-	): Promise<GraphError | null> {
+	): Promise<boolean> {
 		await StoryModel.findById(storyId, (err, story: Story) => {
 			if (err) {
-				return { reason: "unable to find story because: " + err };
+				return Promise.reject({ reason: "unable to find story because: " + err });
 			} else if (story === null) {
-				return { reason: "story with id: " + storyId + " does not exist" };
+				return Promise.reject({ reason: "story with id: " + storyId + " does not exist" });
 			} else if (story.owner !== user._id) {
-				return { reason: "you don't have permissions to delete this story" };
+				return Promise.reject({ reason: "you don't have permissions to delete this story" });
 			} else {
 				StoryModel.deleteOne(story, (err) => {
 					if (err) {
@@ -93,11 +83,11 @@ export namespace StoryCraft {
 								err,
 						};
 					}
-					return null;
+					return true;
 				});
 			}
 		});
-		return null;
+		return false;
 	}
 
 	export async function edit(

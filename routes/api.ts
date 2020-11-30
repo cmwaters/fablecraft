@@ -7,6 +7,16 @@ import { Story, StoryModel } from "../models/story";
 import { StoryCraft, GraphError } from "../services/graph";
 import { MessageI, MessageError, PermissionGroup } from "../messages/messages";
 
+export type CreateStoryResponse = {
+	story: Story
+	error: string
+}
+
+export type DeleteStoryResponse = {
+	deleted: boolean
+	error: string
+}
+
 router.get("/me", (req: any, res) => {
 	res.json({
 		message: "user profile",
@@ -43,40 +53,53 @@ router.delete("/me", (req: any, res) => {
 	res.status(201).send({ message: "user deleted" });
 });
 
-// we should just abbreviate this call to showing only a few details of each story and a later call to load the actual story
+// TODO: at the moment this returns just story id's but it would be more helpful to return
+// the title. We may also want to add owner, author, editor, viewer concept to the user. 
 router.get("/stories", async (req, res) => {
 	if (req.user === undefined) {
-		return res.status(200).send({ message: "error: user not found" });
+		return res.status(200).send({ message: "failed", error: "user not found" });
 	}
 	return res.status(200).send({ message: "success", stories: (req.user as User).stories})
 });
 
-router.post("/story", async (req, res) => {
+router.post("/story", (req, res) => {
+	console.log(req.body)
 	const { title, description } = req.body;
 	if (req.user === undefined) {
-		return res.status(200).send({ message: "error: user not found" });
+		return res.status(200).send();
 	}
-	StoryCraft.create(req.user as User, title, description).then((value: GraphError | Story) => {
-		if ((value as GraphError) !== null) {
-			console.log("here")
-			console.log(value as GraphError)
-			return res.status(200).send({ error: (value as GraphError).reason });
-		} else {
-			const story = value as Story;
-			return res.status(201).send({ message: "success. " + story.title + " created.", story: story});
-		}
-	});
+	StoryCraft.create(req.user as User, title, description)
+		.then((story: Story) => {
+			console.log("1")
+			res.status(201).send({ story: story, error: ""});
+		}, (reason: any) => {
+			console.log("2")
+			res.status(200).send({ story: null, error: reason})
+		})
+		.catch((err) => {
+			console.log("3")
+			res.status(200).send({ story: null, error: err.message})
+		});
+	return;
 });
 
 router.delete("/story/:id", async (req, res) => {
 	const id = req.params.id;
 	if (req.user === undefined) {
-		return res.status(200).send({ message: "error: user not found" });
+		return res.status(200).send({ deleted: false, error: "User not found" });
 	}
-	if (id !== undefined) {
-		let err = StoryCraft.remove(req.user as User, id);
+	if (id === undefined) {
+		return res.status(500).send({ deleted: false, error: "no story id provided in params" });
 	}
-	return res.status(500).send({ message: "no story id provided in params" });
+	StoryCraft.remove(req.user as User, id)
+		.then((deleted: boolean) => {
+			if (deleted) {
+				res.status(200).send({ deleted: true, error: null})
+			}
+		}).catch((err: any) => {
+			res.status(200).send({ deleted: false, error: err.message})
+		});
+	
 });
 
 router.post("/story/:id", async (req, res) => {
@@ -95,11 +118,11 @@ router.post("/story/:id", async (req, res) => {
 
 router.get("/story/:id", async (req, res) => {
 	if (req.user === undefined) {
-		return res.status(200).send({ message: "error: user not found" });
+		return res.status(200).send({ error: "error: user not found" });
 	}
 	let results = await StoryCraft.find(req.user as User, req.params.id);
 	if (results.err) {
-		return res.status(200).send({ message: results.err });
+		return res.status(200).send({ error: results.err });
 	}
 	return res.status(200).send({ story: results.story });
 });

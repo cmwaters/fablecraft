@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv'
 import express from 'express';
 import mongoose from 'mongoose';
-import session from 'express-session';
+// import session from 'express-session';
 import * as bodyParser from 'body-parser';
 import "./models/user"
 import authRouter from './routes/auth';
@@ -16,7 +16,7 @@ dotenv.config({ path: `.env.${process.env.NODE_ENV}` })
 
 export const app = express();
 
-mongoose.connect(process.env.DATABASE_URL!, { useNewUrlParser: true, useUnifiedTopology: true});
+mongoose.connect(process.env.DATABASE_URL!, { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true, useFindAndModify:false});
 const db = mongoose.connection;
 db.on('error', (error) => console.error(error));
 db.once('open', () => {

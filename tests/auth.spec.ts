@@ -120,7 +120,6 @@ describe("Authentication", () => {
 
     describe("/POST login", () => {
       it("returns a token for correct requests", done => {
-
         chai
           .request(app)
           .post("/auth/login")
