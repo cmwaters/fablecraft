@@ -33,7 +33,6 @@ describe.only("Story", () => {
             .query({token: token})
             .send(story)
             .end((err, res) => {
-                console.log(res.body)
                 res.should.have.status(201);
                 res.body.should.have.property("title")
                 res.body.title.should.equals(story.title)
@@ -84,7 +83,6 @@ describe.only("Story", () => {
             .get("/api/story/" + storyId)
             .query({ token: token })
             .end((err, res) => {
-                console.log(res.body)
                 res.should.have.status(200);
                 res.body.should.have.property("title")
                 res.body.title.should.equals("Test Story");
@@ -112,13 +110,33 @@ describe.only("Story", () => {
                 .get("/api/story/" + storyId)
                 .query({token: secondToken})
                 .end((err, res) => {
-                    console.log(res.body)
                     res.should.have.status(200)
                     res.body.should.have.property("error")
                     res.body.error.should.equals(storyErrors.UserPermissionDenied)
                     done()
                 })
         })
+    })
+
+    it("can delete stories", done => {
+        chai
+            .request(app)
+            .delete("/api/story/" + storyId)
+            .query({token: token})
+            .end((err, res) => {
+                res.should.have.status(204)
+                res.body.should.be.empty
+                chai
+                    .request(app)
+                    .get("/api/story/" + storyId)
+                    .query({ token: token })
+                    .end((err, res) => {
+                        res.should.have.status(200);
+                        res.body.should.have.property("error")
+                        res.body.error.should.equals(storyErrors.StoryNotFound);
+                        done()
+                    });
+            })
     })
     
 });

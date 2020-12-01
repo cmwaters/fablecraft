@@ -20,8 +20,6 @@ export class Graph {
 			return Promise.reject(err.StoryNotFound)
 		}
 		const userPerm = story.getPermission(user)
-		console.log(user._id)
-		console.log(userPerm)
 		if (userPerm === PermissionGroup.None) {
 			return Promise.reject(err.UserPermissionDenied)
 		}
@@ -38,7 +36,6 @@ export class Graph {
 		title: string,
 		description?: string
 	): Promise<Story> {
-		console.log(title)
 		if (title === undefined || title === "") {
 			return Promise.reject("empty title");
 		}
@@ -78,13 +75,10 @@ export class Graph {
 	}
 
 	async remove(): Promise<boolean> {
-		await StoryModel.deleteOne(this.story, (err) => {
-			if (err) {
-				return Promise.reject(err)
-			}
-			return Promise.resolve(true);
-		});
-		return Promise.resolve(false)
+		await StoryModel.deleteOne(this.story).catch((err: any) => {
+			return Promise.reject(err)
+		})
+		return Promise.resolve(true);
 	}
 
 	// async edit(

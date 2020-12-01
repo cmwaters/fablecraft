@@ -31,7 +31,6 @@ router.put("/user", async (req: any, res) => {
 			user: req.user,
 		});
 	} catch (e) {
-		console.log(e);
 		res.json({
 			error: e,
 		});
@@ -69,28 +68,6 @@ router.post("/story", (req, res) => {
 	return;
 });
 
-router.delete("/story/:id", async (req, res) => {
-	const id = req.params.id;
-	if (req.user === undefined) {
-		return res.status(400).send(err.NoUserAuthenticated);
-	}
-	if (id === undefined) {
-		return res.status(400).send({ error: "no story id provided in params" });
-	}
-	Graph.loadFromUser(req.user as User, id)
-		.then((graph: Graph) => {
-			return graph.remove()
-		})
-		.then((deleted: boolean) => {
-			if (deleted) {
-				res.status(200).send({ deleted: true, error: null })
-			}
-		}).catch((err: any) => {
-			res.status(200).send({ deleted: false, error: err.message })
-		});
-
-});
-
 router.get("/story/:id", async (req, res) => {
 	if (!req.user) {
 		return res.status(200).send(err.NoUserAuthenticated);
@@ -105,6 +82,28 @@ router.get("/story/:id", async (req, res) => {
 		.catch((err) => {
 			return res.status(200).send({ error: err })
 		})
+});
+
+router.delete("/story/:id", async (req, res) => {
+	const id = req.params.id;
+	if (req.user === undefined) {
+		return res.status(400).send(err.NoUserAuthenticated);
+	}
+	if (id === undefined) {
+		return res.status(400).send(err.NoStoryID);
+	}
+	Graph.loadFromUser(req.user as User, id)
+		.then((graph: Graph) => {
+			return graph.remove()
+		})
+		.then((deleted: boolean) => {
+			if (deleted) {
+				return res.status(204).send()
+			}
+		}).catch((err: any) => {
+			res.status(200).send({ error: err.message })
+		});
+
 });
 
 router.put("/story/:id/title", async (req, res) => {
