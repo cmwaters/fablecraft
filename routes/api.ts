@@ -107,17 +107,20 @@ router.delete("/story/:id", async (req, res) => {
 });
 
 router.put("/story/:id/title", async (req, res) => {
-	let msgs: MessageI[] = req.body;
+	const { title } = req.body;
 	if (req.user === undefined) {
 		return res.status(200).send(err.NoUserAuthenticated);
 	}
 	if (!req.params.id) {
 		return res.status(400).send(err.NoStoryID)
 	}
-	Graph.loadFromUser(req.user as User, req.params.id);
-	return res
-		.status(200)
-		.send({ message: "successfully processed msgs", messages: msgs });
+	(await Graph.loadFromUser(req.user as User, req.params.id))
+		.changeTitle(title).then(() => {
+			return res.status(204).send()
+		})
+		.catch(err => {
+			return res.status(200).send({ error: err })
+		})
 });
 
 router.put("/story/:id/description", async (req, res) => {

@@ -81,6 +81,14 @@ export class Graph {
 		return Promise.resolve(true);
 	}
 
+	async changeTitle(newTitle: string): Promise<any> {
+		this.story.title = newTitle
+		await this.story.save().catch((err: any) => {
+			return Promise.reject(err)
+		})
+		return Promise.resolve()
+	}
+
 	// async edit(
 	// 	user: User,
 	// 	storyId: string,

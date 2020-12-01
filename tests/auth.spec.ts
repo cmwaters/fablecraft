@@ -131,7 +131,7 @@ describe("Authentication", () => {
             // check that the user is logged in
             chai
               .request(app)
-              .get("/api/me")
+              .get("/api/user")
               .query({token: res.body.token})
               .end((err, res) => {
                 res.should.have.status(200)

@@ -10,7 +10,7 @@ import { storyErrors } from "../routes/errors";
 
 chai.use(chaiHttp);
 // NOTE: all tests within the describe are dependent on one another 
-describe.only("Story", () => {
+describe("Story", () => {
     let token = ""
     before((done) => {
         clearUsers()
