@@ -195,7 +195,7 @@ describe("Authentication", () => {
       it("should not show a profile", (done) => {
         chai
             .request(app)
-            .get("/api/me")
+            .get("/api/user")
             .query({token: invalidToken})
             .end((err, res) => {
                 if (err) {

@@ -51,21 +51,21 @@ const StorySchema = new mongoose.Schema({
 });
 
 StorySchema.methods.getPermission = function(user: User): PermissionGroup {
-	if (user._id === this.owner) {
+	if (user.id == this.owner) {
 		return PermissionGroup.Owner
 	}
 	for (let author of this.authors) {
-		if (user._id === author) {
+		if (user.id == author) {
 			return PermissionGroup.Author
 		}
 	}
 	for (let editor of this.editors) {
-		if (user._id === editor) {
+		if (user.id == editor) {
 			return PermissionGroup.Editor
 		}
 	}
 	for (let viewer of this.viewers) {
-		if (user._id === viewer) {
+		if (user.id == viewer) {
 			return PermissionGroup.Viewer
 		}
 	}

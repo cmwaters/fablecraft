@@ -3,29 +3,21 @@ const router = express.Router();
 import * as argon2 from "argon2";
 import { randomBytes } from "crypto";
 import { User, UserModel } from "../models/user";
-import { Story, StoryModel } from "../models/story";
-import { StoryCraft, GraphError } from "../services/graph";
-import { MessageI, MessageError, PermissionGroup } from "../messages/messages";
+import { Story } from "../models/story";
+import { Graph } from "../services/graph";
+import { MessageI } from "../messages/messages";
+import { routerErrors } from "./errors";
 
-export type CreateStoryResponse = {
-	story: Story
-	error: string
-}
+const err = routerErrors
 
-export type DeleteStoryResponse = {
-	deleted: boolean
-	error: string
-}
-
-router.get("/me", (req: any, res) => {
+router.get("/user", (req: any, res) => {
 	res.json({
-		message: "user profile",
 		user: req.user,
 		token: req.query.token,
 	});
 });
 
-router.put("/me", async (req: any, res) => {
+router.put("/user", async (req: any, res) => {
 	const { email, password, name } = req.body;
 	try {
 		const salt = randomBytes(32);
@@ -36,49 +28,43 @@ router.put("/me", async (req: any, res) => {
 			name: name,
 		});
 		res.json({
-			message: "successfully updated account",
 			user: req.user,
 		});
 	} catch (e) {
 		console.log(e);
 		res.json({
-			message: "error changing account details",
 			error: e,
 		});
 	}
 });
 
-router.delete("/me", (req: any, res) => {
+router.delete("/user", (req: any, res) => {
 	UserModel.findByIdAndDelete(req.user._id);
-	res.status(201).send({ message: "user deleted" });
+	res.status(204).send();
 });
 
 // TODO: at the moment this returns just story id's but it would be more helpful to return
 // the title. We may also want to add owner, author, editor, viewer concept to the user. 
-router.get("/stories", async (req, res) => {
+router.get("/story", async (req, res) => {
 	if (req.user === undefined) {
-		return res.status(200).send({ message: "failed", error: "user not found" });
+		return res.status(200).send(err.NoUserAuthenticated);
 	}
-	return res.status(200).send({ message: "success", stories: (req.user as User).stories})
+	return res.status(200).send((req.user as User).stories)
 });
 
 router.post("/story", (req, res) => {
-	console.log(req.body)
 	const { title, description } = req.body;
 	if (req.user === undefined) {
-		return res.status(200).send();
+		return res.status(200).send(err.NoUserAuthenticated);
 	}
-	StoryCraft.create(req.user as User, title, description)
+	Graph.create(req.user as User, title, description)
 		.then((story: Story) => {
-			console.log("1")
-			res.status(201).send({ story: story, error: ""});
+			res.status(201).send(story);
 		}, (reason: any) => {
-			console.log("2")
-			res.status(200).send({ story: null, error: reason})
+			res.status(400).send({ error: reason })
 		})
-		.catch((err) => {
-			console.log("3")
-			res.status(200).send({ story: null, error: err.message})
+		.catch((err: any) => {
+			res.status(500).send({ error: err.message })
 		});
 	return;
 });
@@ -86,45 +72,69 @@ router.post("/story", (req, res) => {
 router.delete("/story/:id", async (req, res) => {
 	const id = req.params.id;
 	if (req.user === undefined) {
-		return res.status(200).send({ deleted: false, error: "User not found" });
+		return res.status(400).send(err.NoUserAuthenticated);
 	}
 	if (id === undefined) {
-		return res.status(500).send({ deleted: false, error: "no story id provided in params" });
+		return res.status(400).send({ error: "no story id provided in params" });
 	}
-	StoryCraft.remove(req.user as User, id)
+	Graph.loadFromUser(req.user as User, id)
+		.then((graph: Graph) => {
+			return graph.remove()
+		})
 		.then((deleted: boolean) => {
 			if (deleted) {
-				res.status(200).send({ deleted: true, error: null})
+				res.status(200).send({ deleted: true, error: null })
 			}
 		}).catch((err: any) => {
-			res.status(200).send({ deleted: false, error: err.message})
+			res.status(200).send({ deleted: false, error: err.message })
 		});
-	
+
 });
 
-router.post("/story/:id", async (req, res) => {
+router.get("/story/:id", async (req, res) => {
+	if (!req.user) {
+		return res.status(200).send(err.NoUserAuthenticated);
+	}
+	if (!req.params.id) {
+		return res.status(400).send(err.NoStoryID)
+	}
+	Graph.loadFromUser(req.user as User, req.params.id).
+		then((graph) => {
+			return res.status(200).send(graph.story)
+		})
+		.catch((err) => {
+			return res.status(200).send({ error: err })
+		})
+});
+
+router.put("/story/:id/title", async (req, res) => {
 	let msgs: MessageI[] = req.body;
 	if (req.user === undefined) {
-		return res.status(200).send({ message: "error: user not found" });
+		return res.status(200).send(err.NoUserAuthenticated);
 	}
-	let err = await StoryCraft.edit(req.user as User, req.params.id, msgs);
-	if (err) {
-		return { message: "failed to process msgs because " + err };
+	if (!req.params.id) {
+		return res.status(400).send(err.NoStoryID)
 	}
+	Graph.loadFromUser(req.user as User, req.params.id);
 	return res
 		.status(200)
 		.send({ message: "successfully processed msgs", messages: msgs });
 });
 
-router.get("/story/:id", async (req, res) => {
+router.put("/story/:id/description", async (req, res) => {
+	let msgs: MessageI[] = req.body;
 	if (req.user === undefined) {
-		return res.status(200).send({ error: "error: user not found" });
+		return res.status(200).send(err.NoUserAuthenticated);
 	}
-	let results = await StoryCraft.find(req.user as User, req.params.id);
-	if (results.err) {
-		return res.status(200).send({ error: results.err });
+	if (!req.params.id) {
+		return res.status(400).send(err.NoStoryID)
 	}
-	return res.status(200).send({ story: results.story });
+	Graph.loadFromUser(req.user as User, req.params.id);
+	return res
+		.status(200)
+		.send({ message: "successfully processed msgs", messages: msgs });
 });
+
+
 
 export default router;
