@@ -82,6 +82,9 @@ export class Graph {
 	}
 
 	async changeTitle(newTitle: string): Promise<any> {
+		if (newTitle === undefined || newTitle === "") {
+			return Promise.reject("invalid title")
+		}
 		this.story.title = newTitle
 		await this.story.save().catch((err: any) => {
 			return Promise.reject(err)

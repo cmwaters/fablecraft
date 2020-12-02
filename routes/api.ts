@@ -45,17 +45,11 @@ router.delete("/user", (req: any, res) => {
 // TODO: at the moment this returns just story id's but it would be more helpful to return
 // the title. We may also want to add owner, author, editor, viewer concept to the user. 
 router.get("/story", async (req, res) => {
-	if (req.user === undefined) {
-		return res.status(200).send(err.NoUserAuthenticated);
-	}
 	return res.status(200).send((req.user as User).stories)
 });
 
 router.post("/story", (req, res) => {
 	const { title, description } = req.body;
-	if (req.user === undefined) {
-		return res.status(200).send(err.NoUserAuthenticated);
-	}
 	Graph.create(req.user as User, title, description)
 		.then((story: Story) => {
 			res.status(201).send(story);
@@ -69,12 +63,6 @@ router.post("/story", (req, res) => {
 });
 
 router.get("/story/:id", async (req, res) => {
-	if (!req.user) {
-		return res.status(200).send(err.NoUserAuthenticated);
-	}
-	if (!req.params.id) {
-		return res.status(400).send(err.NoStoryID)
-	}
 	Graph.loadFromUser(req.user as User, req.params.id).
 		then((graph) => {
 			return res.status(200).send(graph.story)
@@ -85,38 +73,40 @@ router.get("/story/:id", async (req, res) => {
 });
 
 router.delete("/story/:id", async (req, res) => {
-	const id = req.params.id;
-	if (req.user === undefined) {
-		return res.status(400).send(err.NoUserAuthenticated);
-	}
-	if (id === undefined) {
-		return res.status(400).send(err.NoStoryID);
-	}
-	Graph.loadFromUser(req.user as User, id)
+	Graph.loadFromUser(req.user as User, req.params.id)
 		.then((graph: Graph) => {
-			return graph.remove()
+			graph.remove().then((deleted: boolean) => {
+				if (deleted) {
+					// successful
+					return res.status(204).send()
+				}
+			}, (error: any) => {
+				// error with deleting the story
+				return res.status(200).send({error: error})
+			})
+		}, (error: any) => {
+			// error with retrieving the story (most likely user perms)
+			return res.status(200).send({error: error})
 		})
-		.then((deleted: boolean) => {
-			if (deleted) {
-				return res.status(204).send()
-			}
-		}).catch((err: any) => {
-			res.status(200).send({ error: err.message })
+		.catch((err: any) => {
+			// server error
+			res.status(500).send({ error: err.message })
 		});
 
 });
 
 router.put("/story/:id/title", async (req, res) => {
-	const { title } = req.body;
-	if (req.user === undefined) {
-		return res.status(200).send(err.NoUserAuthenticated);
-	}
-	if (!req.params.id) {
-		return res.status(400).send(err.NoStoryID)
-	}
-	(await Graph.loadFromUser(req.user as User, req.params.id))
-		.changeTitle(title).then(() => {
-			return res.status(204).send()
+	Graph.loadFromUser(req.user as User, req.params.id)
+		.then((graph: Graph) => {
+			graph.changeTitle(req.body.title).then(() => { 
+				return res.status(204).send()
+			}, (err: any) => {
+				// error with changing the title (most likely an invalid title)
+				return res.status(200).send({ error: err})
+			})
+		}, (err: any) => {
+			// error with retrieving the story (most likely user perms)
+			return res.status(200).send({ error: err })
 		})
 		.catch(err => {
 			return res.status(200).send({ error: err })
@@ -125,17 +115,19 @@ router.put("/story/:id/title", async (req, res) => {
 
 router.put("/story/:id/description", async (req, res) => {
 	let msgs: MessageI[] = req.body;
-	if (req.user === undefined) {
-		return res.status(200).send(err.NoUserAuthenticated);
-	}
-	if (!req.params.id) {
-		return res.status(400).send(err.NoStoryID)
-	}
 	Graph.loadFromUser(req.user as User, req.params.id);
 	return res
 		.status(200)
 		.send({ message: "successfully processed msgs", messages: msgs });
 });
+
+router.post("/story/:id/permissions", async (req, res) => {
+	const { user, permission } = req.body;
+})
+
+router.delete("/story/:id/permissions", async (req, res) => {
+	
+})
 
 
 

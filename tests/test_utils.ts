@@ -26,6 +26,23 @@ export async function setupUserAndToken(name: string): Promise<string> {
   })
 }
 
+export function createStory(name: string, token: string): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
+        chai
+            .request(app)
+            .post("/api/story")
+            .query({ token: token })
+            .send({ title: name })
+            .end((err, res) => {
+                if (err) {
+                    reject(err)
+                }
+                resolve(res.body._id)
+            });
+    })
+    
+}
+
 export async function clearUsers() {
   await UserModel.deleteMany({}, (err) => {
       if (err) {
