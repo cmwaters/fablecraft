@@ -22,10 +22,10 @@ export type MessageI = {
 }
 
 export enum PermissionGroup {
-  Owner = 1,
-  Author,
-  Editor,
+  None = 0,
   Viewer,
-  None
+  Editor,
+  Author,
+  Owner,
 }
 

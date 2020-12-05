@@ -84,13 +84,10 @@ router.delete("/story/:id", async (req, res) => {
 				// error with deleting the story
 				return res.status(200).send({error: error})
 			})
-		}, (error: any) => {
-			// error with retrieving the story (most likely user perms)
-			return res.status(200).send({error: error})
 		})
 		.catch((err: any) => {
-			// server error
-			res.status(500).send({ error: err.message })
+			// error with retrieving the story (most likely user perms)
+			res.status(200).send({ error: err })
 		});
 
 });
@@ -104,11 +101,9 @@ router.put("/story/:id/title", async (req, res) => {
 				// error with changing the title (most likely an invalid title)
 				return res.status(200).send({ error: err})
 			})
-		}, (err: any) => {
-			// error with retrieving the story (most likely user perms)
-			return res.status(200).send({ error: err })
 		})
 		.catch(err => {
+			// error with retrieving the story (most likely user perms)
 			return res.status(200).send({ error: err })
 		})
 });
@@ -122,7 +117,20 @@ router.put("/story/:id/description", async (req, res) => {
 });
 
 router.post("/story/:id/permissions", async (req, res) => {
-	const { user, permission } = req.body;
+	const { user, permission } = req.body; // used is the id
+	Graph.loadFromUser(req.user as User, req.params.id)
+		.then((graph: Graph) => {
+			graph.addPermission(user, permission).then((err: Error | null) => {
+				if (err) {
+					return res.status(200).send({ error: err })
+				} else {
+					return res.status(204).send()
+				}
+			})
+		})
+		.catch((err: string) => {
+			return res.status(200).send({error: err})
+		})
 })
 
 router.delete("/story/:id/permissions", async (req, res) => {

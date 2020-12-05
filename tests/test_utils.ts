@@ -1,4 +1,4 @@
-import { UserModel } from "../models/user"
+import { UserModel, User } from "../models/user"
 import { StoryModel } from "../models/story"
 import { CardModel } from "../models/card"
 import { app } from "../index";
@@ -8,21 +8,27 @@ import chaiHttp from "chai-http";
 
 // XXX: Perhaps it's better to use something else than the test framework for creating users and tokens
 chai.use(chaiHttp)
-export async function setupUserAndToken(name: string): Promise<string> {
+export async function setupUsersAndTokens(names: string[]): Promise<any[]> {
   return new Promise( (resolve, reject) => {
-      chai
-          .request(app)
-          .post("/auth/signup")
-          .send({
-              email: name + "@example.com",
-              password: name
-          })
-          .end((err, res) => {
-              if (err) {
-                  reject(err)
-              }
-              resolve(res.body.token)
-          })
+        let resp: any[] = []
+        for (let i = names.length - 1; i >= 0; i--) {
+            chai
+                .request(app)
+                .post("/auth/signup")
+                .send({
+                    email: names[i] + "@example.com",
+                    password: names[i]
+                })
+                .end((err, res) => {
+                    if (err) {
+                        reject(err)
+                    }
+                    resp.push({ token: res.body.token, id: res.body.user._id})
+                    if (i === names.length - 1) {
+                        resolve(resp)
+                    }
+                })
+        }
   })
 }
 

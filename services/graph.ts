@@ -92,97 +92,66 @@ export class Graph {
 		return Promise.resolve()
 	}
 
-	// async edit(
-	// 	user: User,
-	// 	storyId: string,
-	// 	messages: MessageI[]
-	// ): Promise<GraphError | null> {
-	// 	await StoryModel.findById(storyId, (dbErr: any, story: Story) => {
-	// 		if (dbErr) {
-	// 			return {
-	// 				reason:
-	// 					"error: story of id " +
-	// 					storyId +
-	// 					" can not be found, err: " +
-	// 					dbErr,
-	// 			};
-	// 		}
-	// 		let perm = getPermission("viewer", user, story);
-	// 		if (perm == PermissionGroup.None) {
-	// 			return { reason: "error: user has no permissions for this story" };
-	// 		}
-	// 		let err = StoryCraft.processMessages({
-	// 			userPerm: perm,
-	// 			story: story,
-	// 			messages: messages,
-	// 		});
-	// 		if (err) {
-	// 			return err;
-	// 		}
-	// 		return null;
-	// 	});
-	// 	return null;
-	// }
+	async addPermission(userID: string, permission: PermissionGroup): Promise<Error | null> {
+		let user = await UserModel.findById(userID, (err: any) => {
+			return new Error(err)
+		})
+		if (!user) { // check the user exists
+			return new Error("user not found")
+		}
+		switch (permission) {
+			case PermissionGroup.None:
+				return new Error("cannot assign none permission. Must remove user from permission list instead.")
+			case PermissionGroup.Viewer:
+				if (this.permission != PermissionGroup.Author && this.permission != PermissionGroup.Owner) {
+					return new Error(storyErrors.UserPermissionDenied)
+				}
+				if (this.story.viewers) {
+					this.story.viewers.push(user)
+				} else {
+					this.story.viewers = [user]
+				}
+				break;
+			case PermissionGroup.Editor:
+				if (this.permission != PermissionGroup.Author && this.permission != PermissionGroup.Owner) {
+					return new Error(storyErrors.UserPermissionDenied)
+				}
+				if (this.story.editors) {
+					this.story.editors.push(user)
+				} else {
+					this.story.editors = [user]
+				}
+				break;
+			case PermissionGroup.Author:
+				if (this.permission != PermissionGroup.Owner) {
+					return new Error(storyErrors.UserPermissionDenied)
+				}
+				if (this.story.authors) {
+					this.story.authors.push(user)
+				} else {
+					this.story.authors = [user]
+				}
+				break;
+			case PermissionGroup.Owner: // changing of ownershiip
+				if (this.permission != PermissionGroup.Owner) {
+					return new Error(storyErrors.UserPermissionDenied)
+				}
+				this.story.owner = user
+				break;
+		}
 
-	// async find(
-	// 	user: User,
-	// 	storyId: string
-	// ): Promise<{ story: Story | null; err: GraphError | null }> {
-	// 	await StoryModel.findById(storyId, (err: any, story: Story) => {
-	// 		if (err) {
-	// 			return {
-	// 				story: null,
-	// 				err: { reason: "failed to find story because: " + err },
-	// 			};
-	// 		}
-	// 		if (story === null) {
-	// 			return { story: null, err: { reason: "story does not exist" } };
-	// 		}
-	// 		if (getPermission("viewer", user, story) == PermissionGroup.None) {
-	// 			return { story: null, err: { reason: "story does not exist" } };
-	// 		}
-	// 		return { story: story, err: null };
-	// 	});
-	// 	return { story: null, err: { reason: "why are we here" } };
-	// }
+		this.story.save().catch((err: any) => {
+			return new Error(err)
+		})
 
-	// processMessages(msgs: MessageSet): GraphError | null {
-	// 	if (msgs === undefined || msgs.messages.length === 0) {
-	// 		return { reason: "empty message set" };
-	// 	}
+		return null
+	}
 
-	// 	// first check that the user has permission to complete all the operations provided
-	// 	for (let index = 0; index < msgs.messages.length; index++) {
-	// 		let msg = msgs.messages[index];
-	// 		if (!msg.hasPermission(msgs.userPerm)) {
-	// 			return {
-	// 				reason:
-	// 					"user does not have permission for " +
-	// 					msg.constructor.name +
-	// 					" at pos " +
-	// 					index,
-	// 			};
-	// 		}
-	// 	}
+	async removePermission(userID: string, permission: PermissionGroup): Promise<Error | null> {
 
-	// 	// now run these updates to story
-	// 	for (let index = 0; index < msgs.messages.length; index++) {
-	// 		let msg = msgs.messages[index];
-	// 		let err = msg.update(msgs.story);
-	// 		if (err) {
-	// 			return {
-	// 				reason:
-	// 					"unable to execute all messages. Failed at " +
-	// 					msg.constructor.name +
-	// 					" at pos " +
-	// 					index +
-	// 					" because: " +
-	// 					err,
-	// 			};
-	// 		}
-	// 	}
+	
 
-	// 	return null;
-	// }
+		return null
+	}
 }
 
