@@ -122,14 +122,14 @@ router.post("/story/:id/permissions", async (req, res) => {
 		.then((graph: Graph) => {
 			graph.addPermission(user, permission).then((err: Error | null) => {
 				if (err) {
-					return res.status(200).send({ error: err })
+					return res.status(200).send({ error: err.message })
 				} else {
 					return res.status(204).send()
 				}
 			})
 		})
 		.catch((err: string) => {
-			return res.status(200).send({error: err})
+			return res.status(200).send({error: err })
 		})
 })
 

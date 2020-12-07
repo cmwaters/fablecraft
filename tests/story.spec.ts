@@ -171,7 +171,6 @@ describe("Story", () => {
                 .delete("/api/story/" + test_env.storyId)
                 .query({ token: test_env.users[1].token })
                 .end((err, res) => {
-                    console.log(res.body)
                     res.should.have.status(200)
                     res.body.should.have.property("error")
                     res.body.error.should.equals(storyErrors.UserPermissionDenied)
@@ -233,8 +232,9 @@ describe("Story", () => {
     describe.only("/POST story permission", () => {
         let test_env: any
         beforeEach(done => {
-            // we set up four users
-            setupUsersAndTokens(["1", "2", "3", "4", "5"])
+            // we set up three users, one is the owner, the next has the permission we are testing, and the
+            // last is the permission we are adjusting / adding
+            setupUsersAndTokens(["1", "2", "3"])
                 .then((res: any[]) => {
                     createStory("Test Story", res[0].token) // 1 is always owner
                         .then((id) => {
@@ -254,26 +254,67 @@ describe("Story", () => {
             {
                 name: "owner can give all permissions to users",
                 querier: 0,
+                prep: async (permissionLevel: number, test_env: any): Promise<void> => {},
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(204)
                     await StoryModel.findById(test_env.storyId, (err, story) => {
                         if (err) {
                             console.error(err)
                         }
-                        console.log(story)
                         switch (permissionLevel) {
                             case 1: 
-                                story!.viewers!.should.contain(test_env.users[1].id)
+                                story!.viewers!.should.contain(test_env.users[2].id)
                                 break;
                             case 2:
                                 story!.editors!.should.contain(test_env.users[2].id)
                                 break;
                             case 3:
-                                story!.authors!.should.contain(test_env.users[3].id)
+                                story!.authors!.should.contain(test_env.users[2].id)
                                 break;
                             case 4:
-                                let id: string = story!.owner.id.toString()
-                                id.should.equal(test_env.users[4].id)
+                                story!.owner._id.toString().should.equal(test_env.users[2].id)
+                                break;
+                        }
+                    })
+                }
+            }, 
+            {
+                name: "author can give viewer and editor permissions to users",
+                querier: 1,
+                prep: async (permissionLevel: number, test_env:any ): Promise<void> => {
+                    // make user 1 an author
+                    await StoryModel.findByIdAndUpdate(test_env.storyId, { authors: [test_env.users[1].id]}, (err, result) => { 
+                        if (err) { console.error(err); }
+                    }); 
+                    return
+                },
+                assertions: async (res: any, permissionLevel: number, test_env: any) => {
+                    await StoryModel.findById(test_env.storyId, (err, story) => {
+                        if (err) {
+                            console.error(err)
+                        }
+                        story!.authors!.should.contain(test_env.users[1].id)
+
+                        switch (permissionLevel) {
+                            case 1: 
+                                res.should.have.status(204)
+                                story!.viewers!.should.contain(test_env.users[2].id)
+                                break;
+                            case 2:
+                                res.should.have.status(204)
+                                story!.editors!.should.contain(test_env.users[2].id)
+                                break;
+                            case 3:
+                                res.should.have.status(200)
+                                res.body.should.have.property('error')
+                                res.body.error.should.equals(storyErrors.UserPermissionDenied)
+                                story!.authors!.should.not.contain(test_env.users[2].id)
+                                break;
+                            case 4:
+                                res.should.have.status(200)
+                                res.body.should.have.property('error')
+                                res.body.error.should.equals(storyErrors.UserPermissionDenied)
+                                story!.owner._id.toString().should.not.equal(test_env.users[2].id)
                                 break;
                         }
                     })
@@ -283,18 +324,24 @@ describe("Story", () => {
 
         testCases.forEach(test => {
             for (let permissionLevel = 1; permissionLevel < 5; permissionLevel++) {
+                
                 it(test.name + ' - ' + permissionLevel, done => {
-                    chai
+                    test.prep(permissionLevel, test_env).then(() => {
+                        chai
                         .request(app)
                         .post("/api/story/" + test_env.storyId + "/permissions")
-                        .query({ token: test_env.users[test.querier].token })
-                        .send({ user: test_env.users[permissionLevel].id, permission: permissionLevel })
+                        .query({ token: test_env.users[test.querier].token }) 
+                        // we always use the second / last user to modify permission
+                        .send({ user: test_env.users[2].id, permission: permissionLevel })
                         .end((err, res) => {
                             if (err) {
                                 console.error(err)
                             }
                             test.assertions(res, permissionLevel, test_env).then(() => { done() })
                         });
+                    })
+                    .catch((err) => console.error(err))
+                    
                 })
             }
         })
