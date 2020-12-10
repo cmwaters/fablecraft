@@ -4,7 +4,7 @@ import chaiHttp from "chai-http";
 import * as dotenv from 'dotenv'
 dotenv.config({ path: `config/.env.${process.env.NODE_ENV}` })
 import { app } from "../index";
-import { setupUsersAndTokens, clearUsers, clearStoriesAndCards, createStory } from "./test_utils"
+import { setupUsersAndTokens, clearUsers, clearStoriesAndCards, createStory, checkUserIsNotPartOfStory } from "./test_utils"
 import { storyErrors } from "../routes/errors";
 import { StoryModel } from "../models/story";
 
@@ -229,7 +229,7 @@ describe("Story", () => {
         })
     })
 
-    describe.only("/POST story permission", () => {
+    describe("/POST story permission", () => {
         let test_env: any
         beforeEach(done => {
             // we set up three users, one is the owner, the next has the permission we are testing, and the
@@ -602,17 +602,17 @@ describe("Story", () => {
                 it(test.name + ' - ' + permissionLevel, done => {
                     test.prep(permissionLevel, test_env).then(() => {
                         chai
-                        .request(app)
-                        .post("/api/story/" + test_env.storyId + "/permissions")
-                        .query({ token: test_env.users[test.querier].token }) 
-                        // we always use the second / last user to modify permission
-                        .send({ user: test_env.users[2].id, permission: permissionLevel })
-                        .end((err, res) => {
-                            if (err) {
-                                console.error(err)
-                            }
-                            test.assertions(res, permissionLevel, test_env).then(() => { done() })
-                        });
+                            .request(app)
+                            .post("/api/story/" + test_env.storyId + "/permissions")
+                            .query({ token: test_env.users[test.querier].token }) 
+                            // we always use the second / last user to modify permission
+                            .send({ user: test_env.users[2].id, permission: permissionLevel })
+                            .end((err, res) => {
+                                if (err) {
+                                    console.error(err)
+                                }
+                                test.assertions(res, permissionLevel, test_env).then(() => { done() })
+                            });
                     })
                     .catch((err) => console.error(err))
                     
@@ -621,7 +621,52 @@ describe("Story", () => {
         })
 
     });
-    
+
+    describe.only("/DELETE story permission", () => {
+        let test_env: any
+        beforeEach(done => {
+            // we set up three users, one is the owner, the next has the permission we are testing, and the
+            // last is the permission we are adjusting / adding
+            setupUsersAndTokens(["1", "2", "3"])
+                .then((res: any[]) => {
+                    createStory("Test Story", res[0].token) // 1 is always owner
+                        .then((id) => {
+                            test_env = {
+                                users: res,
+                                storyId: id
+                            }
+                            done()
+                        })
+                })
+                .catch((err) => {
+                    console.log(err)
+                });
+        })
+        
+        it("should allow users to remove themselves from a story - viewer", done => {
+            StoryModel.findByIdAndUpdate(test_env.storyId, { viewers: [test_env.users[1].id] }, (err, result) => {
+                if (err) { console.error(err); }
+            }).then(() => { 
+                chai
+                    .request(app)
+                    .delete("/api/story/" + test_env.storyId + "/permissions")
+                    .query({ token: test_env.users[1].token })
+                    .send({ user: test_env.users[1].id })
+                    .end((err, res) => {
+                        if (err) {
+                            console.error(err)
+                        }
+                        res.should.have.status(204)
+                        checkUserIsNotPartOfStory(test_env.users[1].id, test_env.storyId)
+                            .then((deleted: boolean) => {
+                                deleted.should.be.true
+                                done()
+                            });
+                    });
+            });
+        });
+
+    });
     
 });
 

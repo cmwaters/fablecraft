@@ -134,9 +134,20 @@ router.post("/story/:id/permissions", async (req, res) => {
 })
 
 router.delete("/story/:id/permissions", async (req, res) => {
-	
+	const { user } = req.body; // should be a user id
+	Graph.loadFromUser(req.user as User, req.params.id)
+		.then((graph: Graph) => {
+			graph.removePermission(user, req.user as User).then((err: Error | null) => {
+				if (err) {
+					return res.status(200).send({ error: err.message })
+				} else {
+					return res.status(204).send()
+				}
+			})
+		})
+		.catch((err: string) => {
+			return res.status(200).send({ error: err })
+		})
 })
-
-
 
 export default router;

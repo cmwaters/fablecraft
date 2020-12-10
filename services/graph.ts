@@ -194,9 +194,46 @@ export class Graph {
 		return
 	}
 
-	async removePermission(userID: string, permission: PermissionGroup): Promise<Error | null> {
+	async removePermission(userID: string, requestingUser: User): Promise<Error | null> {
+		let user = await UserModel.findById(userID, (err: any) => {
+			return new Error(err)
+		})
+		if (!user) { // check the user exists
+			return new Error("user not found")
+		}
+		let current_permission = this.story.getPermission(user)
+		if (current_permission === PermissionGroup.Owner) {
+			console.log("1")
+			// no one can delete the permission of the owner. Not even the owner themselves. In order to
+			// remove ownership the owner must nominate a user to be owner.
+			return new Error(storyErrors.UserPermissionDenied)
+		}
+		// you should always be able to remove yourself
+		if (requestingUser.id == userID) {
+			console.log("2")
+			this.removeUserFromPermissionGroup(user, current_permission)
+			this.story.save().catch((err: any) => {
+				return new Error(err)
+			})
+			return null
+		}
 
-	
+		// only the owner can remove authors
+		if (current_permission === PermissionGroup.Author && this.permission != PermissionGroup.Owner) {
+			console.log("3")
+			return new Error(storyErrors.UserPermissionDenied)
+		}
+		// viewers and editors can't remove anyone
+		if (this.permission === PermissionGroup.Editor || this.permission === PermissionGroup.Viewer) {
+			console.log("4")
+			return new Error(storyErrors.UserPermissionDenied)
+		}
+
+		console.log("5")
+		this.removeUserFromPermissionGroup(user, current_permission)
+		this.story.save().catch((err: any) => {
+			return new Error(err)
+		})
 
 		return null
 	}

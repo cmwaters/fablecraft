@@ -1,10 +1,11 @@
 import { UserModel, User } from "../models/user"
-import { StoryModel } from "../models/story"
+import { Story, StoryModel } from "../models/story"
 import { CardModel } from "../models/card"
 import { app } from "../index";
 
 import chai from "chai"
 import chaiHttp from "chai-http";
+import { PermissionGroup } from "../messages/messages";
 
 // XXX: Perhaps it's better to use something else than the test framework for creating users and tokens
 chai.use(chaiHttp)
@@ -68,4 +69,20 @@ export async function clearStoriesAndCards() {
           console.log(err);
       }
   })
+}
+
+export async function checkUserIsNotPartOfStory(userID: string, storyID: string): Promise<boolean> {
+    return new Promise<boolean>((resolve, reject) =>{
+        StoryModel.findById(storyID, (err: any, story: Story) => {
+            if (err) { console.error(err); }
+            UserModel.findById(userID, (err: any, user: User) => {
+                if (err) { console.error(err); }
+                if (story.getPermission(user) === PermissionGroup.None) {
+                    resolve(true);
+                }
+                resolve(false);
+            })
+            
+        })
+    })
 }
