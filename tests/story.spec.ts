@@ -272,6 +272,9 @@ describe("Story", () => {
                                 story!.authors!.should.contain(test_env.users[2].id)
                                 break;
                             case 4:
+                                // this is a change in ownership - the previous owner should
+                                // automatically become an author
+                                story!.authors!.should.contain(test_env.users[0].id)
                                 story!.owner._id.toString().should.equal(test_env.users[2].id)
                                 break;
                         }
@@ -319,7 +322,278 @@ describe("Story", () => {
                         }
                     })
                 }
-            }
+            },
+            {
+                name: "editor can not give any permissions to users",
+                querier: 1,
+                prep: async (permissionLevel: number, test_env: any): Promise<void> => {
+                    // make user 1 an editor
+                    await StoryModel.findByIdAndUpdate(test_env.storyId, { editors: [test_env.users[1].id] }, (err, result) => {
+                        if (err) { console.error(err); }
+                    });
+                    return
+                },
+                assertions: async (res: any, permissionLevel: number, test_env: any) => {
+                    res.should.have.status(200)
+                    res.body.should.have.property('error')
+                    res.body.error.should.equals(storyErrors.UserPermissionDenied)
+                    await StoryModel.findById(test_env.storyId, (err, story) => {
+                        if (err) {
+                            console.error(err)
+                        }
+                        story!.editors!.should.contain(test_env.users[1].id)
+
+                        switch (permissionLevel) {
+                            case 1:
+                                story!.viewers!.should.not.contain(test_env.users[2].id)
+                                break;
+                            case 2:
+                                story!.editors!.should.not.contain(test_env.users[2].id)
+                                break;
+                            case 3:
+                                story!.authors!.should.not.contain(test_env.users[2].id)
+                                break;
+                            case 4:
+                                story!.owner._id.toString().should.not.equal(test_env.users[2].id)
+                                break;
+                        }
+                    })
+                }
+            },
+            {
+                name: "viewer can not give any permissions to users",
+                querier: 1,
+                prep: async (permissionLevel: number, test_env: any): Promise<void> => {
+                    // make user 1 a viewer
+                    await StoryModel.findByIdAndUpdate(test_env.storyId, { viewers: [test_env.users[1].id] }, (err, result) => {
+                        if (err) { console.error(err); }
+                    });
+                    return
+                },
+                assertions: async (res: any, permissionLevel: number, test_env: any) => {
+                    res.should.have.status(200)
+                    res.body.should.have.property('error')
+                    res.body.error.should.equals(storyErrors.UserPermissionDenied)
+                    await StoryModel.findById(test_env.storyId, (err, story) => {
+                        if (err) {
+                            console.error(err)
+                        }
+                        story!.viewers!.should.contain(test_env.users[1].id)
+
+                        switch (permissionLevel) {
+                            case 1:
+                                story!.viewers!.should.not.contain(test_env.users[2].id)
+                                break;
+                            case 2:
+                                story!.editors!.should.not.contain(test_env.users[2].id)
+                                break;
+                            case 3:
+                                story!.authors!.should.not.contain(test_env.users[2].id)
+                                break;
+                            case 4:
+                                story!.owner._id.toString().should.not.equal(test_env.users[2].id)
+                                break;
+                        }
+                    })
+                }
+            },
+            {
+                name: "owner should be able to change all existing permissions",
+                querier: 0,
+                prep: async (permissionLevel: number, test_env: any): Promise<void> => {
+                    // make user 2 an author
+                    await StoryModel.findByIdAndUpdate(test_env.storyId, { authors: [test_env.users[2].id] }, (err, result) => {
+                        if (err) { console.error(err); }
+                    });
+                    return
+                },
+                assertions: async (res: any, permissionLevel: number, test_env: any) => {
+                    res.should.have.status(204)
+                    await StoryModel.findById(test_env.storyId, (err, story) => {
+                        if (err) {
+                            console.error(err)
+                        }
+                        switch (permissionLevel) {
+                            case 1:
+                                story!.authors!.should.not.contain(test_env.users[2].id)
+                                story!.viewers!.should.contain(test_env.users[2].id)
+                                break;
+                            case 2:
+                                story!.authors!.should.not.contain(test_env.users[2].id)
+                                story!.editors!.should.contain(test_env.users[2].id)
+                                break;
+                            case 3:
+                                story!.authors!.should.contain(test_env.users[2].id)
+                                break;
+                            case 4:
+                                // this is a change of ownership - prior owner should become an author
+                                story!.authors!.should.not.contain(test_env.users[2].id)
+                                story!.owner._id.toString().should.equal(test_env.users[2].id)
+                                story!.authors!.should.contain(test_env.users[0].id)
+                                break;
+                        }
+                    })
+                }
+            },
+            {
+                name: "author should not be able to change the permissions of another author",
+                querier: 1,
+                prep: async (permissionLevel: number, test_env: any): Promise<void> => {
+                    // make user 2 an author
+                    await StoryModel.findByIdAndUpdate(test_env.storyId, { authors: [test_env.users[1].id, test_env.users[2].id] }, (err, result) => {
+                        if (err) { console.error(err); }
+                    });
+                    return
+                },
+                assertions: async (res: any, permissionLevel: number, test_env: any) => {
+                    res.should.have.status(200)
+                    res.body.should.have.property('error')
+                    res.body.error.should.equals(storyErrors.UserPermissionDenied)
+                    await StoryModel.findById(test_env.storyId, (err, story) => {
+                        if (err) {
+                            console.error(err)
+                        }
+                        story!.viewers!.should.not.contain(test_env.users[2].id)
+                        story!.editors!.should.not.contain(test_env.users[2].id)
+                        story!.authors!.should.contain(test_env.users[2].id)
+                        story!.owner._id.toString().should.not.equal(test_env.users[2].id)
+                    })
+                }
+            },
+            {
+                name: "author should not be able to change the permissions of an owner",
+                querier: 1,
+                prep: async (permissionLevel: number, test_env: any): Promise<void> => {
+                    // make user 1 an author and 2 an owner
+                    await StoryModel.findByIdAndUpdate(test_env.storyId, { owner: test_env.users[2].id, authors: [test_env.users[1].id] }, (err, result) => {
+                        if (err) { console.error(err); }
+                    });
+                    return
+                },
+                assertions: async (res: any, permissionLevel: number, test_env: any) => {
+                    res.should.have.status(200)
+                    res.body.should.have.property('error')
+                    res.body.error.should.equals(storyErrors.UserPermissionDenied)
+                    await StoryModel.findById(test_env.storyId, (err, story) => {
+                        if (err) {
+                            console.error(err)
+                        }
+                        story!.viewers!.should.not.contain(test_env.users[2].id)
+                        story!.editors!.should.not.contain(test_env.users[2].id)
+                        story!.authors!.should.not.contain(test_env.users[2].id)
+                        story!.owner._id.toString().should.be.equal(test_env.users[2].id)
+                    })
+                }
+            },
+            {
+                name: "author should be able to change the permissions of an editor", // we assume also a viewer
+                querier: 1,
+                prep: async (permissionLevel: number, test_env: any): Promise<void> => {
+                    // make user 1 an author and 2 an editor
+                    await StoryModel.findByIdAndUpdate(test_env.storyId, { authors: [test_env.users[1].id], editors: [test_env.users[2].id]}, (err, result) => {
+                        if (err) { console.error(err); }
+                    });
+                    return
+                },
+                assertions: async (res: any, permissionLevel: number, test_env: any) => {
+                    await StoryModel.findById(test_env.storyId, (err, story) => {
+                        if (err) {
+                            console.error(err)
+                        }
+                        switch (permissionLevel) {
+                            case 1:
+                                res.should.have.status(204)
+                                story!.editors!.should.not.contain(test_env.users[2].id)
+                                story!.viewers!.should.contain(test_env.users[2].id)
+                                break;
+                            case 2:
+                                res.should.have.status(204)
+                                story!.editors!.should.contain(test_env.users[2].id)
+                                break;
+                            case 3:
+                                res.should.have.status(200)
+                                res.body.should.have.property('error')
+                                story!.authors!.should.not.contain(test_env.users[2].id)
+                                break;
+                            case 4:
+                                res.should.have.status(200)
+                                res.body.should.have.property('error')
+                                story!.owner._id.toString().should.not.be.equal(test_env.users[2].id)
+                                break;
+                        }
+                    })
+                }
+            },
+            {
+                name: "editor should not be able to change any permissions",
+                querier: 1,
+                prep: async (permissionLevel: number, test_env: any): Promise<void> => {
+                    // make both user 1 and 2 editors
+                    await StoryModel.findByIdAndUpdate(test_env.storyId, { editors: [test_env.users[1].id, test_env.users[2].id] }, (err, result) => {
+                        if (err) { console.error(err); }
+                    });
+                    return
+                },
+                assertions: async (res: any, permissionLevel: number, test_env: any) => {
+                    res.should.have.status(200)
+                    res.body.should.have.property('error')
+                    res.body.error.should.equals(storyErrors.UserPermissionDenied)
+                    await StoryModel.findById(test_env.storyId, (err, story) => {
+                        if (err) {
+                            console.error(err)
+                        }
+                        switch (permissionLevel) {
+                            case 1:
+                                story!.viewers!.should.not.contain(test_env.users[2].id)
+                                break;
+                            case 2:
+                                story!.editors!.should.contain(test_env.users[2].id)
+                                break;
+                            case 3:
+                                story!.authors!.should.not.contain(test_env.users[2].id)
+                                break;
+                            case 4:
+                                story!.owner._id.toString().should.not.be.equal(test_env.users[2].id)
+                                break;
+                        }
+                    })
+                }
+            },
+            {
+                name: "viewer should not be able to change any permissions",
+                querier: 1,
+                prep: async (permissionLevel: number, test_env: any): Promise<void> => {
+                    // mmake both user 1 and 2 viewers
+                    await StoryModel.findByIdAndUpdate(test_env.storyId, { viewers: [test_env.users[1].id, test_env.users[2].id] }, (err, result) => {
+                        if (err) { console.error(err); }
+                    });
+                    return
+                },
+                assertions: async (res: any, permissionLevel: number, test_env: any) => {
+                    res.should.have.status(200)
+                    res.body.should.have.property('error')
+                    res.body.error.should.equals(storyErrors.UserPermissionDenied)
+                    await StoryModel.findById(test_env.storyId, (err, story) => {
+                        if (err) {
+                            console.error(err)
+                        }
+                        switch (permissionLevel) {
+                            case 1:
+                                story!.viewers!.should.contain(test_env.users[2].id)
+                                break;
+                            case 2:
+                                story!.editors!.should.not.contain(test_env.users[2].id)
+                                break;
+                            case 3:
+                                story!.authors!.should.not.contain(test_env.users[2].id)
+                                break;
+                            case 4:
+                                story!.owner._id.toString().should.not.be.equal(test_env.users[2].id)
+                                break;
+                        }
+                    })
+                }
+            },
         ]
 
         testCases.forEach(test => {
