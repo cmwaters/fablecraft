@@ -5,8 +5,6 @@ import { randomBytes } from "crypto";
 import { User, UserModel } from "../models/user";
 import { Story } from "../models/story";
 import { Graph } from "../services/graph";
-import { MessageI } from "../messages/messages";
-import { errors } from "./errors";
 
 router.get("/user", (req: any, res) => {
 	res.json({
@@ -140,6 +138,25 @@ router.delete("/story/:id/permissions", async (req, res) => {
 		})
 })
 
+router.get("/story/:id/cards", async (req, res) => {
+	res.status(200).send()
+})
+
+router.post("/story/:id/card", async (req, res) => {
+	res.status(200).send()
+})
+
+router.get("/story/:storyId/card/:cardId", async (req, res) => {
+	res.status(200).send()
+})
+
+router.put("/story/:storyId/card/:cardId", async (req, res) => {
+	res.status(200).send()
+})
+
+router.delete("/story/:storyId/card/:cardId", async (req, res) => {
+	res.status(200).send()
+})
 
 
 export default router;

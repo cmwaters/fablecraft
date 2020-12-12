@@ -7,7 +7,7 @@ import { app } from "../index";
 import { setupUsersAndTokens, clearUsers, clearStoriesAndCards, createStory, checkUserIsNotPartOfStory, addUserPermission } from "./test_utils"
 import { errors } from "../routes/errors";
 import { StoryModel } from "../models/story";
-import { PermissionGroup, permissionString } from "../messages/messages";
+import { PermissionGroup, permissionString } from "../services/permissions";
 
 let should = chai.should();
 let expect = chai.expect;

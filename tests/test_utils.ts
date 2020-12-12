@@ -5,7 +5,7 @@ import { app } from "../index";
 
 import chai from "chai"
 import chaiHttp from "chai-http";
-import { PermissionGroup } from "../messages/messages";
+import { PermissionGroup } from "../services/permissions";
 
 // XXX: Perhaps it's better to use something else than the test framework for creating users and tokens
 chai.use(chaiHttp)

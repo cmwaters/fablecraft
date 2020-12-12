@@ -1,7 +1,7 @@
 import { Story, StoryModel } from "./../models/story";
 import { Card, CardModel } from "./../models/card";
 import { User, UserModel } from "./../models/user";
-import { MessageSet, MessageI, PermissionGroup } from "../messages/messages";
+import { PermissionGroup } from "../services/permissions";
 import { errors } from "../routes/errors";
 
 export class Graph {
