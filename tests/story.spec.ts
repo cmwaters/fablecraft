@@ -4,9 +4,10 @@ import chaiHttp from "chai-http";
 import * as dotenv from 'dotenv'
 dotenv.config({ path: `config/.env.${process.env.NODE_ENV}` })
 import { app } from "../index";
-import { setupUsersAndTokens, clearUsers, clearStoriesAndCards, createStory, checkUserIsNotPartOfStory } from "./test_utils"
+import { setupUsersAndTokens, clearUsers, clearStoriesAndCards, createStory, checkUserIsNotPartOfStory, addUserPermission } from "./test_utils"
 import { storyErrors } from "../routes/errors";
 import { StoryModel } from "../models/story";
+import { PermissionGroup } from "../messages/messages";
 
 let should = chai.should();
 // let expect = chai.expect;
@@ -622,11 +623,11 @@ describe("Story", () => {
 
     });
 
-    describe.only("/DELETE story permission", () => {
+    describe("/DELETE story permission", () => {
         let test_env: any
         beforeEach(done => {
-            // we set up three users, one is the owner, the next has the permission we are testing, and the
-            // last is the permission we are adjusting / adding
+            // we set up three users, one is the owner, the next has the permission we are testing (the subject)
+            // and the last is the permission we are most likely removing (the object)
             setupUsersAndTokens(["1", "2", "3"])
                 .then((res: any[]) => {
                     createStory("Test Story", res[0].token) // 1 is always owner
@@ -643,26 +644,116 @@ describe("Story", () => {
                 });
         })
         
-        it("should allow users to remove themselves from a story - viewer", done => {
-            StoryModel.findByIdAndUpdate(test_env.storyId, { viewers: [test_env.users[1].id] }, (err, result) => {
-                if (err) { console.error(err); }
-            }).then(() => { 
-                chai
-                    .request(app)
-                    .delete("/api/story/" + test_env.storyId + "/permissions")
-                    .query({ token: test_env.users[1].token })
-                    .send({ user: test_env.users[1].id })
-                    .end((err, res) => {
-                        if (err) {
-                            console.error(err)
+        let testCases = [
+            {
+                name: "allows viewer to remove themselves from a story",
+                subjectsPermission: PermissionGroup.Viewer,
+                removeObject: false, // i.e. the subject is removing themselves 
+                objectsPermission: PermissionGroup.None, // noop as we are not removing the object 
+                expResponse: null 
+            },
+            {
+                name: "does not allow owner to remove themselves from the story",
+                subjectsPermission: PermissionGroup.Owner,
+                removeObject: false, // i.e. the subject is removing themselves 
+                objectsPermission: PermissionGroup.None, // noop as we are not removing the object 
+                expResponse: storyErrors.UserPermissionDenied
+            },
+            {
+                name: "allows owner to remove an author from the story",
+                subjectsPermission: PermissionGroup.Owner,
+                removeObject: true, // i.e. the subject is removing themselves 
+                objectsPermission: PermissionGroup.Author, // noop as we are not removing the object 
+                expResponse: null
+            },
+            {
+                name: "allows author to remove editor from the story",
+                subjectsPermission: PermissionGroup.Author,
+                removeObject: true, // i.e. the subject is removing themselves 
+                objectsPermission: PermissionGroup.Editor, // noop as we are not removing the object 
+                expResponse: null
+            },
+            {
+                name: "does not allow author to remove another author",
+                subjectsPermission: PermissionGroup.Author,
+                removeObject: true, // i.e. the subject is removing themselves 
+                objectsPermission: PermissionGroup.Author, // noop as we are not removing the object 
+                expResponse: storyErrors.UserPermissionDenied
+            },
+            {
+                name: "no one should be able to remove the owner",
+                subjectsPermission: PermissionGroup.Author,
+                removeObject: true, // i.e. the subject is removing themselves 
+                objectsPermission: PermissionGroup.Owner, // noop as we are not removing the object 
+                expResponse: storyErrors.UserPermissionDenied
+            },
+            {
+                name: "does not allow editor to remove author",
+                subjectsPermission: PermissionGroup.Editor,
+                removeObject: true, // i.e. the subject is removing themselves 
+                objectsPermission: PermissionGroup.Author, // noop as we are not removing the object 
+                expResponse: storyErrors.UserPermissionDenied
+            },
+            {
+                name: "does not allow editor to remove viewer",
+                subjectsPermission: PermissionGroup.Editor,
+                removeObject: true, // i.e. the subject is removing themselves 
+                objectsPermission: PermissionGroup.Viewer, // noop as we are not removing the object 
+                expResponse: storyErrors.UserPermissionDenied
+            },
+            {
+                name: "does not allow viewer to remove author",
+                subjectsPermission: PermissionGroup.Viewer,
+                removeObject: true, // i.e. the subject is removing themselves 
+                objectsPermission: PermissionGroup.Author, // noop as we are not removing the object 
+                expResponse: storyErrors.UserPermissionDenied
+            },
+            {
+                name: "does not allow viewer to remove viewer",
+                subjectsPermission: PermissionGroup.Viewer,
+                removeObject: true, // i.e. the subject is removing themselves 
+                objectsPermission: PermissionGroup.Viewer, // noop as we are not removing the object 
+                expResponse: storyErrors.UserPermissionDenied
+            },
+        ]
+
+        testCases.forEach(test =>{
+            it(test.name, done => {
+                addUserPermission(test_env.users[1].id, test_env.storyId, test.subjectsPermission).then(() => { 
+                    addUserPermission(test_env.users[2].id, test_env.storyId, test.objectsPermission).then(() => { 
+                        let objectIndex = 1;
+                        if (test.removeObject) {
+                            objectIndex = 2; 
                         }
-                        res.should.have.status(204)
-                        checkUserIsNotPartOfStory(test_env.users[1].id, test_env.storyId)
-                            .then((deleted: boolean) => {
-                                deleted.should.be.true
-                                done()
+                        chai
+                            .request(app)
+                            .delete("/api/story/" + test_env.storyId + "/permissions")
+                            .query({ token: test_env.users[1].token })
+                            .send({ user: test_env.users[objectIndex].id })
+                            .end((err, res) => {
+                                if (err) {
+                                    console.error(err)
+                                }
+                                if (test.expResponse) {
+                                    res.should.have.status(200)
+                                    res.body.should.have.property('error')
+                                    res.body.error.should.equals(test.expResponse)
+                                } else {
+                                    res.should.have.status(204)
+                                }
+                                
+                                checkUserIsNotPartOfStory(test_env.users[objectIndex].id, test_env.storyId)
+                                    .then((deleted: boolean) => {
+                                        if (test.expResponse) {
+                                            deleted.should.be.false
+                                        } else {
+                                            deleted.should.be.true
+                                        }
+                                        done()
+                                    });
                             });
-                    });
+                    })
+                })
             });
         });
 

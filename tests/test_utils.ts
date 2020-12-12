@@ -86,3 +86,18 @@ export async function checkUserIsNotPartOfStory(userID: string, storyID: string)
         })
     })
 }
+
+export async function addUserPermission(userID: any, storyID: any, permission: PermissionGroup) {
+    switch (permission) {
+        case PermissionGroup.Owner:
+            return await StoryModel.findByIdAndUpdate(storyID, { owner: userID } )
+        case PermissionGroup.Author:
+            return await StoryModel.findByIdAndUpdate(storyID, { authors: [userID] })
+        case PermissionGroup.Editor:
+            return await StoryModel.findByIdAndUpdate(storyID, { editors: [userID] })
+        case PermissionGroup.Viewer:
+            return await StoryModel.findByIdAndUpdate(storyID, { viewers: [userID] })
+        default:
+            return 
+    }
+}
