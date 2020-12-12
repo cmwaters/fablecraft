@@ -1,10 +1,8 @@
-export const routerErrors = {
-    NoUserAuthenticated: { error: "no user authenticated" },
-    NoStoryID: { error: "no story id provided" },
-    
-}
-
-export const storyErrors = {
+export const errors = {
+    NoUserAuthenticated: "no user authenticated",
+    NoStoryID: "no story id provided",
+    InvalidArguments: "request has invalid arguments",
     StoryNotFound: "story not found",
-    UserPermissionDenied: "user does not have permission"
+    UserPermissionDenied: "user does not have permission", 
+    UserNotFound: "user could not be found"
 }

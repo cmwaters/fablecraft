@@ -29,3 +29,10 @@ export enum PermissionGroup {
   Owner,
 }
 
+export const permissionString = [
+  "none",
+  "viewer",
+  "editor",
+  "author",
+  "owner" 
+]

@@ -2,9 +2,7 @@ import { Story, StoryModel } from "./../models/story";
 import { Card, CardModel } from "./../models/card";
 import { User, UserModel } from "./../models/user";
 import { MessageSet, MessageI, PermissionGroup } from "../messages/messages";
-import { storyErrors } from "../routes/errors";
-
-const err = storyErrors
+import { errors } from "../routes/errors";
 
 export class Graph {
 	story: Story
@@ -17,11 +15,11 @@ export class Graph {
 			}
 		})
 		if (!story) {
-			return Promise.reject(err.StoryNotFound)
+			return Promise.reject(errors.StoryNotFound)
 		}
 		const userPerm = story.getPermission(user)
 		if (userPerm === PermissionGroup.None) {
-			return Promise.reject(err.UserPermissionDenied)
+			return Promise.reject(errors.UserPermissionDenied)
 		}
 		return Promise.resolve(new Graph(story, userPerm))
 	}
@@ -81,14 +79,19 @@ export class Graph {
 		return Promise.resolve(true);
 	}
 
-	async changeTitle(newTitle: string): Promise<any> {
-		if (newTitle === undefined || newTitle === "") {
+	async modify(newTitle: string, newDescription: string): Promise<any> {
+		if ((newTitle === undefined || newTitle === "") && (newDescription === undefined || newDescription === "")) {
 			return Promise.reject("invalid title")
 		}
 		if (this.permission == PermissionGroup.Viewer || this.permission == PermissionGroup.Editor) {
-			return Promise.reject(storyErrors.UserPermissionDenied)
+			return Promise.reject(errors.UserPermissionDenied)
 		}
-		this.story.title = newTitle
+		if (newTitle) {
+			this.story.title = newTitle
+		}
+		if (newDescription) { 
+			this.story.description = newDescription
+		}
 		await this.story.save().catch((err: any) => {
 			return Promise.reject(err)
 		})
@@ -106,18 +109,18 @@ export class Graph {
 		if (current_permission === PermissionGroup.Owner) {
 			// no one can change the permission of the owner. Not even the owner themselves. In order to
 			// change ownership the owner must nominate a user to be owner.
-			return new Error(storyErrors.UserPermissionDenied)
+			return new Error(errors.UserPermissionDenied)
 		}
 		switch (new_permission) {
 			case PermissionGroup.None:
 				return new Error("cannot assign none permission. Must remove user from permission list instead.")
 			case PermissionGroup.Viewer:
 				if (this.permission != PermissionGroup.Author && this.permission != PermissionGroup.Owner) {
-					return new Error(storyErrors.UserPermissionDenied)
+					return new Error(errors.UserPermissionDenied)
 				}
 				if (current_permission === PermissionGroup.Author && this.permission != PermissionGroup.Owner) {
 					// someone who is not the owner is trying to demote an author to a viewer
-					return new Error(storyErrors.UserPermissionDenied)
+					return new Error(errors.UserPermissionDenied)
 				}
 				this.removeUserFromPermissionGroup(user, current_permission)
 				if (this.story.viewers) {
@@ -128,11 +131,11 @@ export class Graph {
 				break;
 			case PermissionGroup.Editor:
 				if (this.permission != PermissionGroup.Author && this.permission != PermissionGroup.Owner) {
-					return new Error(storyErrors.UserPermissionDenied)
+					return new Error(errors.UserPermissionDenied)
 				}
 				if (current_permission === PermissionGroup.Author && this.permission != PermissionGroup.Owner) {
 					// someone who is not the owner is trying to demote an author to an editor
-					return new Error(storyErrors.UserPermissionDenied)
+					return new Error(errors.UserPermissionDenied)
 				}
 				this.removeUserFromPermissionGroup(user, current_permission)
 				if (this.story.editors) {
@@ -143,7 +146,7 @@ export class Graph {
 				break;
 			case PermissionGroup.Author:
 				if (this.permission != PermissionGroup.Owner) {
-					return new Error(storyErrors.UserPermissionDenied)
+					return new Error(errors.UserPermissionDenied)
 				}
 				this.removeUserFromPermissionGroup(user, current_permission)
 				if (this.story.authors) {
@@ -154,7 +157,7 @@ export class Graph {
 				break;
 			case PermissionGroup.Owner: // changing of ownershiip
 				if (this.permission != PermissionGroup.Owner) {
-					return new Error(storyErrors.UserPermissionDenied)
+					return new Error(errors.UserPermissionDenied)
 				}
 				// remove from existing permission group if any
 				this.removeUserFromPermissionGroup(user, current_permission)
@@ -208,7 +211,7 @@ export class Graph {
 		if (current_permission === PermissionGroup.Owner) {
 			// no one can delete the permission of the owner. Not even the owner themselves. In order to
 			// remove ownership the owner must nominate a user to be owner.
-			return new Error(storyErrors.UserPermissionDenied)
+			return new Error(errors.UserPermissionDenied)
 		}
 		// you should always be able to remove yourself
 		if (requestingUser.id == userID) {
@@ -221,11 +224,11 @@ export class Graph {
 
 		// only the owner can remove authors
 		if (current_permission === PermissionGroup.Author && this.permission != PermissionGroup.Owner) {
-			return new Error(storyErrors.UserPermissionDenied)
+			return new Error(errors.UserPermissionDenied)
 		}
 		// viewers and editors can't remove anyone
 		if (this.permission === PermissionGroup.Editor || this.permission === PermissionGroup.Viewer) {
-			return new Error(storyErrors.UserPermissionDenied)
+			return new Error(errors.UserPermissionDenied)
 		}
 
 		this.removeUserFromPermissionGroup(user, current_permission)

@@ -6,9 +6,7 @@ import { User, UserModel } from "../models/user";
 import { Story } from "../models/story";
 import { Graph } from "../services/graph";
 import { MessageI } from "../messages/messages";
-import { routerErrors } from "./errors";
-
-const err = routerErrors
+import { errors } from "./errors";
 
 router.get("/user", (req: any, res) => {
 	res.json({
@@ -92,10 +90,10 @@ router.delete("/story/:id", async (req, res) => {
 
 });
 
-router.put("/story/:id/title", async (req, res) => {
+router.put("/story/:id/", async (req, res) => {
 	Graph.loadFromUser(req.user as User, req.params.id)
 		.then((graph: Graph) => {
-			graph.changeTitle(req.body.title).then(() => { 
+			graph.modify(req.body.title, req.body.description).then(() => { 
 				return res.status(204).send()
 			}, (err: any) => {
 				// error with changing the title (most likely an invalid title)
@@ -106,14 +104,6 @@ router.put("/story/:id/title", async (req, res) => {
 			// error with retrieving the story (most likely user perms)
 			return res.status(200).send({ error: err })
 		})
-});
-
-router.put("/story/:id/description", async (req, res) => {
-	let msgs: MessageI[] = req.body;
-	Graph.loadFromUser(req.user as User, req.params.id);
-	return res
-		.status(200)
-		.send({ message: "successfully processed msgs", messages: msgs });
 });
 
 router.post("/story/:id/permissions", async (req, res) => {
@@ -149,5 +139,7 @@ router.delete("/story/:id/permissions", async (req, res) => {
 			return res.status(200).send({ error: err })
 		})
 })
+
+
 
 export default router;

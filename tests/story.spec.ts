@@ -5,12 +5,12 @@ import * as dotenv from 'dotenv'
 dotenv.config({ path: `config/.env.${process.env.NODE_ENV}` })
 import { app } from "../index";
 import { setupUsersAndTokens, clearUsers, clearStoriesAndCards, createStory, checkUserIsNotPartOfStory, addUserPermission } from "./test_utils"
-import { storyErrors } from "../routes/errors";
+import { errors } from "../routes/errors";
 import { StoryModel } from "../models/story";
-import { PermissionGroup } from "../messages/messages";
+import { PermissionGroup, permissionString } from "../messages/messages";
 
 let should = chai.should();
-// let expect = chai.expect;
+let expect = chai.expect;
 
 chai.use(chaiHttp);
 // NOTE: all tests within each describe are dependent on one another 
@@ -129,7 +129,7 @@ describe("Story", () => {
                 .end((err, res) => {
                     res.should.have.status(200)
                     res.body.should.have.property("error")
-                    res.body.error.should.equals(storyErrors.StoryNotFound)
+                    res.body.error.should.equals(errors.StoryNotFound)
                     done();
                 })
         })
@@ -144,7 +144,7 @@ describe("Story", () => {
                         .end((err, res) => {
                             res.should.have.status(200)
                             res.body.should.have.property("error")
-                            res.body.error.should.equals(storyErrors.UserPermissionDenied)
+                            res.body.error.should.equals(errors.UserPermissionDenied)
                             done()
                         })
                 });
@@ -174,7 +174,7 @@ describe("Story", () => {
                 .end((err, res) => {
                     res.should.have.status(200)
                     res.body.should.have.property("error")
-                    res.body.error.should.equals(storyErrors.UserPermissionDenied)
+                    res.body.error.should.equals(errors.UserPermissionDenied)
                     // authorized user should still have access to the 
                     chai
                         .request(app)
@@ -223,7 +223,7 @@ describe("Story", () => {
                         .end((err, res) => {
                             res.should.have.status(200);
                             res.body.should.have.property("error")
-                            res.body.error.should.equals(storyErrors.StoryNotFound);
+                            res.body.error.should.equals(errors.StoryNotFound);
                             done()
                         });
                 })
@@ -311,13 +311,13 @@ describe("Story", () => {
                             case 3:
                                 res.should.have.status(200)
                                 res.body.should.have.property('error')
-                                res.body.error.should.equals(storyErrors.UserPermissionDenied)
+                                res.body.error.should.equals(errors.UserPermissionDenied)
                                 story!.authors!.should.not.contain(test_env.users[2].id)
                                 break;
                             case 4:
                                 res.should.have.status(200)
                                 res.body.should.have.property('error')
-                                res.body.error.should.equals(storyErrors.UserPermissionDenied)
+                                res.body.error.should.equals(errors.UserPermissionDenied)
                                 story!.owner._id.toString().should.not.equal(test_env.users[2].id)
                                 break;
                         }
@@ -337,7 +337,7 @@ describe("Story", () => {
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(200)
                     res.body.should.have.property('error')
-                    res.body.error.should.equals(storyErrors.UserPermissionDenied)
+                    res.body.error.should.equals(errors.UserPermissionDenied)
                     await StoryModel.findById(test_env.storyId, (err, story) => {
                         if (err) {
                             console.error(err)
@@ -374,7 +374,7 @@ describe("Story", () => {
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(200)
                     res.body.should.have.property('error')
-                    res.body.error.should.equals(storyErrors.UserPermissionDenied)
+                    res.body.error.should.equals(errors.UserPermissionDenied)
                     await StoryModel.findById(test_env.storyId, (err, story) => {
                         if (err) {
                             console.error(err)
@@ -449,7 +449,7 @@ describe("Story", () => {
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(200)
                     res.body.should.have.property('error')
-                    res.body.error.should.equals(storyErrors.UserPermissionDenied)
+                    res.body.error.should.equals(errors.UserPermissionDenied)
                     await StoryModel.findById(test_env.storyId, (err, story) => {
                         if (err) {
                             console.error(err)
@@ -474,7 +474,7 @@ describe("Story", () => {
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(200)
                     res.body.should.have.property('error')
-                    res.body.error.should.equals(storyErrors.UserPermissionDenied)
+                    res.body.error.should.equals(errors.UserPermissionDenied)
                     await StoryModel.findById(test_env.storyId, (err, story) => {
                         if (err) {
                             console.error(err)
@@ -538,7 +538,7 @@ describe("Story", () => {
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(200)
                     res.body.should.have.property('error')
-                    res.body.error.should.equals(storyErrors.UserPermissionDenied)
+                    res.body.error.should.equals(errors.UserPermissionDenied)
                     await StoryModel.findById(test_env.storyId, (err, story) => {
                         if (err) {
                             console.error(err)
@@ -573,7 +573,7 @@ describe("Story", () => {
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(200)
                     res.body.should.have.property('error')
-                    res.body.error.should.equals(storyErrors.UserPermissionDenied)
+                    res.body.error.should.equals(errors.UserPermissionDenied)
                     await StoryModel.findById(test_env.storyId, (err, story) => {
                         if (err) {
                             console.error(err)
@@ -657,7 +657,7 @@ describe("Story", () => {
                 subjectsPermission: PermissionGroup.Owner,
                 removeObject: false, // i.e. the subject is removing themselves 
                 objectsPermission: PermissionGroup.None, // noop as we are not removing the object 
-                expResponse: storyErrors.UserPermissionDenied
+                expResponse: errors.UserPermissionDenied
             },
             {
                 name: "allows owner to remove an author from the story",
@@ -678,42 +678,42 @@ describe("Story", () => {
                 subjectsPermission: PermissionGroup.Author,
                 removeObject: true, // i.e. the subject is removing themselves 
                 objectsPermission: PermissionGroup.Author, // noop as we are not removing the object 
-                expResponse: storyErrors.UserPermissionDenied
+                expResponse: errors.UserPermissionDenied
             },
             {
                 name: "no one should be able to remove the owner",
                 subjectsPermission: PermissionGroup.Author,
                 removeObject: true, // i.e. the subject is removing themselves 
                 objectsPermission: PermissionGroup.Owner, // noop as we are not removing the object 
-                expResponse: storyErrors.UserPermissionDenied
+                expResponse: errors.UserPermissionDenied
             },
             {
                 name: "does not allow editor to remove author",
                 subjectsPermission: PermissionGroup.Editor,
                 removeObject: true, // i.e. the subject is removing themselves 
                 objectsPermission: PermissionGroup.Author, // noop as we are not removing the object 
-                expResponse: storyErrors.UserPermissionDenied
+                expResponse: errors.UserPermissionDenied
             },
             {
                 name: "does not allow editor to remove viewer",
                 subjectsPermission: PermissionGroup.Editor,
                 removeObject: true, // i.e. the subject is removing themselves 
                 objectsPermission: PermissionGroup.Viewer, // noop as we are not removing the object 
-                expResponse: storyErrors.UserPermissionDenied
+                expResponse: errors.UserPermissionDenied
             },
             {
                 name: "does not allow viewer to remove author",
                 subjectsPermission: PermissionGroup.Viewer,
                 removeObject: true, // i.e. the subject is removing themselves 
                 objectsPermission: PermissionGroup.Author, // noop as we are not removing the object 
-                expResponse: storyErrors.UserPermissionDenied
+                expResponse: errors.UserPermissionDenied
             },
             {
                 name: "does not allow viewer to remove viewer",
                 subjectsPermission: PermissionGroup.Viewer,
                 removeObject: true, // i.e. the subject is removing themselves 
                 objectsPermission: PermissionGroup.Viewer, // noop as we are not removing the object 
-                expResponse: storyErrors.UserPermissionDenied
+                expResponse: errors.UserPermissionDenied
             },
         ]
 
@@ -759,7 +759,7 @@ describe("Story", () => {
 
     });
 
-    describe.only("/PUT story title", () => {
+    describe("/PUT modify story meta data", () => {
         let test_env: any
         beforeEach(done => {
             setupUsersAndTokens(["user1", "user2"])
@@ -770,7 +770,8 @@ describe("Story", () => {
                                 users: res,
                                 storyId: id,
                                 originalTitle: "Test Story", 
-                                newTitle: "New Test Story"
+                                newTitle: "New Test Story", 
+                                newDescription: "this is a test description"
                             }
                             done()
                         })
@@ -780,58 +781,35 @@ describe("Story", () => {
                 });
         })
 
-        // TODO we could simplify this even further but something to do in the future
-        let testCases = [
-            {
-                name: "allows the owner to change the name of a story",
-                permission:  PermissionGroup.Owner,
-                error: null
-            },
-            {
-                name: "allows an author to change the name of a story",
-                permission:  PermissionGroup.Author,
-                error: null
-            },
-            {
-                name: "does not allow an editor to change the name of a story",
-                permission:  PermissionGroup.Editor,
-                error: storyErrors.UserPermissionDenied
-            },
-            {
-                name: "does not allow a viewer to change the name of a story",
-                permission:  PermissionGroup.Viewer,
-                error: storyErrors.UserPermissionDenied
-            },
-            {
-                name: "does not allow an unknown user to change the title of a story",
-                permission:  PermissionGroup.None,
-                error: storyErrors.UserPermissionDenied
-            }
-        ]
+        let expErrors = [ true, true, true, false, false ]
         
-        testCases.forEach(test => {
-            it(test.name, done => { 
-                addUserPermission(test_env.users[1].id, test_env.storyId, test.permission)
+        expErrors.forEach((expError: boolean, index: number) => {
+            let name = "allows user of permission " + permissionString[index] + " to change the title of a story"
+            if (expError) { 
+                name = "does not allow user of permission " + permissionString[index] + " to change the title of a story"
+            }
+            it(name, done => { 
+                addUserPermission(test_env.users[1].id, test_env.storyId, index)
                     .then(() => {
                         chai
                             .request(app)
-                            .put("/api/story/" + test_env.storyId + "/title")
+                            .put("/api/story/" + test_env.storyId)
                             .query({ token: test_env.users[1].token })
                             .send({ title: test_env.newTitle })
                             .end((err, res) => {
                                 if (err) {
                                     console.error(err)
                                 }
-                                if (test.error) {
+                                if (expError) {
                                     res.should.have.status(200)
                                     res.body.should.have.property('error')
-                                    res.body.error.should.equals(storyErrors.UserPermissionDenied)
+                                    res.body.error.should.equals(errors.UserPermissionDenied)
                                 } else {
                                     res.should.have.status(204)
                                 }
                                 StoryModel.findById(test_env.storyId, (err, story) => {
                                     if (err) {console.error(err);}
-                                    if (test.error) {
+                                    if (expError) {
                                         story!.title.should.equals(test_env.originalTitle)
                                     } else {
                                         story!.title.should.equals(test_env.newTitle)
@@ -843,7 +821,44 @@ describe("Story", () => {
             });
         });
 
+        expErrors.forEach((expError: boolean, index: number) => {
+            let name = "allows user of permission " + permissionString[index] + " to change the description of a story"
+            if (expError) { 
+                name = "does not allow user of permission " + permissionString[index] + " to change the description of a story"
+            }
+            it(name, done => { 
+                addUserPermission(test_env.users[1].id, test_env.storyId, index)
+                    .then(() => {
+                        chai
+                            .request(app)
+                            .put("/api/story/" + test_env.storyId)
+                            .query({ token: test_env.users[1].token })
+                            .send({ description: test_env.newDescription })
+                            .end((err, res) => {
+                                if (err) {
+                                    console.error(err)
+                                }
+                                if (expError) {
+                                    res.should.have.status(200)
+                                    res.body.should.have.property('error')
+                                    res.body.error.should.equals(errors.UserPermissionDenied)
+                                } else {
+                                    res.should.have.status(204)
+                                }
+                                StoryModel.findById(test_env.storyId, (err, story) => {
+                                    if (err) {console.error(err);}
+                                    if (expError) {
+                                        expect(story!.description).to.be.undefined
+                                    } else {
+                                        story!.description!.should.equals(test_env.newDescription)
+                                    }
+                                    done()
+                                })
+                            });
+                    })
+            });
+        });
+
     });
-    
 });
 
