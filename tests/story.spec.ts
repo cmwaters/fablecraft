@@ -758,6 +758,92 @@ describe("Story", () => {
         });
 
     });
+
+    describe.only("/PUT story title", () => {
+        let test_env: any
+        beforeEach(done => {
+            setupUsersAndTokens(["user1", "user2"])
+                .then((res: any[]) => {
+                    createStory("Test Story", res[0].token)
+                        .then((id) => {
+                            test_env = {
+                                users: res,
+                                storyId: id,
+                                originalTitle: "Test Story", 
+                                newTitle: "New Test Story"
+                            }
+                            done()
+                        })
+                })
+                .catch((err) => {
+                    console.log(err)
+                });
+        })
+
+        // TODO we could simplify this even further but something to do in the future
+        let testCases = [
+            {
+                name: "allows the owner to change the name of a story",
+                permission:  PermissionGroup.Owner,
+                error: null
+            },
+            {
+                name: "allows an author to change the name of a story",
+                permission:  PermissionGroup.Author,
+                error: null
+            },
+            {
+                name: "does not allow an editor to change the name of a story",
+                permission:  PermissionGroup.Editor,
+                error: storyErrors.UserPermissionDenied
+            },
+            {
+                name: "does not allow a viewer to change the name of a story",
+                permission:  PermissionGroup.Viewer,
+                error: storyErrors.UserPermissionDenied
+            },
+            {
+                name: "does not allow an unknown user to change the title of a story",
+                permission:  PermissionGroup.None,
+                error: storyErrors.UserPermissionDenied
+            }
+        ]
+        
+        testCases.forEach(test => {
+            it(test.name, done => { 
+                addUserPermission(test_env.users[1].id, test_env.storyId, test.permission)
+                    .then(() => {
+                        chai
+                            .request(app)
+                            .put("/api/story/" + test_env.storyId + "/title")
+                            .query({ token: test_env.users[1].token })
+                            .send({ title: test_env.newTitle })
+                            .end((err, res) => {
+                                if (err) {
+                                    console.error(err)
+                                }
+                                if (test.error) {
+                                    res.should.have.status(200)
+                                    res.body.should.have.property('error')
+                                    res.body.error.should.equals(storyErrors.UserPermissionDenied)
+                                } else {
+                                    res.should.have.status(204)
+                                }
+                                StoryModel.findById(test_env.storyId, (err, story) => {
+                                    if (err) {console.error(err);}
+                                    if (test.error) {
+                                        story!.title.should.equals(test_env.originalTitle)
+                                    } else {
+                                        story!.title.should.equals(test_env.newTitle)
+                                    }
+                                    done()
+                                })
+                            });
+                    })
+            });
+        });
+
+    });
     
 });
 

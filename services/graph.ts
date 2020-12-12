@@ -85,6 +85,9 @@ export class Graph {
 		if (newTitle === undefined || newTitle === "") {
 			return Promise.reject("invalid title")
 		}
+		if (this.permission == PermissionGroup.Viewer || this.permission == PermissionGroup.Editor) {
+			return Promise.reject(storyErrors.UserPermissionDenied)
+		}
 		this.story.title = newTitle
 		await this.story.save().catch((err: any) => {
 			return Promise.reject(err)
