@@ -10,11 +10,12 @@ export class Graph {
 	response: any
 
 	story?: Story
+	card?: Card
 	permission?: PermissionGroup
 	
 
-	static async loadFromUser(user: User, storyId: string): Promise<Graph> {
-		let story = await StoryModel.findById(storyId, (err) => {
+	static async loadFromStory(user: User, storyID: string): Promise<Graph> {
+		let story = await StoryModel.findById(storyID, (err) => {
 			if (err) {
 				return new Graph(status.INTERNAL, err)
 			}
@@ -29,6 +30,22 @@ export class Graph {
 			return new Graph(status.UNAUTHORIZED, errors.UserPermissionDenied)
 		}
 		return new Graph(status.READ, story, story, userPerm)
+	}
+
+	static async loadFromCard(user: User, cardID: string): Promise<Graph> {
+		let card = await CardModel.findById(cardID, (err) => {
+			if (err) { return new Graph(status.INTERNAL, err)}
+		})
+
+		if (!card) {
+			return new Graph(status.ERROR, errors.CardNotFound)
+		}
+
+		
+		let graph = await Graph.loadFromStory(user, card.story._id)
+
+		graph.card = card
+		return graph
 	}
 
 	constructor(status: number, response: any, story?: Story, permission?: PermissionGroup) {
@@ -292,37 +309,93 @@ export class Graph {
 		
 	}
 
-	async addCard(depth: number, index: number, text: string): Promise<void> {
+	async addCardAbove(siblingID: any, text: string): Promise<void> {
 		if (this.hasAnError()) { return }
-		if (index < 0 || depth < 0) {
-			return this.error(errors.InvalidArguments)
-		}
+
 		if (this.permission != PermissionGroup.Owner && this.permission != PermissionGroup.Author) {
 			return this.error(errors.UserPermissionDenied)
 		}
+		
+		// fetch sibling card and check that it exists
+		let sibling = await CardModel.findById(siblingID, (err) => {
+			if (err) { return this.internal(err) }
+		})
 
-		// check that the card doesn't already exist
-		if (await CardModel.findOne({ story: this.story!.id, index: index, depth: depth }, (err, card) => {
-			if (err) { 
-				this.internal(err) 
-				return true
-			}
-			if (card) { 
-				this.error(errors.CardAlreadyExists)
-				return true
-			}
-			return false
-		})) { return }
+		if (!sibling) {
+			return this.error(errors.CardNotFound)
+		}
 
+		// create new card
 		let card = await CardModel.create({ 
 			story: this.story!,
-			index: index,
-			depth: depth,
+			// this field is eventually consistent
+			index: sibling.index, 
+			depth: sibling.depth,
+			below: sibling,
 			text: text
+		})
+
+		// update the parent
+		if (sibling.parent) {
+			card.parent = sibling.parent
+			sibling.parent.children!.push(card)
+			card.parent.save().catch((err: any) => {
+				return this.internal(err)
+			})
+		}
+
+		// update the sibling above the new one
+		if (sibling.above) {
+			sibling.above.below = card
+			card.above = sibling.above
+			card.above.save().catch((err: any) => {
+				return this.internal(err)
+			})
+		}
+
+		// update the sibling
+		sibling.above = card
+		sibling.index = card.index + 1
+		sibling.save().catch((err: any) => {
+			return this.internal(err)
+		})
+
+		card.save().catch((err: any) => {
+			return this.internal(err)
 		})
 
 		this.status = status.CREATED
 		this.response = { card: card }
+	}
+
+	async addCardBelow(sibling: any, text: string): Promise<void> {
+		return
+	}
+
+	async addCardBranch(sibling: any, text: string): Promise<void> {
+		return
+	}
+
+	async addCardPull(sibling: any, text: string): Promise<void> {
+		return
+	}
+
+	async removeCard(): Promise<void> {
+		if (this.hasAnError()) { return }
+		this.deleteCard(this.card!)
+	}
+
+	private async deleteCard(card: Card): Promise<void> {
+		if (this.hasAnError()) { return }
+		if (this.card!.children) {
+			for (let child of this.card!.children) {
+				this.deleteCard(child)
+			}
+		}
+		await CardModel.findByIdAndDelete(card.id, (err) => {
+			return this.internal(err)
+		})
+		return
 	}
 
 	private error(err: any) {

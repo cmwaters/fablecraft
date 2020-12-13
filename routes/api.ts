@@ -55,58 +55,100 @@ router.post("/story", async (req, res) => {
 });
 
 router.get("/story/:id", async (req, res) => {
-	let graph = await Graph.loadFromUser(req.user as User, req.params.id)
+	let graph = await Graph.loadFromStory(req.user as User, req.params.id)
 	graph.send(res)
 });
 
 router.delete("/story/:id", async (req, res) => {
-	let graph = await Graph.loadFromUser(req.user as User, req.params.id)
+	let graph = await Graph.loadFromStory(req.user as User, req.params.id)
 	await graph.remove()
 	graph.send(res)
 });
 
 router.put("/story/:id/", async (req, res) => {
-	let graph = await Graph.loadFromUser(req.user as User, req.params.id)
+	let graph = await Graph.loadFromStory(req.user as User, req.params.id)
 	await graph.modify(req.body.title, req.body.description)
 	graph.send(res)
 });
 
 router.post("/story/:id/permissions", async (req, res) => {
 	const { user, permission } = req.body; // used is the id
-	let graph = await Graph.loadFromUser(req.user as User, req.params.id)
+	let graph = await Graph.loadFromStory(req.user as User, req.params.id)
 	await graph.addPermission(user, permission)
 	graph.send(res)
 })
 
 router.delete("/story/:id/permissions", async (req, res) => {
 	const { user } = req.body; // should be a user id
-	let graph = await Graph.loadFromUser(req.user as User, req.params.id)
+	let graph = await Graph.loadFromStory(req.user as User, req.params.id)
 	await graph.removePermission(user, req.user as User)
 	graph.send(res)
 })
 
-router.get("/story/:id/cards", async (req, res) => {
-	let graph = await Graph.loadFromUser(req.user as User, req.params.id)
+router.get("/cards", async (req, res) => {
+	let graph = await Graph.loadFromStory(req.user as User, req.body.story)
 	await graph.cards()
 	graph.send(res)
 })
 
-router.post("/story/:id/card", async (req, res) => {
-	let { depth, index, text } = req.body 
-	let graph = await Graph.loadFromUser(req.user as User, req.params.id)
-	await graph.addCard(depth, index, text)
+// creates a card above a sibling
+router.post("/card/above", async (req, res) => {
+	let { sibling, text } = req.body 
+	let graph = await Graph.loadFromStory(req.user as User, req.params.id)
+	await graph.addCardAbove(sibling, text)
 	graph.send(res)
 })
 
-router.get("/story/:id/card/:depth/:index", async (req, res) => {
+// creates a card below a sibling
+router.post("/card/below", async (req, res) => {
+	let { sibling, text } = req.body
+	let graph = await Graph.loadFromStory(req.user as User, req.params.id)
+	await graph.addCardBelow(sibling, text)
+	graph.send(res)
+})
+
+// creates a card that is the child of a card
+router.post("/card/child", async (req, res) => {
+	let { parent, text } = req.body
+	let graph = await Graph.loadFromStory(req.user as User, req.params.id)
+	await graph.addCardBranch(parent, text)
+	graph.send(res)
+})
+
+// creates a card that becomes the parent of the child
+router.post("/card/parent", async (req, res) => {
+	let { child, text } = req.body
+	let graph = await Graph.loadFromStory(req.user as User, req.params.id)
+	await graph.addCardAbove(child, text)
+	graph.send(res)
+})
+
+// gets a card (note: probably won't be used that often)
+router.get("/card/:id", async (req, res) => {
 	res.status(200).send()
 })
 
-router.put("/story/:id/card/:depth/:index", async (req, res) => {
+// moves the card one index smaller (or one card higher)
+router.put("/card/move-up", async (req, res) => {
+	const { story, depth, index } = req.body
 	res.status(200).send()
 })
 
-router.delete("/story/:id/card/:depth/:index", async (req, res) => {
+// moves the card one index greater (or one card lower)
+router.put("/card/move-down", async (req, res) => {
+	const { story, depth, index } = req.body
+	res.status(200).send()
+})
+
+// edits a card's text
+router.put("/card/:id", async (req, res) => {
+	const { text } = req.body
+	res.status(200).send()
+})
+
+// deletes a card and recursively deletes all children
+router.delete("/card/:id", async (req, res) => {
+
 	res.status(200).send()
 })
 
