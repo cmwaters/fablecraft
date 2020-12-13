@@ -50,6 +50,15 @@ export function createStory(name: string, token: string): Promise<string> {
     
 }
 
+export async function addCard(storyID: any, depth: number, index: number, text: string) {
+    return await CardModel.create({ 
+        story: storyID,
+        depth: depth,
+        index: index, 
+        text: text
+    }) 
+}
+
 export async function clearUsers() {
   await UserModel.deleteMany({}, (err) => {
       if (err) {

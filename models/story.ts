@@ -26,10 +26,6 @@ const StorySchema = new mongoose.Schema({
 		required: true,
 	},
 	description: String,
-	rootCard: {
-		type: mongoose.Schema.Types.ObjectId,
-		ref: "User",
-	},
 	authors: [
 		{
 			type: mongoose.Schema.Types.ObjectId,
