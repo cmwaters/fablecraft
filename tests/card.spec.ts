@@ -80,7 +80,7 @@ describe.only("Card", () => {
         })
     })
 
-    describe("/POST create card above", () => {
+    describe.only("/POST create card above", () => {
 
         let testResults = [ true, true, false, false, false ]
 
@@ -90,11 +90,22 @@ describe.only("Card", () => {
                 name = permissionString[4-index] + " should be able to create a card above"
             }  
             it(name, done => {
-                chai
+                CardModel.findOne({ 
+                    story: test_env.story,
+                    depth: 0,
+                    index: 0,
+                }, (err, card) => {
+                    if (err) {
+                        return console.error(err)
+                    }
+                    if (card) {
+                        test_env.rootCard = card.id
+                    }
+                    chai
                     .request(app)
-                    .post("/api/story/" + test_env.story + "/card")
+                    .post("/api/card/above")
                     .query({ token: test_env.users[index].token })
-                    .send({ index: 0, depth: 1, text: defaultCardText })
+                    .send({ story: test_env.story, sibling: test_env.rootCard, text: defaultCardText })
                     .end((err, res) => {
                         console.log(res.body)
                         if (success) {
@@ -104,45 +115,47 @@ describe.only("Card", () => {
                         } else {
                             res.should.have.status(401)
                         }
-                        CardModel.find({ story: test_env.story, index: 0, depth: 1 }, (err, card) => {
+                        CardModel.find({ story: test_env.story }, (err, cards) => {
                             if (success) {
-                                expect(card).to.be.not.empty
+                                expect(cards).to.have.length(2)
                             } else {
-                                expect(card).to.be.empty
+                                expect(cards).to.have.length(1)
                             }
                             done()
                         })
                     });
+                })
+                .catch(err => console.error(err))
             });      
         })
 
-        it.only("should not allow creating a card where one already exists", done => {
-            CardModel.create({ 
-                story: test_env.story,
-                depth: 1,
-                index: 2,
-                text: defaultCardText
-            }).then(() => {
-                console.log("story:" + test_env.story + " index: " + 2 + " depth: " + 1)
-                CardModel.find({ story: test_env.story, depth: 1, index: 2}, (err, card) => {
-                    console.log(card)
-                })
-                chai
-                    .request(app)
-                    .post("/api/story/" + test_env.story + "/card")
-                    .query({ token: test_env.users[0].token })
-                    .send({ index: 2, depth: 1, text: defaultCardText })
-                    .end((err, res) => {
-                        console.log("result")
-                        console.log(res.body)
-                        res.should.have.status(200);
-                        res.body.should.have.property("error")
-                        done()
-                    });
-            }).catch(err => {
-                console.error(err)
-            })
-        });      
+        // it.only("should not allow creating a card where one already exists", done => {
+        //     CardModel.create({ 
+        //         story: test_env.story,
+        //         depth: 1,
+        //         index: 2,
+        //         text: defaultCardText
+        //     }).then(() => {
+        //         console.log("story:" + test_env.story + " index: " + 2 + " depth: " + 1)
+        //         CardModel.find({ story: test_env.story, depth: 1, index: 2}, (err, card) => {
+        //             console.log(card)
+        //         })
+        //         chai
+        //             .request(app)
+        //             .post("/api/story/" + test_env.story + "/card")
+        //             .query({ token: test_env.users[0].token })
+        //             .send({ index: 2, depth: 1, text: defaultCardText })
+        //             .end((err, res) => {
+        //                 console.log("result")
+        //                 console.log(res.body)
+        //                 res.should.have.status(200);
+        //                 res.body.should.have.property("error")
+        //                 done()
+        //             });
+        //     }).catch(err => {
+        //         console.error(err)
+        //     })
+        // });      
         
         
     })

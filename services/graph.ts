@@ -328,57 +328,51 @@ export class Graph {
 		if (this.permission != PermissionGroup.Owner && this.permission != PermissionGroup.Author) {
 			return this.error(errors.UserPermissionDenied)
 		}
+
+		try {
 		
-		// fetch sibling card and check that it exists
-		let sibling = await CardModel.findById(siblingID, (err) => {
-			if (err) { return this.internal(err) }
-		})
+			// fetch sibling card and check that it exists
+			let sibling = await CardModel.findById(siblingID)
 
-		if (!sibling) {
-			return this.error(errors.CardNotFound)
-		}
+			if (!sibling) {
+				return this.error(errors.CardNotFound)
+			}
 
-		// create new card
-		let card = await CardModel.create({ 
-			story: this.story!,
-			// this field is eventually consistent
-			index: sibling.index, 
-			depth: sibling.depth,
-			below: sibling,
-			text: text
-		})
-
-		// update the parent
-		if (sibling.parent) {
-			card.parent = sibling.parent
-			sibling.parent.children!.push(card)
-			card.parent.save().catch((err: any) => {
-				return this.internal(err)
+			// create new card
+			let card = await CardModel.create({ 
+				story: this.story!,
+				// this field is eventually consistent
+				index: sibling.index, 
+				depth: sibling.depth,
+				below: sibling.id,
+				text: text
 			})
-		}
 
-		// update the sibling above the new one
-		if (sibling.above) {
-			sibling.above.below = card
-			card.above = sibling.above
-			card.above.save().catch((err: any) => {
-				return this.internal(err)
-			})
-		}
+			// update the parent
+			if (sibling.parent) {
+				card.parent = sibling.parent
+				sibling.parent.children!.push(card)
+				await card.parent.save()
+			}
 
-		// update the sibling
-		sibling.above = card
-		sibling.index = card.index + 1
-		sibling.save().catch((err: any) => {
-			return this.internal(err)
-		})
+			// update the sibling above the new one
+			if (sibling.above) {
+				sibling.above.below = card.id
+				card.above = sibling.above
+				await card.above.save()
+			}
 
-		card.save().catch((err: any) => {
-			return this.internal(err)
-		})
+			// // update the sibling
+			sibling.above = card.id
+			sibling.index = card.index + 1
+			await sibling.save()
 
-		this.status = status.CREATED
-		this.response = { card: card }
+			// finally save the new card
+			await card.save()
+
+			this.status = status.CREATED
+			this.response = { card: card }
+		} catch (error) { return this.internal(error) }
 	}
 
 	async addCardBelow(sibling: any, text: string): Promise<void> {

@@ -93,32 +93,32 @@ router.get("/cards", async (req, res) => {
 
 // creates a card above a sibling
 router.post("/card/above", async (req, res) => {
-	let { sibling, text } = req.body 
-	let graph = await Graph.loadFromStory(req.user as User, req.params.id)
+	let { story, sibling, text } = req.body 
+	let graph = await Graph.loadFromStory(req.user as User, story)
 	await graph.addCardAbove(sibling, text)
 	graph.send(res)
 })
 
 // creates a card below a sibling
 router.post("/card/below", async (req, res) => {
-	let { sibling, text } = req.body
-	let graph = await Graph.loadFromStory(req.user as User, req.params.id)
+	let { story, sibling, text } = req.body
+	let graph = await Graph.loadFromStory(req.user as User, story)
 	await graph.addCardBelow(sibling, text)
 	graph.send(res)
 })
 
 // creates a card that is the child of a card
 router.post("/card/child", async (req, res) => {
-	let { parent, text } = req.body
-	let graph = await Graph.loadFromStory(req.user as User, req.params.id)
+	let { story, parent, text } = req.body
+	let graph = await Graph.loadFromStory(req.user as User, story)
 	await graph.addCardChild(parent, text)
 	graph.send(res)
 })
 
 // creates a card that becomes the parent of the child
 router.post("/card/parent", async (req, res) => {
-	let { child, text } = req.body
-	let graph = await Graph.loadFromStory(req.user as User, req.params.id)
+	let { story, child, text } = req.body
+	let graph = await Graph.loadFromStory(req.user as User, story)
 	await graph.addCardParent(child, text)
 	graph.send(res)
 })
