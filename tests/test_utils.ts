@@ -24,6 +24,9 @@ export async function setupUsersAndTokens(names: string[]): Promise<any[]> {
                     if (err) {
                         reject(err)
                     }
+                    if (res.status !== 201) {
+                        console.error(res.body)
+                    }
                     resp.push({ token: res.body.token, id: res.body.user._id})
                     if (i === names.length - 1) {
                         resolve(resp)

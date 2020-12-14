@@ -111,7 +111,7 @@ router.post("/card/below", async (req, res) => {
 router.post("/card/child", async (req, res) => {
 	let { parent, text } = req.body
 	let graph = await Graph.loadFromStory(req.user as User, req.params.id)
-	await graph.addCardBranch(parent, text)
+	await graph.addCardChild(parent, text)
 	graph.send(res)
 })
 
@@ -119,7 +119,7 @@ router.post("/card/child", async (req, res) => {
 router.post("/card/parent", async (req, res) => {
 	let { child, text } = req.body
 	let graph = await Graph.loadFromStory(req.user as User, req.params.id)
-	await graph.addCardAbove(child, text)
+	await graph.addCardParent(child, text)
 	graph.send(res)
 })
 

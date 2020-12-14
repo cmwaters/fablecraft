@@ -50,9 +50,7 @@ describe("Authentication", () => {
           if (err) {
             console.log(err)
           }
-          res.should.have.status(200);
-          res.body.should.have.property("message")
-          res.body.message.should.equals("Signup successful") 
+          res.should.have.status(201);
           res.body.should.have.property("user")
           res.body.user.email.should.equals(user.email)
           res.body.should.have.property("token")

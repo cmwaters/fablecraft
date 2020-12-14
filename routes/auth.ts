@@ -13,8 +13,7 @@ router.post("/signup", async (req, res, next) => {
       const error = new Error('An Error occurred')
         return next(error);
     } else if (info) {
-      return res.json({ 
-        message: "Signup failed",
+      return res.status(200).send({ 
         error: info.message
       })
     } else {
@@ -28,8 +27,7 @@ router.post("/signup", async (req, res, next) => {
           //Sign the JWT token and populate the payload with the user email and id
           const token = jwt.sign({ user : body }, process.env.JWT_SECRET as string);
           //Send back the token to the user
-          return res.json({
-            message: "Signup successful",
+          return res.status(201).send({
             user: user,
             token: token
           })

@@ -68,26 +68,39 @@ export class Graph {
 			return new Graph(status.BADREQUEST, errors.MissingTitle)
 		}
 
-		let story = new StoryModel({
-			title: title,
-			owner: user._id,
-		});
+		try {
 
-		if (description !== undefined || description !== "") {
-			story.description = description;
+			let story = new StoryModel({
+				title: title,
+				owner: user._id,
+			});
+
+			if (description !== undefined || description !== "") {
+				story.description = description;
+			}
+
+			await story.save()
+			
+			// we always must have at least one card associated with
+			// a story
+			let rootCard = new CardModel({ 
+				story: story.id,
+				depth: 0,
+				index: 0,
+				text: " ", // needs to be something
+			})
+			await rootCard.save()
+
+			// add story to user
+			const stories = user.stories.concat(story);
+			await UserModel.findByIdAndUpdate(user._id, {stories: stories}).catch((err: any) => {
+				throw err
+			})
+
+			return new Graph(status.CREATED, story, story, PermissionGroup.Owner)
+		} catch (error) {
+			return new Graph(status.INTERNAL, error)
 		}
-
-		await story.save().catch((err: any) => {
-			return new Graph(status.INTERNAL, err)
-		})		
-
-		// add story to user
-		const stories = user.stories.concat(story);
-		await UserModel.findByIdAndUpdate(user._id, {stories: stories}).catch((err: any) => {
-			return new Graph(status.INTERNAL, err)
-		})
-
-		return new Graph(status.CREATED, story, story, PermissionGroup.Owner)
 	}
 
 	hasAnError(): boolean {
@@ -299,7 +312,7 @@ export class Graph {
 
 	async cards(): Promise<void> {
 		if (this.hasAnError()) { return }
-		await CardModel.find({storyId: this.story}, (err, cards) => {
+		await CardModel.find({story: this.story}, (err, cards) => {
 			if (err) { return this.internal(err) }
 			if (cards) {
 				this.status = status.READ
@@ -372,11 +385,11 @@ export class Graph {
 		return
 	}
 
-	async addCardBranch(sibling: any, text: string): Promise<void> {
+	async addCardChild(parent: any, text: string): Promise<void> {
 		return
 	}
 
-	async addCardPull(sibling: any, text: string): Promise<void> {
+	async addCardParent(child: any, text: string): Promise<void> {
 		return
 	}
 
