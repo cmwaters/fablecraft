@@ -533,15 +533,29 @@ export class Graph {
         if (this.hasAnError()) {
             return;
         }
+        
+        if (this.permission !== PermissionGroup.Owner && this.permission !== PermissionGroup.Author) {
+            return this.error(errors.UserPermissionDenied);
+        }
+
+        // check to make sure we are not deleting the last root card
+        let count = await CardModel.count({story: this.story!.id, depth: 0})
+        if (count === 1 && this.card!.depth === 0) {
+            return this.error(errors.DeletingFinalRootCard)
+        }
+
         this.deleteCard(this.card!);
+
+        this.status = status.DELETED
+        return;
     }
 
     private async deleteCard(card: Card): Promise<void> {
         if (this.hasAnError()) {
             return;
         }
-        if (this.card!.children) {
-            for (let child of this.card!.children) {
+        if (card!.children) {
+            for (let child of card!.children) {
                 this.deleteCard(child);
             }
         }

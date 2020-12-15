@@ -154,7 +154,9 @@ router.put("/card/:id", async (req, res) => {
 
 // deletes a card and recursively deletes all children
 router.delete("/card/:id", async (req, res) => {
-    res.status(200).send();
+    let graph = await Graph.loadFromCard(req.user as User, req.params.id);
+    await graph.removeCard();
+    graph.send(res);
 });
 
 export default router;

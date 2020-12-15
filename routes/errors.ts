@@ -9,4 +9,5 @@ export const errors = {
     CardAlreadyExists: "card with exact story, depth and index already exists",
     CardNotFound: "card could not be found", 
     MissingTitle: "story is missing title",
+    DeletingFinalRootCard: "can not delete final root card",
 }
