@@ -45,6 +45,7 @@ export class Graph {
         let graph = await Graph.loadFromStory(user, card.story._id);
 
         graph.card = card;
+        graph.response = card
         return graph;
     }
 

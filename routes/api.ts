@@ -129,19 +129,22 @@ router.post("/card/parent", async (req, res) => {
 
 // gets a card (note: probably won't be used that often)
 router.get("/card/:id", async (req, res) => {
-    res.status(200).send();
+    let graph = await Graph.loadFromCard(req.user as User, req.params.id);
+    graph.send(res);
 });
 
 // moves the card one index smaller (or one card higher)
-router.put("/card/move-up", async (req, res) => {
-    const { story, depth, index } = req.body;
-    res.status(200).send();
+router.put("/card/:id/move-up", async (req, res) => {
+    let graph = await Graph.loadFromCard(req.user as User, req.params.id);
+    await graph.moveCardUp();
+    graph.send(res);
 });
 
 // moves the card one index greater (or one card lower)
-router.put("/card/move-down", async (req, res) => {
-    const { story, depth, index } = req.body;
-    res.status(200).send();
+router.put("/card/:id/move-down", async (req, res) => {
+    let graph = await Graph.loadFromCard(req.user as User, req.params.id);
+    await graph.moveCardDown();
+    graph.send(res);
 });
 
 // edits a card's text

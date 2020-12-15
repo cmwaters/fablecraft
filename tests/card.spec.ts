@@ -295,7 +295,7 @@ describe.only("Card", () => {
         });
     });
 
-    describe.only("/DELETE remove card", () => {
+    describe("/DELETE remove card", () => {
         let testResults = [true, true, false, false, false];
 
         testResults.forEach((success, index) => {
@@ -349,4 +349,59 @@ describe.only("Card", () => {
             });
         });
     });
+
+    describe.only("/PUT move cards up and down", () => {
+        let testResults = [true, true, false, false, false];
+
+        testResults.forEach((success, index) => {
+            let name = permissionString[4 - index] + " should not be able to move the card upwards";
+            if (success) {
+                name = permissionString[4 - index] + " should be able to move the card upwards";
+            }
+            it(name, (done) => {
+                addCardAbove(test_env.story, test_env.rootCard, test_env.users[0].token).then((card) => {
+                    // once we've created a card we are going to delete the root card
+                    chai.request(app)
+                        .put("/api/card/" + card.id + "/move-up")
+                        .query({ token: test_env.users[index].token })
+                        .end((err, res) => {
+                            if (success) {
+                                res.should.have.status(204);
+                                res.body.should.be.empty;
+                            } else {
+                                res.should.have.status(401);
+                            }
+                            CardModel.find({ story: test_env.story }, (err, cards) => {
+                                if (success) {
+                                    cards[1].text.should.equal(defaultCardText)
+                                } else {
+                                    cards[0].text.should.equal(defaultCardText)
+                                }
+                                // chai.request(app)
+                                //     .delete("/api/card/" + card._id + "/move-up")
+                                //     .query({ token: test_env.users[index].token })
+                                //     .end((err, res) => {
+                                //         if (success) {
+                                //             res.should.have.status(200);
+                                //             res.body.should.have.property("error")
+                                //             res.body.error.should.equal(errors.DeletingFinalRootCard)
+                                //         } else {
+                                //             res.should.have.status(401)
+                                //         }
+                                //         CardModel.find({ story: test_env.story }, (err, cards) => {
+                                //             // nothing should have happened
+                                //             if (success) {
+                                //                 cards.should.have.length(1)
+                                //             } else {
+                                //                 cards.should.have.length(2)
+                                //             }
+                                //             done();
+                                //         });
+                                //     });
+                            });
+                        });
+                });
+            });
+        });
+    })
 });
