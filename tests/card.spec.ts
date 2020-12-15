@@ -134,9 +134,9 @@ describe.only("Card", () => {
         let testResults = [true, true, false, false, false];
 
         testResults.forEach((success, index) => {
-            let name = permissionString[4 - index] + " should not be able to create a card above";
+            let name = permissionString[4 - index] + " should not be able to create a card below";
             if (success) {
-                name = permissionString[4 - index] + " should be able to create a card above";
+                name = permissionString[4 - index] + " should be able to create a card below";
             }
             it(name, (done) => {
                 addCardAbove(test_env.story, test_env.rootCard, test_env.users[0].token)
@@ -182,9 +182,9 @@ describe.only("Card", () => {
         let testResults = [true, true, false, false, false];
 
         testResults.forEach((success, index) => {
-            let name = permissionString[4 - index] + " should not be able to create a card above";
+            let name = permissionString[4 - index] + " should not be able to create a child card";
             if (success) {
-                name = permissionString[4 - index] + " should be able to create a card above";
+                name = permissionString[4 - index] + " should be able to create a child card";
             }
             it(name, (done) => {
                 chai.request(app)
@@ -214,10 +214,85 @@ describe.only("Card", () => {
                             } else {
                                 expect(cards).to.have.length(1);
                             }
+                            // we make the same request again. This time it is too a card with existing children
+                            // so it should append to the end
+                            chai.request(app)
+                            .post("/api/card/child")
+                            .query({ token: test_env.users[index].token })
+                            .send({ story: test_env.story, parent: test_env.rootCard, text: defaultCardText })
+                            .end((err, res) => {
+                                if (success) {
+                                    res.should.have.status(201);
+                                    res.body.should.have.property("card");
+                                    // we just want the output to be the id, not the entire story
+                                    res.body.card.should.have.property("story");
+                                    res.body.card.story.should.equal(test_env.story)
+                                    res.body.card.text.should.equal(defaultCardText);
+                                } else {
+                                    res.should.have.status(401);
+                                }
+                                CardModel.find({ story: test_env.story }, (err, cards) => {
+                                    if (success) {
+                                        expect(cards).to.have.length(3);
+                                        // check that the index and depths are correct
+                                        cards[0].index.should.equal(0);
+                                        cards[0].depth.should.equal(0);
+                                        cards[1].index.should.equal(0);
+                                        cards[1].depth.should.equal(1);
+                                        cards[2].index.should.equal(1)
+                                        cards[2].depth.should.equal(1)
+                                        // check that the ancestry is correct
+                                        cards[0].children![0]._id.toString().should.equal(cards[1].id);
+                                        cards[0].children![1]._id.toString().should.equal(cards[2].id)
+                                        cards[1].parent!._id.toString().should.equal(cards[0].id);
+                                        cards[2].parent!._id.toString().should.equal(cards[0].id)
+                                        // check that the relations are correct
+                                        cards[1].below!._id.toString().should.equal(cards[2].id);
+                                        cards[2].above!._id.toString().should.equal(cards[1].id);
+                                    } else {
+                                        expect(cards).to.have.length(1);
+                                    }
+                                    done();
+                                });
+                            });
+                        });
+                    });
+
+                    
+            });
+        });
+    });
+
+    describe.only("/PUT update card text", () => {
+        let testResults = [true, true, false, false, false];
+
+        testResults.forEach((success, index) => {
+            let name = permissionString[4 - index] + " should not be able to modify a card";
+            if (success) {
+                name = permissionString[4 - index] + " should be able to modify a card";
+            }
+            it(name, (done) => {
+                chai.request(app)
+                    .put("/api/card/" + test_env.rootCard)
+                    .query({ token: test_env.users[index].token })
+                    .send({ text: defaultCardText })
+                    .end((err, res) => {
+                        if (success) {
+                            res.should.have.status(204);
+                            res.body.should.be.empty;
+                        } else {
+                            res.should.have.status(401);
+                        }
+                        CardModel.findById(test_env.rootCard, (err, card) => {
+                            if (success) {
+                                card!.text.should.equal(defaultCardText)
+                            } else {
+                                card!.text.should.equal(" ")
+                            }
                             done();
                         });
                     });
             });
         });
-    });
+    })
 });

@@ -462,7 +462,6 @@ export class Graph {
             // if the parent already has children then we append this new card to the end
             if (parent.children && parent.children.length > 0) {
                 let lastChildIdx = parent.children![parent.children!.length - 1];
-                console.log(lastChildIdx);
                 let lastChild = await CardModel.findById(lastChildIdx);
                 if (!lastChild) {
                     return this.internal("data corrupted: unable to find parents child");
@@ -478,6 +477,9 @@ export class Graph {
                     above: lastChild.id,
                     text: text,
                 });
+
+                lastChild.below = card.id
+                await lastChild.save()
             } else {
                 // this is the first child of the parent
                 card = await CardModel.create({
@@ -504,8 +506,26 @@ export class Graph {
         return;
     }
 
-		// TODO: this is a rare operation where the child inherits a new parent
+    // TODO: this is a rare operation where the child inherits a new parent
     async addCardParent(child: any, text: string): Promise<void> {
+        return;
+    }
+
+    // at the moment updating a card just means modifying text. In the future we may
+    // want to extend this functionality
+    async updateCard(text: string): Promise<void> {
+        if (this.hasAnError()) {
+            return;
+        }
+
+        if (this.permission !== PermissionGroup.Owner && this.permission !== PermissionGroup.Author) {
+            return this.error(errors.UserPermissionDenied);
+        }
+
+        this.card!.text = text;
+        await this.card!.save();
+
+        this.status = status.UPDATED;
         return;
     }
 

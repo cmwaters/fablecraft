@@ -147,7 +147,9 @@ router.put("/card/move-down", async (req, res) => {
 // edits a card's text
 router.put("/card/:id", async (req, res) => {
     const { text } = req.body;
-    res.status(200).send();
+    let graph = await Graph.loadFromCard(req.user as User, req.params.id);
+    await graph.updateCard(text);
+    graph.send(res);
 });
 
 // deletes a card and recursively deletes all children
