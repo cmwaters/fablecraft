@@ -97,7 +97,7 @@ export class Graph {
 				throw err
 			})
 
-			return new Graph(status.CREATED, story, story, PermissionGroup.Owner)
+			return new Graph(status.CREATED, { story: story, rootCard: rootCard }, story, PermissionGroup.Owner)
 		} catch (error) {
 			return new Graph(status.INTERNAL, error)
 		}
@@ -233,7 +233,7 @@ export class Graph {
 					this.story!.authors = [user]
 				}
 				break;
-			case PermissionGroup.Owner: // changing of ownershiip
+			case PermissionGroup.Owner: // changing of ownership
 				if (this.permission != PermissionGroup.Owner) {
 					return this.error(errors.UserPermissionDenied)
 				}
@@ -340,10 +340,10 @@ export class Graph {
 
 			// create new card
 			let card = await CardModel.create({ 
-				story: this.story!,
+				story: this.story!.id,
+				depth: sibling.depth,
 				// this field is eventually consistent
 				index: sibling.index, 
-				depth: sibling.depth,
 				below: sibling.id,
 				text: text
 			})
@@ -351,15 +351,13 @@ export class Graph {
 			// update the parent
 			if (sibling.parent) {
 				card.parent = sibling.parent
-				sibling.parent.children!.push(card)
-				await card.parent.save()
+				await CardModel.findByIdAndUpdate(card.parent, { $addToSet: { children: card.id }})
 			}
 
 			// update the sibling above the new one
 			if (sibling.above) {
-				sibling.above.below = card.id
 				card.above = sibling.above
-				await card.above.save()
+				await CardModel.findByIdAndUpdate(card.above, { below: card.id })
 			}
 
 			// // update the sibling
@@ -375,7 +373,59 @@ export class Graph {
 		} catch (error) { return this.internal(error) }
 	}
 
-	async addCardBelow(sibling: any, text: string): Promise<void> {
+	async addCardBelow(siblingID: any, text: string): Promise<void> {
+		if (this.hasAnError()) { return }
+
+		if (this.permission != PermissionGroup.Owner && this.permission != PermissionGroup.Author) {
+			return this.error(errors.UserPermissionDenied)
+		}
+
+		try { 
+			
+			// fetch sibling card and check that it exists
+			let sibling = await CardModel.findById(siblingID)
+
+			if (!sibling) {
+				return this.error(errors.CardNotFound)
+			}
+
+			// create new card
+			let card = await CardModel.create({ 
+				story: this.story!.id,
+				depth: sibling.depth,
+				// this field is eventually consistent
+				index: sibling.index + 1, 
+				above: sibling.id,
+				text: text
+			})
+
+			// update the parent
+			if (sibling.parent) {
+				card.parent = sibling.parent
+				await CardModel.findByIdAndUpdate(card.parent, { $addToSet: { children: card.id }})
+			}
+
+			// update the sibling below the new one
+			if (sibling.below) {
+				card.below = sibling.below
+				await CardModel.findByIdAndUpdate(card.below, { index: card.index + 1, above: card.id })
+			}
+
+			// // update the sibling
+			sibling.below = card.id
+			await sibling.save()
+
+			// finally save the new card
+			await card.save()
+
+			this.status = status.CREATED
+			this.response = { card: card }
+		
+		} catch(err) { 
+			console.error(err)
+			return this.internal(err)
+		}
+
 		return
 	}
 

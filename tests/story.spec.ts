@@ -107,10 +107,10 @@ describe("Story", () => {
         })
 
         it("can retrieve existing stories", done => {
-            createStory("Test Story", token).then((storyId: string) => {
+            createStory("Test Story", token).then((resp: any) => {
                 chai
                     .request(app)
-                    .get("/api/story/" + storyId)
+                    .get("/api/story/" + resp.story._id)
                     .query({ token: token })
                     .end((err, res) => {
                         res.should.have.status(200);
@@ -136,10 +136,10 @@ describe("Story", () => {
 
         it("doesn't allow access to accounts that do not have permission", done => {
             setupUsersAndTokens(["second_user"]).then((resp: any[]) => {
-                createStory("Test Story", token).then((storyId: string) => {
+                createStory("Test Story", token).then((res: any) => {
                     chai
                         .request(app)
-                        .get("/api/story/" + storyId)
+                        .get("/api/story/" + res.story._id)
                         .query({ token: resp[0].token })
                         .end((err, res) => {
                             res.should.have.status(401)
@@ -155,10 +155,10 @@ describe("Story", () => {
         let test_env: any
         beforeEach(done => {
             setupUsersAndTokens(["authorized_user", "unauthorized_user"]).then((users: any[]) => {
-                createStory("Test Story", users[0].token).then((res: string) => {
+                createStory("Test Story", users[0].token).then((res: any) => {
                     test_env = {
                         users: users,
-                        storyId: res
+                        storyId: res.story._id
                     }
                     done()
                 });
@@ -236,10 +236,10 @@ describe("Story", () => {
             setupUsersAndTokens(["1", "2", "3"])
                 .then((res: any[]) => {
                     createStory("Test Story", res[0].token) // 1 is always owner
-                        .then((id) => {
+                        .then((resp) => {
                             test_env = {
                                 users: res,
-                                storyId: id
+                                storyId: resp.story._id
                             }
                             done()
                         })
@@ -621,10 +621,10 @@ describe("Story", () => {
             setupUsersAndTokens(["1", "2", "3"])
                 .then((res: any[]) => {
                     createStory("Test Story", res[0].token) // 1 is always owner
-                        .then((id) => {
+                        .then((resp) => {
                             test_env = {
                                 users: res,
-                                storyId: id
+                                storyId: resp.story._id
                             }
                             done()
                         })
@@ -754,10 +754,10 @@ describe("Story", () => {
             setupUsersAndTokens(["user1", "user2"])
                 .then((res: any[]) => {
                     createStory("Test Story", res[0].token)
-                        .then((id) => {
+                        .then((resp: any) => {
                             test_env = {
                                 users: res,
-                                storyId: id,
+                                storyId: resp.story._id,
                                 originalTitle: "Test Story", 
                                 newTitle: "New Test Story", 
                                 newDescription: "this is a test description"
