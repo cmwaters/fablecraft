@@ -478,8 +478,8 @@ export class Graph {
                     text: text,
                 });
 
-                lastChild.below = card.id
-                await lastChild.save()
+                lastChild.below = card.id;
+                await lastChild.save();
             } else {
                 // this is the first child of the parent
                 card = await CardModel.create({
@@ -490,6 +490,11 @@ export class Graph {
                     parent: parent.id,
                     text: text,
                 });
+
+                // FIXME: what happens if there are other cards in this column,
+                // specifically ones belonging to parents that are higher than
+                // this parent. We should still connect with them to make one
+                // long list.
             }
 
             // add reference of the new child to the parent
@@ -529,24 +534,116 @@ export class Graph {
         return;
     }
 
+    // moves the card down by one (if it's not the last). This is essentially executed like a swap
+    // with the card below swapping with the card above
+    async moveCardDown(): Promise<any> {
+        if (this.hasAnError()) {
+            return;
+        }
+
+        if (this.permission !== PermissionGroup.Owner && this.permission !== PermissionGroup.Author) {
+            return this.error(errors.UserPermissionDenied);
+        }
+
+        if (!this.card!.below) {
+            return this.error(errors.LowerCardBound);
+        }
+
+        try {
+            let lowerCard = await CardModel.findById(this.card!.below);
+            if (!lowerCard) {
+                return this.internal(errors.DataInconsistency);
+            }
+
+            await this.swapCards(this.card!, lowerCard);
+
+            this.status = status.UPDATED;
+            return;
+        } catch (err) {
+            return this.internal(err);
+        }
+    }
+
+    // moves the card up by one (if it's not the last). This is essentially executed like a swap
+    // with the card above swapping with the card below
+    async moveCardUp(): Promise<any> {
+        if (this.hasAnError()) {
+            return;
+        }
+
+        if (this.permission !== PermissionGroup.Owner && this.permission !== PermissionGroup.Author) {
+            return this.error(errors.UserPermissionDenied);
+        }
+
+        if (!this.card!.above) {
+            return this.error(errors.UpperCardBound);
+        }
+
+        try {
+            let upperCard = await CardModel.findById(this.card!.above);
+            if (!upperCard) {
+                return this.internal(errors.DataInconsistency);
+            }
+
+            await this.swapCards(upperCard, this.card!);
+
+            this.status = status.UPDATED;
+            return;
+        } catch (err) {
+            return this.internal(err);
+        }
+    }
+
+    private async swapCards(upperCard: Card, lowerCard: Card): Promise<any> {
+        
+        // swap the outer relationships first
+        if (upperCard.above) {
+            lowerCard.above = upperCard.above
+
+            // we also need to update the upper neighbor
+            await CardModel.findByIdAndUpdate(upperCard.above, { below: lowerCard.id })
+        } else {
+            lowerCard.above = undefined
+        }
+
+        if (lowerCard.below) {
+            upperCard.below = lowerCard.below
+
+            // we also need to update the lower neighbor
+            await CardModel.findByIdAndUpdate(lowerCard.below, { above: upperCard.id })
+        } else {
+            upperCard.below = undefined
+        }
+
+        // swap the inner relationships
+        lowerCard.below = upperCard.id
+        upperCard.above = lowerCard.id
+
+        // persist the changes to disk
+        await lowerCard.save()
+        await upperCard.save()
+
+        return
+    }
+
     async removeCard(): Promise<void> {
         if (this.hasAnError()) {
             return;
         }
-        
+
         if (this.permission !== PermissionGroup.Owner && this.permission !== PermissionGroup.Author) {
             return this.error(errors.UserPermissionDenied);
         }
 
         // check to make sure we are not deleting the last root card
-        let count = await CardModel.count({story: this.story!.id, depth: 0})
+        let count = await CardModel.count({ story: this.story!.id, depth: 0 });
         if (count === 1 && this.card!.depth === 0) {
-            return this.error(errors.DeletingFinalRootCard)
+            return this.error(errors.DeletingFinalRootCard);
         }
 
-        this.deleteCard(this.card!);
+        await this.deleteCard(this.card!);
 
-        this.status = status.DELETED
+        this.status = status.DELETED;
         return;
     }
 
