@@ -440,10 +440,71 @@ export class Graph {
         return;
     }
 
-    async addCardChild(parent: any, text: string): Promise<void> {
+    async addCardChild(parentID: any, text: string): Promise<void> {
+        if (this.hasAnError()) {
+            return;
+        }
+
+        if (this.permission != PermissionGroup.Owner && this.permission != PermissionGroup.Author) {
+            return this.error(errors.UserPermissionDenied);
+        }
+
+        let card: Card;
+
+        try {
+            // fetch parent card and check that it exists
+            let parent = await CardModel.findById(parentID);
+
+            if (!parent) {
+                return this.error(errors.CardNotFound);
+            }
+
+            // if the parent already has children then we append this new card to the end
+            if (parent.children && parent.children.length > 0) {
+                let lastChildIdx = parent.children![parent.children!.length - 1];
+                console.log(lastChildIdx);
+                let lastChild = await CardModel.findById(lastChildIdx);
+                if (!lastChild) {
+                    return this.internal("data corrupted: unable to find parents child");
+                }
+
+                // create new card
+                card = await CardModel.create({
+                    story: this.story!.id,
+                    depth: lastChild.depth,
+                    // this field is eventually consistent
+                    index: lastChild.index + 1,
+                    parent: parent.id,
+                    above: lastChild.id,
+                    text: text,
+                });
+            } else {
+                // this is the first child of the parent
+                card = await CardModel.create({
+                    story: this.story!.id,
+                    depth: parent.depth + 1,
+                    // this field is eventually consistent
+                    index: 0,
+                    parent: parent.id,
+                    text: text,
+                });
+            }
+
+            // add reference of the new child to the parent
+            parent.children!.push(card.id);
+            await parent.save();
+
+            this.status = status.CREATED;
+            this.response = { card: card };
+        } catch (err) {
+            console.error(err);
+            return this.internal(err);
+        }
+
         return;
     }
 
+		// TODO: this is a rare operation where the child inherits a new parent
     async addCardParent(child: any, text: string): Promise<void> {
         return;
     }
