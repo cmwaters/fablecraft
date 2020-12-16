@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "test": "NODE_ENV=test mocha --timeout 10000",
+    "init-dev-db": "ts-node scripts/dev.ts",
     "build-server": "tsc",
     "build-client": "webpack",
     "build-dev": "concurrently --kill-others-on-fail \"tsc --watch --preserveWatchOutput\" \"webpack --watch\"",

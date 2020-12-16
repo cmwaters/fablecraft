@@ -1,4 +1,3 @@
-process.env.NODE_ENV = 'development';
 import * as dotenv from 'dotenv'
 import mongoose from 'mongoose';
 import * as argon2 from "argon2";
@@ -6,8 +5,21 @@ import { randomBytes } from "crypto";
 import { Card, CardModel } from '../models/card'
 import { Story, StoryModel } from '../models/story'
 import { User, UserModel } from '../models/user'
+import { LoremIpsum } from "lorem-ipsum";
 
-dotenv.config({ path: `../config/.env.${process.env.NODE_ENV}` })
+
+const lorem = new LoremIpsum({
+    sentencesPerParagraph: {
+        max: 8,
+        min: 4
+    },
+    wordsPerSentence: {
+        max: 16,
+        min: 4
+    }
+});
+
+dotenv.config({ path: `config/.env.development` })
 
 const devUser = {
     name: "test",
@@ -48,12 +60,7 @@ db.once('open', async () => {
         })
 
         console.log("Creating cards")
-        await CardModel.create({
-            story: story.id, 
-            text: "Welcome to fablecraft!",
-            depth: 0,
-            index: 0,
-        })
+        await generateCards(story._id, 0, 3, 7)
 
         console.log("Closing connection")
         db.close()
@@ -64,3 +71,46 @@ db.once('open', async () => {
 
 });
 
+function getRandomInt(min: number, max: number) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min) + min); //The maximum is exclusive and the minimum is inclusive
+}
+
+
+async function generateCards(storyId: any, depth: number, min: number, max: number, parent?: Card) {
+    let range = getRandomInt(min, max)
+    let column = []
+
+    for (let index = 0; index < range; index++) {
+        column.push( await CardModel.create({
+            story: storyId, 
+            text: lorem.generateParagraphs(1),
+            depth: depth,
+            index: index,
+        }))
+    }
+
+    for (let index = 0; index < range; index++) {
+        if (parent !== undefined) {
+            column[index].parent = parent._id
+            parent.children!.push(column[index]._id)
+        }
+        if (index !== 0) {
+            column[index].above = column[index - 1]._id
+        }
+        if (index !== range - 1) {
+            column[index].below = column[index + 1]._id
+        }
+        if (depth < 3 && getRandomInt(0, 2) === 0) {
+            generateCards(storyId, depth + 1, min - 1, max - 1, column[index])
+        }
+
+        await column[index].save()
+    }
+
+    if (parent !== undefined) {
+        await parent.save()
+    }
+
+} 

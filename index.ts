@@ -10,8 +10,6 @@ import path from 'path'
 
 dotenv.config({ path: `config/.env.${process.env.NODE_ENV}` })
 
-console.log(process.env)
-
 import './services/auth'
 let clientRouter = express.Router();
 
@@ -49,7 +47,6 @@ clientRouter.get('/test', (req, res, next) => {
 app.use('/', clientRouter)
 app.use('/auth', authRouter);
 app.use('/api', passport.authenticate('jwt', { session : false }), apiRouter);
-// passport.authenticate('jwt', { session : false }),
 
 
 const PORT = process.env.PORT || 8080;
@@ -57,57 +54,3 @@ const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log('Fablecraft server listening on port ' + PORT + ' in ' + process.env.NODE_ENV + ' mode') 
 })
-
-// /**
-//  * Create HTTP server.
-//  */
-
-// var server = http.createServer(app);
-
-// /**
-//  * Listen on provided port, on all network interfaces.
-//  */
-
-// server.listen(PORT);
-// server.on('error', onError);
-// server.on('listening', onListening);
-
-// /**
-//  * Event listener for HTTP server "error" event.
-//  */
-
-// function onError(error: any) {
-//   if (error.syscall !== 'listen') {
-//     throw error;
-//   }
-
-//   var bind = typeof PORT === 'string'
-//     ? 'Pipe ' + PORT
-//     : 'Port ' + PORT;
-
-//   // handle specific listen errors with friendly messages
-//   switch (error.code) {
-//     case 'EACCES':
-//       console.error(bind + ' requires elevated privileges');
-//       process.exit(1);
-//       break;
-//     case 'EADDRINUSE':
-//       console.error(bind + ' is already in use for serving fablecraft');
-//       process.exit(1);
-//       break;
-//     default:
-//       throw error;
-//   }
-// }
-
-// /**
-//  * Event listener for HTTP server "listening" event.
-//  */
-
-// function onListening() {
-//   var addr = server.address();
-//   var bind = typeof addr === 'string'
-//     ? 'pipe ' + addr
-//     : 'port ' + addr.port;
-//   debug('Listening on ' + bind);
-// }
