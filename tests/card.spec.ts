@@ -21,7 +21,7 @@ import { errors } from "../routes/errors";
 const defaultCardText = "default test card text";
 
 chai.use(chaiHttp);
-describe.only("Card", () => {
+describe("Card", () => {
     let test_env: any;
 
     before((done) => {
@@ -50,8 +50,10 @@ describe.only("Card", () => {
                 await addUserPermission(test_env.users[2].id, res.story._id, PermissionGroup.Editor);
                 await addUserPermission(test_env.users[3].id, res.story._id, PermissionGroup.Viewer);
                 done();
-            });
-        });
+            })
+            .catch(err => console.error(err))
+        })
+        .catch(err => console.error(err))
     });
 
     describe("/GET cards", () => {
@@ -80,6 +82,7 @@ describe.only("Card", () => {
                             res.body.cards.should.have.length(2);
                         } else {
                             res.should.have.status(401);
+                            res.body.should.be.empty 
                         }
                         done();
                     });
@@ -113,6 +116,7 @@ describe.only("Card", () => {
                             res.body.card.text.should.equal(defaultCardText);
                         } else {
                             res.should.have.status(401);
+                            res.body.should.be.empty 
                         }
                         CardModel.find({ story: test_env.story }, (err, cards) => {
                             if (success) {
@@ -156,6 +160,7 @@ describe.only("Card", () => {
                                     res.body.card.text.should.equal(defaultCardText);
                                 } else {
                                     res.should.have.status(401);
+                                    res.body.should.be.empty 
                                 }
                                 CardModel.find({ story: test_env.story }, (err, cards) => {
                                     if (success) {
@@ -202,6 +207,7 @@ describe.only("Card", () => {
                             res.body.card.text.should.equal(defaultCardText);
                         } else {
                             res.should.have.status(401);
+                            res.body.should.be.empty 
                         }
                         CardModel.find({ story: test_env.story }, (err, cards) => {
                             if (success) {
@@ -231,6 +237,7 @@ describe.only("Card", () => {
                                         res.body.card.text.should.equal(defaultCardText);
                                     } else {
                                         res.should.have.status(401);
+                                        res.body.should.be.empty 
                                     }
                                     CardModel.find({ story: test_env.story }, (err, cards) => {
                                         if (success) {
@@ -278,10 +285,10 @@ describe.only("Card", () => {
                     .end((err, res) => {
                         if (success) {
                             res.should.have.status(204);
-                            res.body.should.be.empty;
                         } else {
                             res.should.have.status(401);
                         }
+                        res.body.should.be.empty 
                         CardModel.findById(test_env.rootCard, (err, card) => {
                             if (success) {
                                 card!.text.should.equal(defaultCardText);
@@ -332,6 +339,7 @@ describe.only("Card", () => {
                                             res.body.error.should.equal(errors.DeletingFinalRootCard)
                                         } else {
                                             res.should.have.status(401)
+                                            res.body.should.be.empty 
                                         }
                                         CardModel.find({ story: test_env.story }, (err, cards) => {
                                             // nothing should have happened
@@ -350,7 +358,7 @@ describe.only("Card", () => {
         });
     });
 
-    describe.only("/PUT move cards up and down", () => {
+    describe("/PUT move cards up and down", () => {
         let testResults = [true, true, false, false, false];
 
         testResults.forEach((success, index) => {
@@ -360,44 +368,60 @@ describe.only("Card", () => {
             }
             it(name, (done) => {
                 addCardAbove(test_env.story, test_env.rootCard, test_env.users[0].token).then((card) => {
-                    // once we've created a card we are going to delete the root card
+                    // once we've created a card we are going to move the root card up
                     chai.request(app)
-                        .put("/api/card/" + card.id + "/move-up")
+                        .put("/api/card/" + test_env.rootCard + "/move-up")
                         .query({ token: test_env.users[index].token })
                         .end((err, res) => {
                             if (success) {
                                 res.should.have.status(204);
-                                res.body.should.be.empty;
                             } else {
                                 res.should.have.status(401);
                             }
+                            res.body.should.be.empty;
                             CardModel.find({ story: test_env.story }, (err, cards) => {
                                 if (success) {
-                                    cards[1].text.should.equal(defaultCardText)
+                                    // these two cards should have swapped
+                                    cards[0].above!._id.toString().should.equal(cards[1].id)
+                                    cards[1].below!._id.toString().should.equal(cards[0].id)
+                                    expect(cards[1].above).to.be.undefined
+                                    expect(cards[0].below).to.be.undefined
                                 } else {
-                                    cards[0].text.should.equal(defaultCardText)
+                                    cards[1].above!._id.toString().should.equal(cards[0].id)
+                                    cards[0].below!._id.toString().should.equal(cards[1].id)
+                                    expect(cards[0].above).to.be.undefined
+                                    expect(cards[1].below).to.be.undefined
                                 }
-                                // chai.request(app)
-                                //     .delete("/api/card/" + card._id + "/move-up")
-                                //     .query({ token: test_env.users[index].token })
-                                //     .end((err, res) => {
-                                //         if (success) {
-                                //             res.should.have.status(200);
-                                //             res.body.should.have.property("error")
-                                //             res.body.error.should.equal(errors.DeletingFinalRootCard)
-                                //         } else {
-                                //             res.should.have.status(401)
-                                //         }
-                                //         CardModel.find({ story: test_env.story }, (err, cards) => {
-                                //             // nothing should have happened
-                                //             if (success) {
-                                //                 cards.should.have.length(1)
-                                //             } else {
-                                //                 cards.should.have.length(2)
-                                //             }
-                                //             done();
-                                //         });
-                                //     });
+                                // now try to move the top card higher -> we should get an error
+                                chai.request(app)
+                                    .put("/api/card/" + test_env.rootCard + "/move-up")
+                                    .query({ token: test_env.users[index].token })
+                                    .end((err, res) => {
+                                        if (success) {
+                                            res.should.have.status(200);
+                                            res.body.should.have.property("error")
+                                            res.body.error.should.equal(errors.UpperCardBound)
+                                        } else {
+                                            res.should.have.status(401)
+                                            res.body.should.be.empty;
+                                        }
+                                        CardModel.find({ story: test_env.story }, (err, cards) => {
+                                            // nothing should have happened
+                                            if (success) {
+                                                // these two cards should have swapped
+                                                cards[0].above!._id.toString().should.equal(cards[1].id)
+                                                cards[1].below!._id.toString().should.equal(cards[0].id)
+                                                expect(cards[1].above).to.be.undefined
+                                                expect(cards[0].below).to.be.undefined
+                                            } else {
+                                                cards[1].above!._id.toString().should.equal(cards[0].id)
+                                                cards[0].below!._id.toString().should.equal(cards[1].id)
+                                                expect(cards[0].above).to.be.undefined
+                                                expect(cards[1].below).to.be.undefined
+                                            }
+                                            done();
+                                        });
+                                    });
                             });
                         });
                 });

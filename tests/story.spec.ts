@@ -14,7 +14,7 @@ let expect = chai.expect;
 
 chai.use(chaiHttp);
 // NOTE: all tests within each describe are dependent on one another 
-describe("Story", () => {
+describe.only("Story", () => {
     afterEach((done) => {
         clearUsers()
         clearStoriesAndCards()
@@ -23,10 +23,12 @@ describe("Story", () => {
 
     describe("/POST story", () => {
         let token: string = ""
+        let user: any
         beforeEach((done) => {
             setupUsersAndTokens(["user"])
                 .then((resp: any[]) => {
                     token = resp[0].token;
+                    user = resp[0]
                     done()
                 })
                 .catch((err: any) => {
@@ -47,12 +49,17 @@ describe("Story", () => {
                 .send(story)
                 .end((err, res) => {
                     res.should.have.status(201);
-                    res.body.should.have.property("title")
-                    res.body.title.should.equals(story.title)
-                    res.body.should.have.property("description")
-                    res.body.description.should.equals(story.description)
-                    res.body.should.have.property("_id")
-                    let storyId = res.body._id
+                    res.body.should.have.property("story")
+                    res.body.should.have.property("rootCard")
+                    res.body.story.should.have.property("description")
+                    res.body.story.should.have.property("title")
+                    res.body.story.should.have.property("owner")
+                    res.body.story.should.have.property("_id")
+                    res.body.story.title.should.equals(story.title)
+                    res.body.story.description.should.equals(story.description)
+                    res.body.story.owner.should.equals(user.id)
+                    let storyId = res.body.story._id
+                    res.body.rootCard.story.should.equals(storyId)
                     chai
                         .request(app)
                         .get("/api/story")
@@ -235,6 +242,11 @@ describe("Story", () => {
             // last is the permission we are adjusting / adding
             setupUsersAndTokens(["1", "2", "3"])
                 .then((res: any[]) => {
+                    for (let r of res) {
+                        if (r.id === undefined) {
+                            console.error("WHYYYYYYYYYY")
+                        }
+                    }
                     createStory("Test Story", res[0].token) // 1 is always owner
                         .then((resp) => {
                             test_env = {
@@ -243,9 +255,10 @@ describe("Story", () => {
                             }
                             done()
                         })
+                        .catch((err => console.error(err)))
                 })
                 .catch((err) => {
-                    console.log(err)
+                    console.error(err)
                 });
         })
 
@@ -591,6 +604,11 @@ describe("Story", () => {
             for (let permissionLevel = 1; permissionLevel < 5; permissionLevel++) {
                 
                 it(test.name + ' - ' + permissionLevel, done => {
+                    for (let r of test_env.users) {
+                        if (r.id === undefined) {
+                            console.error("WHYYYYYYYYYY")
+                        }
+                    }
                     test.prep(permissionLevel, test_env).then(() => {
                         chai
                             .request(app)

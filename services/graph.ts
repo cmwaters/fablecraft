@@ -44,8 +44,10 @@ export class Graph {
 
         let graph = await Graph.loadFromStory(user, card.story._id);
 
-        graph.card = card;
-        graph.response = card
+        if (!graph.hasAnError()) {
+            graph.card = card;
+            graph.response = card
+        }
         return graph;
     }
 
@@ -637,7 +639,7 @@ export class Graph {
         }
 
         // check to make sure we are not deleting the last root card
-        let count = await CardModel.count({ story: this.story!.id, depth: 0 });
+        let count = await CardModel.countDocuments({ story: this.story!.id, depth: 0 });
         if (count === 1 && this.card!.depth === 0) {
             return this.error(errors.DeletingFinalRootCard);
         }
