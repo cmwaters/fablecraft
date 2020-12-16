@@ -162,4 +162,30 @@ router.delete("/card/:id", async (req, res) => {
     graph.send(res);
 });
 
+// -------------------------------- FUTURE API's --------------------------------
+
+router.post("/card:id/comment", async (req, res) => {
+	res.status(200).send();
+});
+
+router.put("/card/:id/comment", async (req, res) => {
+	res.status(200).send();
+});
+
+router.delete("/card/:id/comment", async (req, res) => {
+	res.status(200).send();
+})
+
+router.post("/card/:id/suggestion", async (req, res) => {
+	res.status(200).send();
+})
+
+router.put("/card/:id/suggestion", async (req, res) => {
+	res.status(200).send();
+})
+
+router.delete("/card/:id/suggestion", async (req, res) => {
+	res.status(200).send();
+})
+
 export default router;

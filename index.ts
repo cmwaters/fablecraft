@@ -1,7 +1,6 @@
 import * as dotenv from 'dotenv'
 import express from 'express';
 import mongoose from 'mongoose';
-// import session from 'express-session';
 import * as bodyParser from 'body-parser';
 import "./models/user"
 import authRouter from './routes/auth';
@@ -9,10 +8,14 @@ import apiRouter from './routes/api';
 import passport from 'passport';
 import path from 'path'
 
+dotenv.config({ path: `config/.env.${process.env.NODE_ENV}` })
+
+console.log(process.env)
+
 import './services/auth'
 let clientRouter = express.Router();
 
-dotenv.config({ path: `.env.${process.env.NODE_ENV}` })
+
 
 export const app = express();
 
