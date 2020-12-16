@@ -14,7 +14,7 @@ let expect = chai.expect;
 
 chai.use(chaiHttp);
 // NOTE: all tests within each describe are dependent on one another 
-describe.only("Story", () => {
+describe("Story", () => {
     afterEach((done) => {
         clearUsers()
         clearStoriesAndCards()

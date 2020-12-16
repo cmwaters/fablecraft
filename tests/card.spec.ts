@@ -428,4 +428,32 @@ describe("Card", () => {
             });
         });
     })
+
+    describe("/GET card", () => {
+        let testResults = [true, true, true, true, false];
+
+        testResults.forEach((success, index) => {
+            let name = permissionString[4 - index] + " should not be able to modify a card";
+            if (success) {
+                name = permissionString[4 - index] + " should be able to modify a card";
+            }
+            it(name, (done) => {
+                chai.request(app)
+                    .get("/api/card/" + test_env.rootCard)
+                    .query({ token: test_env.users[index].token })
+                    .send({ text: defaultCardText })
+                    .end((err, res) => {
+                        if (success) {
+                            res.should.have.status(200);
+                            res.body.should.have.property("story")
+                            res.body.story.should.equals(test_env.story)
+                            res.body.should.have.property("_id")
+                        } else {
+                            res.should.have.status(401);
+                        }
+                        done()
+                    });
+            });
+        });
+    })
 });
