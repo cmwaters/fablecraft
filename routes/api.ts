@@ -46,15 +46,20 @@ router.delete("/user", async (req: any, res) => {
     res.status(204).send();
 });
 
-// TODO: at the moment this returns just story id's but it would be more helpful to return
-// the title. We may also want to add owner, author, editor, viewer concept to the user.
 router.get("/story", async (req, res) => {
-    return res.status(200).send((req.user as User).stories);
+    let graph = await Graph.getAllStories(req.user as User,);
+    graph.send(res);
+});
+
+// This retrieves the last story that the user was working on
+router.get("/story/last", async (req, res) => {
+    let graph = await Graph.loadFromStory(req.user as User, (req.user as User).lastStory);
+    graph.send(res);
 });
 
 router.post("/story", async (req, res) => {
     const { title, description } = req.body;
-    let graph = await Graph.create(req.user as User, title, description);
+    let graph = await Graph.createStory(req.user as User, title, description);
     graph.send(res);
 });
 

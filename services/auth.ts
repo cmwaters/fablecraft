@@ -29,6 +29,7 @@ passport.use('signup', new LocalStrategy.Strategy({
         password: passwordHashed,
         name: "",
         stories: [],
+        lastStory: undefined, 
       });
       //Send the user information to the next middleware
       return done(null, user);
@@ -65,7 +66,7 @@ passport.use('login', new LocalStrategy.Strategy({
 passport.use('jwt', new Strategy({
   //secret we used to sign our JWT
   secretOrKey : process.env.JWT_SECRET,
-  //we expect the user to send the token as a query paramater with the name 'token'
+  //we expect the user to send the token as a query parameter with the name 'token'
   jwtFromRequest : ExtractJwt.fromUrlQueryParameter('token')
 }, async (token: any, done: Function) => {
   try {

@@ -2,7 +2,7 @@ const dotenv = require("dotenv");
 dotenv.config();
 
 module.exports = {
-	mode: process.env.MODE,
+	mode: process.env.NODE_ENV,
 	watch: false,
 	entry: {
 		fablecraft: "./client/fablecraft.ts"

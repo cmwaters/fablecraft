@@ -6,7 +6,7 @@ export enum status {
     NOTFOUND,
     UNAUTHORIZED,
     ERROR,
-    BADREQUEST,
+    BAD_REQUEST,
     INTERNAL
 }
 
@@ -18,6 +18,6 @@ export const HTTP = [
     404, // NOTFOUND
     401, // UNAUTHORIZED
     200, // ERROR
-    400, // BADREQUEST
+    400, // BAD_REQUEST
     500, // INTERNAL
 ]

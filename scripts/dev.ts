@@ -3,8 +3,8 @@ import mongoose from 'mongoose';
 import * as argon2 from "argon2";
 import { randomBytes } from "crypto";
 import { Card, CardModel } from '../models/card'
-import { Story, StoryModel } from '../models/story'
-import { User, UserModel } from '../models/user'
+import { StoryModel } from '../models/story'
+import { UserModel } from '../models/user'
 import { LoremIpsum } from "lorem-ipsum";
 
 
@@ -50,6 +50,7 @@ db.once('open', async () => {
             password: passwordHashed,
             name: devUser.name, 
             stories: [],
+            lastStory: undefined,
         })
 
         console.log("Creating story")
@@ -58,6 +59,9 @@ db.once('open', async () => {
             description: devStory.description, 
             owner: user.id
         })
+
+        user.lastStory = story
+        await user.save()
 
         console.log("Creating cards")
         await generateCards(story._id, 0, 3, 7)

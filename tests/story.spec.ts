@@ -5,6 +5,7 @@ dotenv.config({ path: `config/.env.${process.env.NODE_ENV}` })
 import { app } from "../index";
 import { setupUsersAndTokens, clearUsers, clearStoriesAndCards, createStory, checkUserIsNotPartOfStory, addUserPermission } from "./test_utils"
 import { errors } from "../routes/errors";
+import { UserModel } from "../models/user";
 import { StoryModel } from "../models/story";
 import { PermissionGroup, permissionString } from "../services/permissions";
 
@@ -157,6 +158,44 @@ describe("Story", () => {
         })
     })
 
+    describe("/GET last story", () => {
+        let test_env: any
+        beforeEach((done) => {
+            setupUsersAndTokens(["user"])
+                .then((resp: any[]) => {
+                    createStory("Test Story", resp[0].token).then((story: any) => {
+                        test_env = {
+                            user: resp[0],
+                            story: story
+                        }
+                        done()
+                    })
+                })
+                .catch((err: any) => {
+                    console.error(err);
+                })
+        })
+
+        it.only("gets the last story the user was on", done => {
+            chai
+                .request(app)
+                .get("/api/story/last")
+                .query({ token: test_env.user.token })
+                .end((err, res) => {
+                    console.log(res)
+                    res.should.have.status(200)
+                    res.body.should.have.property("_id")
+                    res.body._id.should.equal(test_env.story.id)
+                    UserModel.findById(test_env.user.id, (err, user) => {
+                        if (err) { console.error(err);}
+                        expect(user).to.not.be.null
+                        user!.lastStory.should.equals(test_env.story._id)
+                        done()
+                    })
+                });
+        })
+    })
+
     describe("/DELETE story", () => {
         let test_env: any
         beforeEach(done => {
@@ -179,7 +218,7 @@ describe("Story", () => {
                 .end((err, res) => {
                     res.should.have.status(401)
                     res.body.should.be.empty
-                    // authorized user should still have access to the 
+                    // authorized user should still have access to the story
                     chai
                         .request(app)
                         .get("/api/story/" + test_env.storyId)
@@ -241,11 +280,6 @@ describe("Story", () => {
             // last is the permission we are adjusting / adding
             setupUsersAndTokens(["1", "2", "3"])
                 .then((res: any[]) => {
-                    for (let r of res) {
-                        if (r.id === undefined) {
-                            console.error("WHYYYYYYYYYY")
-                        }
-                    }
                     createStory("Test Story", res[0].token) // 1 is always owner
                         .then((resp) => {
                             test_env = {
@@ -567,7 +601,7 @@ describe("Story", () => {
                 name: "viewer should not be able to change any permissions",
                 querier: 1,
                 prep: async (permissionLevel: number, test_env: any): Promise<void> => {
-                    // mmake both user 1 and 2 viewers
+                    // make both user 1 and 2 viewers
                     await StoryModel.findByIdAndUpdate(test_env.storyId, { viewers: [test_env.users[1].id, test_env.users[2].id] }, (err, result) => {
                         if (err) { console.error(err); }
                     });
@@ -603,11 +637,6 @@ describe("Story", () => {
             for (let permissionLevel = 1; permissionLevel < 5; permissionLevel++) {
                 
                 it(test.name + ' - ' + permissionLevel, done => {
-                    for (let r of test_env.users) {
-                        if (r.id === undefined) {
-                            console.error("WHYYYYYYYYYY")
-                        }
-                    }
                     test.prep(permissionLevel, test_env).then(() => {
                         chai
                             .request(app)

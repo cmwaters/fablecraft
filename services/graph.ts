@@ -24,13 +24,23 @@ export class Graph {
             return new Graph(status.ERROR, errors.StoryNotFound);
         }
 
+        // get permissions from the user and store them in the graph
         const userPerm = story.getPermission(user);
         if (userPerm === PermissionGroup.None) {
             return new Graph(status.UNAUTHORIZED, errors.UserPermissionDenied);
         }
+
+        // update the last story if the user is now working on a different story
+        if (user.lastStory !== story._id) {
+            user.lastStory = story._id;
+            await user.save()
+        }
+
         return new Graph(status.READ, story, story, userPerm);
     }
 
+    // This is wraps around the loadFromStory process but is specific to operations
+    // surrounding a single card. 
     static async loadFromCard(user: User, cardID: string): Promise<Graph> {
         let card = await CardModel.findById(cardID, (err) => {
             if (err) {
@@ -62,9 +72,10 @@ export class Graph {
         this.response = response;
     }
 
-    static async create(user: User, title: string, description?: string): Promise<Graph> {
+    // creates a new story owned by the user
+    static async createStory(user: User, title: string, description?: string): Promise<Graph> {
         if (title === undefined || title === "") {
-            return new Graph(status.BADREQUEST, errors.MissingTitle);
+            return new Graph(status.BAD_REQUEST, errors.MissingTitle);
         }
 
         try {
@@ -89,13 +100,25 @@ export class Graph {
             });
             await rootCard.save();
 
-            // add story to user
+            // add story to user and make it the users last story
             const stories = user.stories.concat(story);
-            await UserModel.findByIdAndUpdate(user._id, { stories: stories }).catch((err: any) => {
+            await UserModel.findByIdAndUpdate(user._id, { stories: stories, lastStory: story }).catch((err: any) => {
                 throw err;
             });
 
             return new Graph(status.CREATED, { story: story, rootCard: rootCard }, story, PermissionGroup.Owner);
+        } catch (error) {
+            return new Graph(status.INTERNAL, error);
+        }
+    }
+
+    static async getAllStories(user: User): Promise<Graph> {
+        let stories = []
+        try {
+            for (let storyID of user.stories) {
+                stories.push(await StoryModel.findById(storyID))
+            }
+            return new Graph(status.READ, stories)
         } catch (error) {
             return new Graph(status.INTERNAL, error);
         }
@@ -107,7 +130,7 @@ export class Graph {
             case status.INTERNAL:
             case status.UNAUTHORIZED:
             case status.NOTFOUND:
-            case status.BADREQUEST:
+            case status.BAD_REQUEST:
                 return true;
         }
         // this shouldn't happen
@@ -126,7 +149,7 @@ export class Graph {
                 this.response = null;
                 break;
             case status.ERROR:
-            case status.BADREQUEST:
+            case status.BAD_REQUEST:
                 this.response = { error: this.response };
                 break;
         }
@@ -151,7 +174,7 @@ export class Graph {
             return;
         }
         if ((newTitle === undefined || newTitle === "") && (newDescription === undefined || newDescription === "")) {
-            this.status = status.BADREQUEST;
+            this.status = status.BAD_REQUEST;
             this.response = errors.InvalidArguments;
             return;
         }

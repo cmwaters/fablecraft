@@ -6,7 +6,7 @@ window.onload = () => {
     console.log("Starting fablecraft");
 
     const loginData = {
-        email: "test",
+        email: "test@example.com",
         password: "test",
     };
 
@@ -15,7 +15,7 @@ window.onload = () => {
     // strictly used for testing create a user if we don't already have one
     Axios.post("/auth/login", loginData)
         .then(function (response) {
-            console.log(response.data.token);
+            console.log(response);
             const token = response.data.token;
             Axios.get("/api/stories/", { params: { token: token } })
                 .then(function (response) {
