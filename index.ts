@@ -1,5 +1,6 @@
 import * as dotenv from 'dotenv'
 import express from 'express';
+import session from 'express-session';
 import mongoose from 'mongoose';
 import * as bodyParser from 'body-parser';
 import "./models/user"
@@ -30,9 +31,24 @@ app.use(express.static(path.join(__dirname, 'client')));
 
 app.use(bodyParser.json());
 app.use(express.json());
+app.use(session({
+  secret: process.env.SECRET!,
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: false }
+}));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(passport.initialize())
 app.use(passport.session())
+
+let authenticated = (req: any, res: any, next: any) => {
+  console.log(req.user)
+  if (req.isAuthenticated()) {
+    next()
+  } else {
+    return res.status(401).send()
+  }
+}
 
 clientRouter.get('/', (req, res, next) => {
   console.log("Starting client")
@@ -46,7 +62,8 @@ clientRouter.get('/test', (req, res, next) => {
 //IMPORT ROUTES
 app.use('/', clientRouter)
 app.use('/auth', authRouter);
-app.use('/api', passport.authenticate('jwt', { session : false }), apiRouter);
+app.use('/api', authenticated, apiRouter);
+
 
 
 const PORT = process.env.PORT || 8080;

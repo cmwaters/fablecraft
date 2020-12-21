@@ -106,6 +106,7 @@ async function generateCards(storyId: any, depth: number, min: number, max: numb
         if (index !== range - 1) {
             column[index].below = column[index + 1]._id
         }
+        // at most stories can have a depth of 3
         if (depth < 3 && getRandomInt(0, 2) === 0) {
             generateCards(storyId, depth + 1, min - 1, max - 1, column[index])
         }

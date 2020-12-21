@@ -19,18 +19,10 @@ router.post("/signup", async (req, res, next) => {
     } else {
       try {
         // we have created the user now we login by creating a token that we can return them
-        req.login(user, { session : false }, async (error) => {
+        req.logIn(user, async (error) => {
           if( error ) return next(error)
-          //We don't want to store the sensitive information such as the
-          //user password in the token so we pick only the email and id
-          const body = { _id : user._id, email : user.email};
-          //Sign the JWT token and populate the payload with the user email and id
-          const token = jwt.sign({ user : body }, process.env.JWT_SECRET as string);
-          //Send back the token to the user
-          return res.status(201).send({
-            user: user,
-            token: token
-          })
+          // Send back acknowledgement of created user
+          return res.status(201).send()
         });
       } catch (error) {
         return next(error)
@@ -40,24 +32,21 @@ router.post("/signup", async (req, res, next) => {
 });
 
 router.post('/login', async (req, res, next) => {
-  passport.authenticate('login', (err, user, info) => {     
+  passport.authenticate('login', (err, user, info) => {   
     if(err){
-      const error = new Error('An Error occurred')
+      const error = new Error('An Error occurred: ' + err)
       return next(error);
     } else if (info && !user) {
       return res.status(200).send({ error: info.message })
     } else { 
-      try {
-          //We don't want to store the sensitive information such as the
-          //user password in the token so we pick only the email and id
-          const body = { _id : user._id, email : user.email };
-          //Sign the JWT token and populate the payload with the user email and id
-          const token = jwt.sign({ user : body }, process.env.JWT_SECRET as string);
-          //Send back the token to the user
-          return res.status(200).send({ token: token });
-      } catch (error) {
-        return next(error)
-      }   
+      console.log("logged in")
+      req.login(user, (err) => {
+        if (err) { return next(err) }
+        console.log('Inside req.login() callback')
+        console.log(`req.session.passport: ${JSON.stringify(req.session!.passport)}`)
+        console.log(`req.user: ${JSON.stringify(req.user)}`)
+        return res.status(200).send('You were authenticated & logged in!\n')
+      })
     }
   })(req, res, next);
 });

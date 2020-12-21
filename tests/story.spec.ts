@@ -3,11 +3,19 @@ import chaiHttp from "chai-http";
 import * as dotenv from 'dotenv'
 dotenv.config({ path: `config/.env.${process.env.NODE_ENV}` })
 import { app } from "../index";
-import { setupUsersAndTokens, clearUsers, clearStoriesAndCards, createStory, checkUserIsNotPartOfStory, addUserPermission } from "./test_utils"
+import { setupUsersAndSession, 
+    clearUsers, 
+    clearStoriesAndCards, 
+    createStory, 
+    checkUserIsNotPartOfStory, 
+    addUserPermission, 
+    SessionEnv, 
+    TestEnv} from "./test_utils"
 import { errors } from "../routes/errors";
 import { UserModel } from "../models/user";
-import { StoryModel } from "../models/story";
+import { Story, StoryModel } from "../models/story";
 import { PermissionGroup, permissionString } from "../services/permissions";
+import { Test } from "mocha";
 
 let should = chai.should();
 let expect = chai.expect;
@@ -22,13 +30,11 @@ describe("Story", () => {
     })
 
     describe("/POST story", () => {
-        let token: string = ""
-        let user: any
+        let test_env: SessionEnv
         beforeEach((done) => {
-            setupUsersAndTokens(["user"])
-                .then((resp: any[]) => {
-                    token = resp[0].token;
-                    user = resp[0]
+            setupUsersAndSession(1)
+                .then((resp: SessionEnv) => {
+                    test_env = resp
                     done()
                 })
                 .catch((err: any) => {
@@ -45,7 +51,7 @@ describe("Story", () => {
             chai
                 .request(app)
                 .post("/api/story")
-                .query({ token: token })
+                .set("cookie", test_env.cookie)
                 .send(story)
                 .end((err, res) => {
                     res.should.have.status(201);
@@ -57,13 +63,13 @@ describe("Story", () => {
                     res.body.story.should.have.property("_id")
                     res.body.story.title.should.equals(story.title)
                     res.body.story.description.should.equals(story.description)
-                    res.body.story.owner.should.equals(user.id)
+                    res.body.story.owner.should.equals(test_env.users[0].id)
                     let storyId = res.body.story._id
                     res.body.rootCard.story.should.equals(storyId)
                     chai
                         .request(app)
                         .get("/api/story")
-                        .query({ token: token })
+                        .set("cookie", test_env.cookie)
                         .end((err, res) => {
                             res.should.have.status(200)
                             res.body.should.have.length(1)
@@ -77,10 +83,9 @@ describe("Story", () => {
             chai
                 .request(app)
                 .post("/api/story")
-                .query({ token: token })
+                .set("cookie", test_env.cookie)
                 .send({ message: "Hello" })
                 .end((err, res) => {
-                    // console.log(res)
                     res.should.have.status(400);
                     res.body.should.have.property("error")
                     res.body.error.should.equals(errors.MissingTitle);
@@ -88,7 +93,7 @@ describe("Story", () => {
                     chai
                         .request(app)
                         .get("/api/story")
-                        .query({ token: token })
+                        .set("cookie", test_env.cookie)
                         .end((err, res) => {
                             res.should.have.status(200)
                             res.body.should.have.length(0)
@@ -99,13 +104,13 @@ describe("Story", () => {
         })
 
     })
-    
+
     describe("/GET story", () => {
-        let token: string = ""
+        let test_env: SessionEnv
         beforeEach((done) => {
-            setupUsersAndTokens(["user"])
-                .then((resp: any[]) => {
-                    token = resp[0].token;
+            setupUsersAndSession(2)
+                .then((resp: SessionEnv) => {
+                    test_env = resp
                     done()
                 })
                 .catch((err: any) => {
@@ -114,11 +119,11 @@ describe("Story", () => {
         })
 
         it("can retrieve existing stories", done => {
-            createStory("Test Story", token).then((resp: any) => {
+            createStory(test_env.users[0]).then((resp: any) => {
                 chai
                     .request(app)
                     .get("/api/story/" + resp.story._id)
-                    .query({ token: token })
+                    .set("cookie", test_env.cookie)
                     .end((err, res) => {
                         res.should.have.status(200);
                         res.body.should.have.property("title")
@@ -132,7 +137,7 @@ describe("Story", () => {
             chai
                 .request(app)
                 .get("/api/story/5fc6a36c86e19483774f3ff7") // random id
-                .query({ token: token })
+                .set("cookie", test_env.cookie)
                 .end((err, res) => {
                     res.should.have.status(200)
                     res.body.should.have.property("error")
@@ -142,30 +147,28 @@ describe("Story", () => {
         })
 
         it("doesn't allow access to accounts that do not have permission", done => {
-            setupUsersAndTokens(["second_user"]).then((resp: any[]) => {
-                createStory("Test Story", token).then((res: any) => {
-                    chai
-                        .request(app)
-                        .get("/api/story/" + res.story._id)
-                        .query({ token: resp[0].token })
-                        .end((err, res) => {
-                            res.should.have.status(401)
-                            res.body.should.be.empty
-                            done()
-                        })
-                });
-            })
+            createStory(test_env.users[1]).then((story: Story) => {
+                chai
+                    .request(app)
+                    .get("/api/story/" + story._id)
+                    .set("cookie", test_env.cookie)
+                    .end((err, res) => {
+                        res.should.have.status(401)
+                        res.body.should.be.empty
+                        done()
+                    })
+            });
         })
     })
 
     describe("/GET last story", () => {
         let test_env: any
         beforeEach((done) => {
-            setupUsersAndTokens(["user"])
-                .then((resp: any[]) => {
-                    createStory("Test Story", resp[0].token).then((story: any) => {
+            setupUsersAndSession(1)
+                .then((resp: SessionEnv) => {
+                    createStory(resp.users[0]).then((story: any) => {
                         test_env = {
-                            user: resp[0],
+                            user: resp.users[0],
                             story: story
                         }
                         done()
@@ -176,18 +179,18 @@ describe("Story", () => {
                 })
         })
 
-        it.only("gets the last story the user was on", done => {
+        it("gets the last story the user was on", done => {
             chai
                 .request(app)
                 .get("/api/story/last")
-                .query({ token: test_env.user.token })
+                .set("cookie", test_env.cookie)
                 .end((err, res) => {
                     console.log(res)
                     res.should.have.status(200)
                     res.body.should.have.property("_id")
                     res.body._id.should.equal(test_env.story.id)
                     UserModel.findById(test_env.user.id, (err, user) => {
-                        if (err) { console.error(err);}
+                        if (err) { console.error(err); }
                         expect(user).to.not.be.null
                         user!.lastStory.should.equals(test_env.story._id)
                         done()
@@ -197,13 +200,15 @@ describe("Story", () => {
     })
 
     describe("/DELETE story", () => {
-        let test_env: any
+        let test_env: TestEnv
         beforeEach(done => {
-            setupUsersAndTokens(["authorized_user", "unauthorized_user"]).then((users: any[]) => {
-                createStory("Test Story", users[0].token).then((res: any) => {
+            setupUsersAndSession(2).then((resp: SessionEnv) => {
+                createStory(resp.users[0]).then((story: Story) => {
                     test_env = {
-                        users: users,
-                        storyId: res.story._id
+                        users: resp.users,
+                        cookie: resp.cookie,
+                        story: story, 
+                        cards: [],
                     }
                     done()
                 });
@@ -211,58 +216,50 @@ describe("Story", () => {
         });
 
         it("should not allow unauthorized users to delete a story", done => {
-            chai
-                .request(app)
-                .delete("/api/story/" + test_env.storyId)
-                .query({ token: test_env.users[1].token })
-                .end((err, res) => {
-                    res.should.have.status(401)
-                    res.body.should.be.empty
-                    // authorized user should still have access to the story
-                    chai
-                        .request(app)
-                        .get("/api/story/" + test_env.storyId)
-                        .query({ token: test_env.users[0].token })
-                        .end((err, res) => {
-                            res.should.have.status(200);
-                            res.body.should.have.property("title")
-                            done()
-                        });
-                });
+            createStory(test_env.users[1], "Other Story").then((story: Story) => {
+                chai
+                    .request(app)
+                    .delete("/api/story/" + story._id)
+                    .query({ token: test_env.cookie })
+                    .end((err, res) => {
+                        res.should.have.status(401)
+                        res.body.should.be.empty
+                        // authorized user should still have access to the story
+                        StoryModel.find(story._id, (err, story) => {
+                            expect(err).to.be.null
+                            expect(story).to.not.be.null
+                        })
+                    });
+            }).catch(err => {console.error(err)})
         })
 
         it("should not allow non-users to delete a story", done => {
             chai
                 .request(app)
-                .delete("/api/story/" + test_env.storyId)
-                .query({ token: "hello" })
+                .delete("/api/story/" + test_env.story._id)
+                .set( "cookie", "invalid cookie" )
                 .end((err, res) => {
                     res.should.have.status(401)
                     // authorized user should still have access to the 
-                    chai
-                        .request(app)
-                        .get("/api/story/" + test_env.storyId)
-                        .query({ token: test_env.users[0].token })
-                        .end((err, res) => {
-                            res.should.have.status(200);
-                            res.body.should.have.property("title")
-                            done()
-                        });
+                    StoryModel.find(test_env.story._id, (err, story) => {
+                        expect(err).to.be.null
+                        expect(story).to.not.be.null
+                    })
                 });
         })
 
         it("can delete stories", done => {
             chai
                 .request(app)
-                .delete("/api/story/" + test_env.storyId)
-                .query({ token: test_env.users[0].token })
+                .delete("/api/story/" + test_env.story._id)
+                .set("cookie", test_env.cookie)
                 .end((err, res) => {
                     res.should.have.status(204)
                     res.body.should.be.empty
                     chai
                         .request(app)
-                        .get("/api/story/" + test_env.storyId)
-                        .query({ token: test_env.users[0].token })
+                        .get("/api/story/" + test_env.story._id)
+                        .set("cookie", test_env.cookie)
                         .end((err, res) => {
                             res.should.have.status(200);
                             res.body.should.have.property("error")
@@ -274,17 +271,19 @@ describe("Story", () => {
     })
 
     describe("/POST story permission", () => {
-        let test_env: any
+        let test_env: TestEnv
         beforeEach(done => {
-            // we set up three users, one is the owner, the next has the permission we are testing, and the
-            // last is the permission we are adjusting / adding
-            setupUsersAndTokens(["1", "2", "3"])
-                .then((res: any[]) => {
-                    createStory("Test Story", res[0].token) // 1 is always owner
-                        .then((resp) => {
+            // we set up three users, the first is the one making the request (the cookie belongs to that owner), 
+            // the second is the owner/creator, and the last is the permission we are adjusting / adding
+            setupUsersAndSession(3)
+                .then((res: SessionEnv) => {
+                    createStory(res.users[1]) // 1 is always owner
+                        .then((story: Story) => {
                             test_env = {
-                                users: res,
-                                storyId: resp.story._id
+                                users: res.users,
+                                cookie: res.cookie,
+                                story: story,
+                                cards: [],
                             }
                             done()
                         })
@@ -298,8 +297,13 @@ describe("Story", () => {
         let testCases = [
             {
                 name: "owner can give all permissions to users",
-                querier: 0,
-                prep: async (permissionLevel: number, test_env: any): Promise<void> => {},
+                prep: async (test_env: TestEnv): Promise<void> => {
+                    // make user 1 the owner
+                    await StoryModel.findByIdAndUpdate(test_env.story._id, { owner: test_env.users[0]._id }, (err, result) => {
+                        if (err) { console.error(err); }
+                    });
+                    return
+                },
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(201)
                     await StoryModel.findById(test_env.storyId, (err, story) => {
@@ -307,7 +311,7 @@ describe("Story", () => {
                             console.error(err)
                         }
                         switch (permissionLevel) {
-                            case 1: 
+                            case 1:
                                 story!.viewers!.should.contain(test_env.users[2].id)
                                 break;
                             case 2:
@@ -325,15 +329,14 @@ describe("Story", () => {
                         }
                     })
                 }
-            }, 
+            },
             {
                 name: "author can give viewer and editor permissions to users",
-                querier: 1,
-                prep: async (permissionLevel: number, test_env:any ): Promise<void> => {
+                prep: async (test_env: TestEnv): Promise<void> => {
                     // make user 1 an author
-                    await StoryModel.findByIdAndUpdate(test_env.storyId, { authors: [test_env.users[1].id]}, (err, result) => { 
+                    await StoryModel.findByIdAndUpdate(test_env.story._id, { authors: [test_env.users[0]._id] }, (err, result) => {
                         if (err) { console.error(err); }
-                    }); 
+                    });
                     return
                 },
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
@@ -344,7 +347,7 @@ describe("Story", () => {
                         story!.authors!.should.contain(test_env.users[1].id)
 
                         switch (permissionLevel) {
-                            case 1: 
+                            case 1:
                                 res.should.have.status(201)
                                 story!.viewers!.should.contain(test_env.users[2].id)
                                 break;
@@ -368,10 +371,9 @@ describe("Story", () => {
             },
             {
                 name: "editor can not give any permissions to users",
-                querier: 1,
-                prep: async (permissionLevel: number, test_env: any): Promise<void> => {
+                prep: async (test_env: TestEnv): Promise<void> => {
                     // make user 1 an editor
-                    await StoryModel.findByIdAndUpdate(test_env.storyId, { editors: [test_env.users[1].id] }, (err, result) => {
+                    await StoryModel.findByIdAndUpdate(test_env.story._id, { editors: [test_env.users[0].id] }, (err, result) => {
                         if (err) { console.error(err); }
                     });
                     return
@@ -404,10 +406,9 @@ describe("Story", () => {
             },
             {
                 name: "viewer can not give any permissions to users",
-                querier: 1,
-                prep: async (permissionLevel: number, test_env: any): Promise<void> => {
+                prep: async (test_env: TestEnv): Promise<void> => {
                     // make user 1 a viewer
-                    await StoryModel.findByIdAndUpdate(test_env.storyId, { viewers: [test_env.users[1].id] }, (err, result) => {
+                    await StoryModel.findByIdAndUpdate(test_env.story._id, { viewers: [test_env.users[0].id] }, (err, result) => {
                         if (err) { console.error(err); }
                     });
                     return
@@ -440,10 +441,9 @@ describe("Story", () => {
             },
             {
                 name: "owner should be able to change all existing permissions",
-                querier: 0,
-                prep: async (permissionLevel: number, test_env: any): Promise<void> => {
-                    // make user 2 an author
-                    await StoryModel.findByIdAndUpdate(test_env.storyId, { authors: [test_env.users[2].id] }, (err, result) => {
+                prep: async (test_env: TestEnv): Promise<void> => {
+                    // make user 1 the owner and user 3 an author
+                    await StoryModel.findByIdAndUpdate(test_env.story._id, { owner: test_env.users[0].id, authors: [test_env.users[2].id] }, (err, result) => {
                         if (err) { console.error(err); }
                     });
                     return
@@ -478,10 +478,9 @@ describe("Story", () => {
             },
             {
                 name: "author should not be able to change the permissions of another author",
-                querier: 1,
-                prep: async (permissionLevel: number, test_env: any): Promise<void> => {
-                    // make user 2 an author
-                    await StoryModel.findByIdAndUpdate(test_env.storyId, { authors: [test_env.users[1].id, test_env.users[2].id] }, (err, result) => {
+                prep: async (test_env: TestEnv): Promise<void> => {
+                    // make both user 1 and 3 an author 
+                    await StoryModel.findByIdAndUpdate(test_env.story._id, { authors: [test_env.users[0].id, test_env.users[2].id] }, (err, result) => {
                         if (err) { console.error(err); }
                     });
                     return
@@ -502,10 +501,9 @@ describe("Story", () => {
             },
             {
                 name: "author should not be able to change the permissions of an owner",
-                querier: 1,
-                prep: async (permissionLevel: number, test_env: any): Promise<void> => {
-                    // make user 1 an author and 2 an owner
-                    await StoryModel.findByIdAndUpdate(test_env.storyId, { owner: test_env.users[2].id, authors: [test_env.users[1].id] }, (err, result) => {
+                prep: async (test_env: TestEnv): Promise<void> => {
+                    // make user 1 an author and 3 an owner
+                    await StoryModel.findByIdAndUpdate(test_env.story._id, { owner: test_env.users[2].id, authors: [test_env.users[0].id] }, (err, result) => {
                         if (err) { console.error(err); }
                     });
                     return
@@ -526,10 +524,9 @@ describe("Story", () => {
             },
             {
                 name: "author should be able to change the permissions of an editor", // we assume also a viewer
-                querier: 1,
-                prep: async (permissionLevel: number, test_env: any): Promise<void> => {
-                    // make user 1 an author and 2 an editor
-                    await StoryModel.findByIdAndUpdate(test_env.storyId, { authors: [test_env.users[1].id], editors: [test_env.users[2].id]}, (err, result) => {
+                prep: async (test_env: TestEnv): Promise<void> => {
+                    // make user 1 an author and 3 an editor
+                    await StoryModel.findByIdAndUpdate(test_env.story._id, { authors: [test_env.users[0].id], editors: [test_env.users[2].id] }, (err, result) => {
                         if (err) { console.error(err); }
                     });
                     return
@@ -565,10 +562,9 @@ describe("Story", () => {
             },
             {
                 name: "editor should not be able to change any permissions",
-                querier: 1,
-                prep: async (permissionLevel: number, test_env: any): Promise<void> => {
-                    // make both user 1 and 2 editors
-                    await StoryModel.findByIdAndUpdate(test_env.storyId, { editors: [test_env.users[1].id, test_env.users[2].id] }, (err, result) => {
+                prep: async (test_env: TestEnv): Promise<void> => {
+                    // make both user 1 and 3 editors
+                    await StoryModel.findByIdAndUpdate(test_env.story._id, { editors: [test_env.users[0].id, test_env.users[2].id] }, (err, result) => {
                         if (err) { console.error(err); }
                     });
                     return
@@ -599,10 +595,9 @@ describe("Story", () => {
             },
             {
                 name: "viewer should not be able to change any permissions",
-                querier: 1,
-                prep: async (permissionLevel: number, test_env: any): Promise<void> => {
+                prep: async (test_env: TestEnv): Promise<void> => {
                     // make both user 1 and 2 viewers
-                    await StoryModel.findByIdAndUpdate(test_env.storyId, { viewers: [test_env.users[1].id, test_env.users[2].id] }, (err, result) => {
+                    await StoryModel.findByIdAndUpdate(test_env.story._id, { viewers: [test_env.users[0].id, test_env.users[2].id] }, (err, result) => {
                         if (err) { console.error(err); }
                     });
                     return
@@ -635,13 +630,13 @@ describe("Story", () => {
 
         testCases.forEach(test => {
             for (let permissionLevel = 1; permissionLevel < 5; permissionLevel++) {
-                
+
                 it(test.name + ' - ' + permissionLevel, done => {
-                    test.prep(permissionLevel, test_env).then(() => {
+                    test.prep(test_env).then(() => {
                         chai
                             .request(app)
-                            .post("/api/story/" + test_env.storyId + "/permissions")
-                            .query({ token: test_env.users[test.querier].token }) 
+                            .post("/api/story/" + test_env.story._id + "/permissions")
+                            .set("cookie", test_env.cookie)
                             // we always use the second / last user to modify permission
                             .send({ user: test_env.users[2].id, permission: permissionLevel })
                             .end((err, res) => {
@@ -651,8 +646,8 @@ describe("Story", () => {
                                 test.assertions(res, permissionLevel, test_env).then(() => { done() })
                             });
                     })
-                    .catch((err) => console.error(err))
-                    
+                        .catch((err) => console.error(err))
+
                 })
             }
         })
@@ -660,17 +655,19 @@ describe("Story", () => {
     });
 
     describe("/DELETE story permission", () => {
-        let test_env: any
+        let test_env: TestEnv;
         beforeEach(done => {
-            // we set up three users, one is the owner, the next has the permission we are testing (the subject)
-            // and the last is the permission we are most likely removing (the object)
-            setupUsersAndTokens(["1", "2", "3"])
-                .then((res: any[]) => {
-                    createStory("Test Story", res[0].token) // 1 is always owner
-                        .then((resp) => {
+            // we set up three users, the first is the one making the request (the cookie belongs to that owner), 
+            // the second is the owner/creator, and the last is the user whoms permission we are deleting
+            setupUsersAndSession(3)
+                .then((res: SessionEnv) => {
+                    createStory(res.users[1]) // 2 is always owner
+                        .then((story: Story) => {
                             test_env = {
-                                users: res,
-                                storyId: resp.story._id
+                                users: res.users,
+                                cookie: res.cookie,
+                                story: story, 
+                                cards: [],
                             }
                             done()
                         })
@@ -679,92 +676,92 @@ describe("Story", () => {
                     console.log(err)
                 });
         })
-        
+
         let testCases = [
             {
                 name: "allows viewer to remove themselves from a story",
                 subjectsPermission: PermissionGroup.Viewer,
-                removeObject: false, 
+                removeObject: false,
                 objectsPermission: PermissionGroup.None,
-                allowed: true 
+                allowed: true
             },
             {
                 name: "does not allow owner to remove themselves from the story",
                 subjectsPermission: PermissionGroup.Owner,
-                removeObject: false, 
+                removeObject: false,
                 objectsPermission: PermissionGroup.None,
                 allowed: false
             },
             {
                 name: "allows owner to remove an author from the story",
                 subjectsPermission: PermissionGroup.Owner,
-                removeObject: true, 
+                removeObject: true,
                 objectsPermission: PermissionGroup.Author,
                 allowed: true
             },
             {
                 name: "allows author to remove editor from the story",
                 subjectsPermission: PermissionGroup.Author,
-                removeObject: true, 
+                removeObject: true,
                 objectsPermission: PermissionGroup.Editor,
                 allowed: true
             },
             {
                 name: "does not allow author to remove another author",
                 subjectsPermission: PermissionGroup.Author,
-                removeObject: true, 
+                removeObject: true,
                 objectsPermission: PermissionGroup.Author,
                 allowed: false
             },
             {
                 name: "no one should be able to remove the owner",
                 subjectsPermission: PermissionGroup.Author,
-                removeObject: true, 
+                removeObject: true,
                 objectsPermission: PermissionGroup.Owner,
                 allowed: false
             },
             {
                 name: "does not allow editor to remove author",
                 subjectsPermission: PermissionGroup.Editor,
-                removeObject: true, 
+                removeObject: true,
                 objectsPermission: PermissionGroup.Author,
                 allowed: false
             },
             {
                 name: "does not allow editor to remove viewer",
                 subjectsPermission: PermissionGroup.Editor,
-                removeObject: true, 
+                removeObject: true,
                 objectsPermission: PermissionGroup.Viewer,
                 allowed: false
             },
             {
                 name: "does not allow viewer to remove author",
                 subjectsPermission: PermissionGroup.Viewer,
-                removeObject: true, 
+                removeObject: true,
                 objectsPermission: PermissionGroup.Author,
                 allowed: false
             },
             {
                 name: "does not allow viewer to remove viewer",
                 subjectsPermission: PermissionGroup.Viewer,
-                removeObject: true, 
+                removeObject: true,
                 objectsPermission: PermissionGroup.Viewer,
                 allowed: false
             },
         ]
 
-        testCases.forEach(test =>{
+        testCases.forEach(test => {
             it(test.name, done => {
-                addUserPermission(test_env.users[1].id, test_env.storyId, test.subjectsPermission).then(() => { 
-                    addUserPermission(test_env.users[2].id, test_env.storyId, test.objectsPermission).then(() => { 
+                addUserPermission(test_env.users[0].id, test_env.story._id, test.subjectsPermission).then(() => {
+                    addUserPermission(test_env.users[2].id, test_env.story._id, test.objectsPermission).then(() => {
                         let objectIndex = 1;
                         if (test.removeObject) {
-                            objectIndex = 2; 
+                            objectIndex = 2;
                         }
                         chai
                             .request(app)
-                            .delete("/api/story/" + test_env.storyId + "/permissions")
-                            .query({ token: test_env.users[1].token })
+                            .delete("/api/story/" + test_env.story._id + "/permissions")
+                            .set("cookie", test_env.cookie)
                             .send({ user: test_env.users[objectIndex].id })
                             .end((err, res) => {
                                 if (err) {
@@ -776,8 +773,8 @@ describe("Story", () => {
                                     res.should.have.status(401)
                                     res.body.should.be.empty
                                 }
-                                
-                                checkUserIsNotPartOfStory(test_env.users[objectIndex].id, test_env.storyId)
+
+                                checkUserIsNotPartOfStory(test_env.users[objectIndex].id, test_env.story._id)
                                     .then((deleted: boolean) => {
                                         if (test.allowed) {
                                             deleted.should.be.true
@@ -797,15 +794,16 @@ describe("Story", () => {
     describe("/PUT modify story meta data", () => {
         let test_env: any
         beforeEach(done => {
-            setupUsersAndTokens(["user1", "user2"])
-                .then((res: any[]) => {
-                    createStory("Test Story", res[0].token)
-                        .then((resp: any) => {
+            setupUsersAndSession(2)
+                .then((res: SessionEnv) => {
+                    createStory(res.users[1])
+                        .then((story: Story) => {
                             test_env = {
-                                users: res,
-                                storyId: resp.story._id,
-                                originalTitle: "Test Story", 
-                                newTitle: "New Test Story", 
+                                users: res.users,
+                                cookie: res.cookie,
+                                storyId: story._id,
+                                originalTitle: "Test Story",
+                                newTitle: "New Test Story",
                                 newDescription: "this is a test description"
                             }
                             done()
@@ -816,20 +814,20 @@ describe("Story", () => {
                 });
         })
 
-        let expErrors = [ true, true, true, false, false ]
-        
+        let expErrors = [true, true, true, false, false]
+
         expErrors.forEach((expError: boolean, index: number) => {
             let name = "allows user of permission " + permissionString[index] + " to change the title of a story"
-            if (expError) { 
+            if (expError) {
                 name = "does not allow user of permission " + permissionString[index] + " to change the title of a story"
             }
-            it(name, done => { 
-                addUserPermission(test_env.users[1].id, test_env.storyId, index)
+            it(name, done => {
+                addUserPermission(test_env.users[0].id, test_env.storyId, index)
                     .then(() => {
                         chai
                             .request(app)
                             .put("/api/story/" + test_env.storyId)
-                            .query({ token: test_env.users[1].token })
+                            .set("cookie", test_env.cookie)
                             .send({ title: test_env.newTitle })
                             .end((err, res) => {
                                 if (err) {
@@ -842,7 +840,7 @@ describe("Story", () => {
                                     res.should.have.status(204)
                                 }
                                 StoryModel.findById(test_env.storyId, (err, story) => {
-                                    if (err) {console.error(err);}
+                                    if (err) { console.error(err); }
                                     if (expError) {
                                         story!.title.should.equals(test_env.originalTitle)
                                     } else {
@@ -857,16 +855,16 @@ describe("Story", () => {
 
         expErrors.forEach((expError: boolean, index: number) => {
             let name = "allows user of permission " + permissionString[index] + " to change the description of a story"
-            if (expError) { 
+            if (expError) {
                 name = "does not allow user of permission " + permissionString[index] + " to change the description of a story"
             }
-            it(name, done => { 
-                addUserPermission(test_env.users[1].id, test_env.storyId, index)
+            it(name, done => {
+                addUserPermission(test_env.users[0].id, test_env.storyId, index)
                     .then(() => {
                         chai
                             .request(app)
                             .put("/api/story/" + test_env.storyId)
-                            .query({ token: test_env.users[1].token })
+                            .set("cookie", test_env.cookie)
                             .send({ description: test_env.newDescription })
                             .end((err, res) => {
                                 if (err) {
@@ -879,7 +877,7 @@ describe("Story", () => {
                                     res.should.have.status(204)
                                 }
                                 StoryModel.findById(test_env.storyId, (err, story) => {
-                                    if (err) {console.error(err);}
+                                    if (err) { console.error(err); }
                                     if (expError) {
                                         expect(story!.description).to.be.undefined
                                     } else {

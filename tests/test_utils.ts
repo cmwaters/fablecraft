@@ -1,7 +1,9 @@
 import { UserModel, User } from "../models/user";
 import { Story, StoryModel } from "../models/story";
-import { CardModel } from "../models/card";
+import { Card, CardModel } from "../models/card";
 import { app } from "../index";
+import { randomBytes } from "crypto";
+import * as argon2 from "argon2";
 
 import chai from "chai";
 import chaiHttp from "chai-http";
@@ -9,59 +11,124 @@ import { PermissionGroup } from "../services/permissions";
 
 // XXX: Perhaps it's better to use something else than the test framework for creating users and tokens
 chai.use(chaiHttp);
-export async function setupUsersAndTokens(names: string[]): Promise<any[]> {
-    return new Promise((resolve, reject) => {
-        let resp: any[] = [];
-        for (let i = names.length - 1; i >= 0; i--) {
-            chai.request(app)
-                .post("/auth/signup")
-                .send({
-                    email: names[i] + "@example.com",
-                    password: names[i],
-                })
-                .end((err, res) => {
-                    if (err) {
-                        reject(err);
-                    }
-                    if (res.status !== 201) {
-                        console.error(res.body);
-                    }
-                    resp.push({ token: res.body.token, id: res.body.user._id });
-                    if (i === names.length - 1) {
-                        resolve(resp);
-                    }
-                });
+export async function setupUsersAndSession(users: number): Promise<SessionEnv> {
+    return new Promise( async (resolve, reject) => {
+        let resp: SessionEnv = {
+            users: [],
+            cookie: "",
         }
-    });
-}
+        for (let i = 0; i < users; i++) {
+            const salt = randomBytes(32);
+            const passwordHashed = await argon2.hash("user" + i, { salt });
 
-export function createStory(name: string, token: string): Promise<any> {
-    return new Promise<string>((resolve, reject) => {
+            resp.users.push(await UserModel.create({
+                email: "user" + i + "@example.com",
+                password: passwordHashed,
+                name: "user" + i,
+                stories: [],
+                lastStory: undefined,
+            }));         
+        }
+        // we create a session with the first user only
         chai.request(app)
-            .post("/api/story")
-            .query({ token: token })
-            .send({ title: name })
+            .post("/auth/login")
+            .send({
+                email: "user0@example.com",
+                password: "user0",
+            })
             .end((err, res) => {
                 if (err) {
                     reject(err);
                 }
-                resolve(res.body);
+                if (res.status !== 200 || res.body.error) {
+                    reject(res.body);
+                }
+                res.header.should.have.property("set-cookie")
+                resp.cookie = res.header["set-cookie"]
+                resolve(resp);
             });
     });
 }
 
-export async function addCardAbove(storyID: string, siblingID: any, token: string): Promise<any> {
+export type SessionEnv = {
+    users: User[],
+    cookie: string
+}
+
+export type TestEnv = {
+    users: User[],
+    cookie: string,
+    story: Story,
+    cards: Card[]
+}
+
+export async function createSession(id: number): Promise<string> {
     return new Promise<string>((resolve, reject) => {
         chai.request(app)
-            .post("/api/card/above")
-            .query({ token: token })
-            .send({ story: storyID, sibling: siblingID, text: "default test card text" })
+            .post("/auth/login")
+            .send({
+                email: "user" + id + "@example.com",
+                password: "user" + id,
+            })
             .end((err, res) => {
                 if (err) {
                     reject(err);
                 }
-                resolve(res.body.card);
+                if (res.status !== 200 || res.body.error) {
+                    reject(res.body)
+                }
+                res.header.should.have.property("set-cookie")
+                resolve(res.header["set-cookie"]);
             });
+    })
+}
+
+// NOTE: create story doesn't automatically create a root card
+export function createStory(user: User, title?: string): Promise<Story> {
+    return new Promise((resolve, reject) => {
+        let storyTitle = "Test Story"
+        if (title) {
+            storyTitle = title
+        }
+        resolve(StoryModel.create({
+            title: storyTitle,
+            owner: user._id
+        }))
+    });
+}
+
+export async function createCardColumn(storyID: any, length: number, depth: number = 0, parent?: Card): Promise<Card[]> {
+    return new Promise<Card[]>(async (resolve, reject) => {
+        let cards: Card[] = []
+        for (let i = 0; i < length; i++) {
+            cards.push(await CardModel.create({
+                story: storyID,
+                text: "Test Card",
+                depth: depth,
+                index: i + 1
+            }))
+        }
+
+        for (let index = 0; index < length; index++) {
+            if (parent !== undefined) {
+                cards[index].parent = parent._id
+                parent.children!.push(cards[index]._id)
+            }
+            if (index !== 0) {
+                cards[index].above = cards[index - 1]._id
+            }
+            if (index !== length - 1) {
+                cards[index].below = cards[index + 1]._id
+            }
+
+            await cards[index].save()
+        }
+
+        if (parent !== undefined) {
+            await parent.save()
+        }
+
+        resolve(cards)
     });
 }
 

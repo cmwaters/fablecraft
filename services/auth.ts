@@ -43,6 +43,7 @@ passport.use('login', new LocalStrategy.Strategy({
   usernameField : 'email',
   passwordField : 'password'
 }, (email, password, done) => {
+  console.log("here")
   // Find the user associated with the email provided by the user
   UserModel.findOne({ email:email }, (err:any, user: User | null) => {
     if (err) { return done(err)} 
@@ -62,10 +63,22 @@ passport.use('login', new LocalStrategy.Strategy({
   });
 }));
 
+passport.serializeUser((user:User, done) => {
+  console.log("Serializing user")
+  done(null, user._id)
+})
+
+passport.deserializeUser((id, done) => {
+  console.log("Deserializing user")
+  UserModel.findById(id, (err, user) => {
+    done(err, user)
+  })
+})
+
 //This verifies that the token sent by the user is valid
 passport.use('jwt', new Strategy({
   //secret we used to sign our JWT
-  secretOrKey : process.env.JWT_SECRET,
+  secretOrKey : process.env.SECRET,
   //we expect the user to send the token as a query parameter with the name 'token'
   jwtFromRequest : ExtractJwt.fromUrlQueryParameter('token')
 }, async (token: any, done: Function) => {

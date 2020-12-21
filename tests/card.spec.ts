@@ -2,18 +2,21 @@ import chai from "chai";
 import chaiHttp from "chai-http";
 import * as dotenv from "dotenv";
 import {
-    setupUsersAndTokens,
+    setupUsersAndSession,
     clearUsers,
     clearStoriesAndCards,
     createStory,
     addUserPermission,
-    addCardAbove,
+    createCardColumn,
+    SessionEnv,
+    TestEnv,
 } from "./test_utils";
 let should = chai.should();
 dotenv.config({ path: `config/.env.${process.env.NODE_ENV}` });
 import { app } from "../index";
 import { expect } from "chai";
-import { CardModel } from "../models/card";
+import { Story } from '../models/story'
+import { Card, CardModel } from "../models/card";
 import { PermissionGroup, permissionString } from "../services/permissions";
 import { errors } from "../routes/errors";
 
@@ -21,7 +24,7 @@ const defaultCardText = "default test card text";
 
 chai.use(chaiHttp);
 describe("Card", () => {
-    let test_env: any;
+    let test_env: TestEnv;
 
     before((done) => {
         clearUsers();
@@ -36,26 +39,25 @@ describe("Card", () => {
     });
 
     beforeEach((done) => {
-        setupUsersAndTokens(["owner", "author", "editor", "viewer", "none"]).then((resp: any[]) => {
-            test_env = {
-                users: resp,
-                story: "",
-                rootCard: "",
-            };
-            createStory("Test Story", test_env.users[0].token).then(async (res: any) => {
-                test_env.story = res.story._id;
-                test_env.rootCard = res.rootCard._id;
-                await addUserPermission(test_env.users[1].id, res.story._id, PermissionGroup.Author);
-                await addUserPermission(test_env.users[2].id, res.story._id, PermissionGroup.Editor);
-                await addUserPermission(test_env.users[3].id, res.story._id, PermissionGroup.Viewer);
-                done();
+        // each test is set up with two users and a single story with two cards
+        setupUsersAndSession(2).then((resp: SessionEnv) => {
+            createStory(test_env.users[1]).then((story: Story) => {
+                createCardColumn(story._id, 2).then((cards: Card[]) => {
+                    test_env = {
+                        users: resp.users,
+                        cookie: resp.cookie,
+                        story: story,
+                        cards: cards,
+                    };
+                    done()
+                })
             })
             .catch(err => console.error(err))
         })
         .catch(err => console.error(err))
     });
 
-    describe("/GET cards", () => {
+    describe("/GET all cards", () => {
         let testResults = [true, true, true, true, false];
 
         testResults.forEach((success, index) => {
@@ -64,27 +66,25 @@ describe("Card", () => {
                 name = permissionString[4 - index] + " should return all the story's cards";
             }
             it(name, (done) => {
-                CardModel.create({
-                    story: test_env.story,
-                    depth: 0,
-                    index: 1,
-                    text: "Hello World",
+                addUserPermission(test_env.users[0].id, test_env.story._id, index)
+                .then(() => {
+                    chai.request(app)
+                        .get("/api/cards/")
+                        .set("cookie", test_env.cookie)
+                        .send({ story: test_env.story })
+                        .end((err, res) => {
+                            if (success) {
+                                res.should.have.status(200);
+                                res.body.should.have.property("cards");
+                                res.body.cards.should.have.length(2);
+                            } else {
+                                res.should.have.status(401);
+                                res.body.should.be.empty
+                            }
+                            done();
+                        });
                 }).catch((err) => console.error(err));
-                chai.request(app)
-                    .get("/api/cards/")
-                    .query({ token: test_env.users[index].token })
-                    .send({ story: test_env.story })
-                    .end((err, res) => {
-                        if (success) {
-                            res.should.have.status(200);
-                            res.body.should.have.property("cards");
-                            res.body.cards.should.have.length(2);
-                        } else {
-                            res.should.have.status(401);
-                            res.body.should.be.empty 
-                        }
-                        done();
-                    });
+                
             });
         });
     });
@@ -101,35 +101,39 @@ describe("Card", () => {
                 name = permissionString[4 - index] + " should be able to create a card above";
             }
             it(name, (done) => {
-                chai.request(app)
-                    .post("/api/card/above")
-                    .query({ token: test_env.users[index].token })
-                    .send({ story: test_env.story, sibling: test_env.rootCard, text: defaultCardText })
-                    .end((err, res) => {
-                        if (success) {
-                            res.should.have.status(201);
-                            res.body.should.have.property("card");
-                            // we just want the output to be the id, not the entire story
-                            res.body.card.should.have.property("story");
-                            res.body.card.story.should.equal(test_env.story);
-                            res.body.card.text.should.equal(defaultCardText);
-                        } else {
-                            res.should.have.status(401);
-                            res.body.should.be.empty 
-                        }
-                        CardModel.find({ story: test_env.story }, (err, cards) => {
+                addUserPermission(test_env.users[0].id, test_env.story._id, index)
+                .then(() => {
+                    chai.request(app)
+                        .post("/api/card/above")
+                        .set("cookie", test_env.cookie)
+                        .send({ story: test_env.story, sibling: test_env.cards[1]._id, text: defaultCardText })
+                        .end((err, res) => {
                             if (success) {
-                                expect(cards).to.have.length(2);
-                                cards[0].index.should.equal(0);
-                                cards[1].index.should.equal(1);
-                                cards[0].below!._id.toString().should.equal(cards[1].id);
-                                cards[1].above!._id.toString().should.equal(cards[0].id);
+                                res.should.have.status(201);
+                                res.body.should.have.property("card");
+                                // we just want the output to be the id, not the entire story
+                                res.body.card.should.have.property("story");
+                                res.body.card.story.should.equal(test_env.story);
+                                res.body.card.text.should.equal(defaultCardText);
                             } else {
-                                expect(cards).to.have.length(1);
+                                res.should.have.status(401);
+                                res.body.should.be.empty 
                             }
-                            done();
+                            CardModel.find({ story: test_env.story }, (err, cards) => {
+                                if (success) {
+                                    expect(cards).to.have.length(3);
+                                    cards[0].index.should.equal(0);
+                                    cards[1].index.should.equal(1);
+                                    cards[2].index.should.equal(1);
+                                    cards[0].below!._id.toString().should.equal(cards[1].id);
+                                    cards[1].above!._id.toString().should.equal(cards[0].id);
+                                } else {
+                                    expect(cards).to.have.length(1);
+                                }
+                                done();
+                            });
                         });
-                    });
+                }).catch(err => { console.error(err);})
             });
         });
     });
@@ -143,11 +147,13 @@ describe("Card", () => {
                 name = permissionString[4 - index] + " should be able to create a card below";
             }
             it(name, (done) => {
-                addCardAbove(test_env.story, test_env.rootCard, test_env.users[0].token)
+                addUserPermission(test_env.users[0].id, test_env.story._id, index)
+                .then(() => {
+                    createCardColumn(test_env.story._id, test_env.cards[0]._id, test_env.cookie)
                     .then((card) => {
                         chai.request(app)
                             .post("/api/card/below")
-                            .query({ token: test_env.users[index].token })
+                            .set("cookie", test_env.cookie)
                             .send({ story: test_env.story, sibling: card._id, text: defaultCardText })
                             .end((err, res) => {
                                 if (success) {
@@ -179,6 +185,7 @@ describe("Card", () => {
                             });
                     })
                     .catch((err) => console.error(err));
+                }).catch((err) => console.error(err));
             });
         });
     });

@@ -6,10 +6,7 @@ import { User, UserModel } from "../models/user";
 import { Graph } from "../services/graph";
 
 router.get("/user", (req: any, res) => {
-    res.json({
-        user: req.user,
-        token: req.query.token,
-    });
+    res.status(200).send(req.user);
 });
 
 router.put("/user", async (req: any, res) => {
