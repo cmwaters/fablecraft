@@ -134,7 +134,6 @@ describe("Authentication", () => {
             .get("/api/user")
             .set("cookie", res.header["set-cookie"])
             .end((err, res) => {
-              console.log(res.body)
               res.should.have.status(200)
               res.body.should.have.property("email")
               res.body.email.should.equals(user.email)

@@ -42,7 +42,6 @@ app.use(passport.initialize())
 app.use(passport.session())
 
 let authenticated = (req: any, res: any, next: any) => {
-  console.log(req.user)
   if (req.isAuthenticated()) {
     next()
   } else {

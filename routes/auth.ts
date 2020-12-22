@@ -39,12 +39,8 @@ router.post('/login', async (req, res, next) => {
     } else if (info && !user) {
       return res.status(200).send({ error: info.message })
     } else { 
-      console.log("logged in")
       req.login(user, (err) => {
         if (err) { return next(err) }
-        console.log('Inside req.login() callback')
-        console.log(`req.session.passport: ${JSON.stringify(req.session!.passport)}`)
-        console.log(`req.user: ${JSON.stringify(req.user)}`)
         return res.status(200).send('You were authenticated & logged in!\n')
       })
     }

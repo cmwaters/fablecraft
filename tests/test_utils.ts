@@ -105,7 +105,7 @@ export async function createCardColumn(storyID: any, length: number, depth: numb
                 story: storyID,
                 text: "Test Card",
                 depth: depth,
-                index: i + 1
+                index: i
             }))
         }
 
