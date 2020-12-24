@@ -8,6 +8,9 @@ import * as argon2 from "argon2";
 import chai from "chai";
 import chaiHttp from "chai-http";
 import { PermissionGroup } from "../services/permissions";
+import { errors } from "../routes/errors"
+
+const defaultCardText = "default test card text";
 
 // XXX: Perhaps it's better to use something else than the test framework for creating users and tokens
 chai.use(chaiHttp);
@@ -97,13 +100,41 @@ export function createStory(user: User, title?: string): Promise<Story> {
     });
 }
 
+export function assertLastStory(storyID: string, cookie: string, done: () => void): void { 
+    chai
+        .request(app)
+        .get("/api/story/last")
+        .set("cookie", cookie)
+        .end((err, res) => {
+            if (err) { console.error(err)}
+            res.should.have.status(200)
+            res.body.should.have.property("_id")
+            res.body._id.should.equal(storyID)
+            done()
+        });
+}
+
+export function assertNoLastStory(cookie: string, done: () => void): void {
+    chai
+        .request(app)
+        .get("/api/story/last")
+        .set("cookie", cookie)
+        .end((err, res) => {
+            if (err) { console.error(err)}
+            res.should.have.status(200)
+            res.body.should.have.property("error")
+            res.body.error.should.equals(errors.StoryNotFound)
+            done()
+        });
+}
+
 export async function createCardColumn(storyID: any, length: number, depth: number = 0, parent?: Card): Promise<Card[]> {
     return new Promise<Card[]>(async (resolve, reject) => {
         let cards: Card[] = []
         for (let i = 0; i < length; i++) {
             cards.push(await CardModel.create({
                 story: storyID,
-                text: "Test Card",
+                text: defaultCardText,
                 depth: depth,
                 index: i
             }))

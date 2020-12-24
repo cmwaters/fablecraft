@@ -23,7 +23,7 @@ import { errors } from "../routes/errors";
 const defaultCardText = "default test card text";
 
 chai.use(chaiHttp);
-describe.only("Card", () => {
+describe("Card", () => {
     let test_env: TestEnv;
 
     before((done) => {
@@ -188,7 +188,7 @@ describe.only("Card", () => {
         });
     });
 
-    describe.only("/POST create child card", () => {
+    describe("/POST create child card", () => {
         let testResults = [true, true, false, false, false];
 
         testResults.forEach((success, index) => {
@@ -282,6 +282,7 @@ describe.only("Card", () => {
 
     describe("/PUT update card text", () => {
         let testResults = [true, true, false, false, false];
+        let newText = "Different Card Text"
 
         testResults.forEach((success, index) => {
             let name = permissionString[4 - index] + " should not be able to modify a card";
@@ -294,7 +295,7 @@ describe.only("Card", () => {
                     chai.request(app)
                         .put("/api/card/" + test_env.cards[0]._id)
                         .set("cookie", test_env.cookie)
-                        .send({ text: defaultCardText })
+                        .send({ text: newText })
                         .end((err, res) => {
                             if (success) {
                                 res.should.have.status(204);
@@ -304,9 +305,9 @@ describe.only("Card", () => {
                             res.body.should.be.empty
                             CardModel.findById(test_env.cards[0]._id, (err, card) => {
                                 if (success) {
-                                    card!.text.should.equal(defaultCardText);
+                                    card!.text.should.equal(newText);
                                 } else {
-                                    card!.text.should.equal(" ");
+                                    card!.text.should.equal(defaultCardText);
                                 }
                                 done();
                             });
@@ -383,7 +384,7 @@ describe.only("Card", () => {
                 name = permissionString[4 - index] + " should be able to move the card upwards";
             }
             it(name, (done) => {
-                addUserPermission(test_env.users[0].id, test_env.story._id, index)
+                addUserPermission(test_env.users[0].id, test_env.story._id, 4 - index)
                 .then(() => {
                     // once we've created a card we are going to move the root card up
                     chai.request(app)
@@ -455,7 +456,7 @@ describe.only("Card", () => {
                 name = permissionString[4 - index] + " should be able to modify a card";
             }
             it(name, (done) => {
-                addUserPermission(test_env.users[0].id, test_env.story._id, index)
+                addUserPermission(test_env.users[0].id, test_env.story._id, 4 - index)
                 .then(() => {
                     chai.request(app)
                         .get("/api/card/" + test_env.cards[0]._id)
@@ -465,7 +466,7 @@ describe.only("Card", () => {
                             if (success) {
                                 res.should.have.status(200);
                                 res.body.should.have.property("story")
-                                res.body.story.should.equals(test_env.story)
+                                res.body.story.should.equals(test_env.story._id.toString())
                                 res.body.should.have.property("_id")
                             } else {
                                 res.should.have.status(401);

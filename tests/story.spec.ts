@@ -10,7 +10,10 @@ import { setupUsersAndSession,
     checkUserIsNotPartOfStory, 
     addUserPermission, 
     SessionEnv, 
-    TestEnv} from "./test_utils"
+    TestEnv,
+    assertLastStory,
+    assertNoLastStory,
+} from "./test_utils"
 import { errors } from "../routes/errors";
 import { UserModel } from "../models/user";
 import { Story, StoryModel } from "../models/story";
@@ -23,6 +26,12 @@ let expect = chai.expect;
 chai.use(chaiHttp);
 // NOTE: all tests within each describe are dependent on one another 
 describe("Story", () => {
+    before((done) => {
+        clearUsers()
+        clearStoriesAndCards()
+        done()
+    })
+
     afterEach((done) => {
         clearUsers()
         clearStoriesAndCards()
@@ -66,16 +75,14 @@ describe("Story", () => {
                     res.body.story.owner.should.equals(test_env.users[0].id)
                     let storyId = res.body.story._id
                     res.body.rootCard.story.should.equals(storyId)
-                    chai
-                        .request(app)
-                        .get("/api/story")
-                        .set("cookie", test_env.cookie)
-                        .end((err, res) => {
-                            res.should.have.status(200)
-                            res.body.should.have.length(1)
-                            res.body[0].should.equals(storyId)
-                            done();
-                        });
+                    StoryModel.findById(storyId, (err, newStory) => {
+                        if (err) { console.error(err); }
+                        expect(newStory).to.not.be.null
+                        newStory!.title.should.equals(story.title)
+                        newStory!.description!.should.equals(story.description)
+                        expect(newStory!.owner.toString()).to.equals(test_env.users[0].id)
+                        assertLastStory(storyId, test_env.cookie, done)
+                    })
                 });
         });
 
@@ -90,28 +97,29 @@ describe("Story", () => {
                     res.body.should.have.property("error")
                     res.body.error.should.equals(errors.MissingTitle);
                     // when we request all stories we should just have the original one
-                    chai
-                        .request(app)
-                        .get("/api/story")
-                        .set("cookie", test_env.cookie)
-                        .end((err, res) => {
-                            res.should.have.status(200)
-                            res.body.should.have.length(0)
-                            done();
-                        });
-
+                    StoryModel.find({ owner: test_env.users[0].id }, (err, result) => {
+                        expect(result).to.have.length(0)
+                        assertNoLastStory(test_env.cookie, done)
+                    })
                 });
         })
 
     })
 
     describe("/GET story", () => {
-        let test_env: SessionEnv
+        let test_env: TestEnv
         beforeEach((done) => {
             setupUsersAndSession(2)
                 .then((resp: SessionEnv) => {
-                    test_env = resp
-                    done()
+                    createStory(resp.users[0]).then((story: Story) => {
+                        test_env = {
+                            users: resp.users,
+                            cookie: resp.cookie,
+                            story: story,
+                            cards: []
+                        }
+                        done()
+                    }).catch((err) => {console.error(err)})  
                 })
                 .catch((err: any) => {
                     console.error(err);
@@ -119,18 +127,16 @@ describe("Story", () => {
         })
 
         it("can retrieve existing stories", done => {
-            createStory(test_env.users[0]).then((resp: any) => {
-                chai
-                    .request(app)
-                    .get("/api/story/" + resp.story._id)
-                    .set("cookie", test_env.cookie)
-                    .end((err, res) => {
-                        res.should.have.status(200);
-                        res.body.should.have.property("title")
-                        res.body.title.should.equals("Test Story");
-                        done()
-                    });
-            });
+            chai
+                .request(app)
+                .get("/api/story/" + test_env.story._id)
+                .set("cookie", test_env.cookie)
+                .end((err, res) => {
+                    res.should.have.status(200);
+                    res.body.should.have.property("title")
+                    res.body.title.should.equals("Test Story");
+                    assertLastStory(test_env.story.id, test_env.cookie, done)
+                });
         })
 
         it("errors when it doesn't have the story", done => {
@@ -158,44 +164,6 @@ describe("Story", () => {
                         done()
                     })
             });
-        })
-    })
-
-    describe("/GET last story", () => {
-        let test_env: any
-        beforeEach((done) => {
-            setupUsersAndSession(1)
-                .then((resp: SessionEnv) => {
-                    createStory(resp.users[0]).then((story: any) => {
-                        test_env = {
-                            user: resp.users[0],
-                            story: story
-                        }
-                        done()
-                    })
-                })
-                .catch((err: any) => {
-                    console.error(err);
-                })
-        })
-
-        it("gets the last story the user was on", done => {
-            chai
-                .request(app)
-                .get("/api/story/last")
-                .set("cookie", test_env.cookie)
-                .end((err, res) => {
-                    console.log(res)
-                    res.should.have.status(200)
-                    res.body.should.have.property("_id")
-                    res.body._id.should.equal(test_env.story.id)
-                    UserModel.findById(test_env.user.id, (err, user) => {
-                        if (err) { console.error(err); }
-                        expect(user).to.not.be.null
-                        user!.lastStory.should.equals(test_env.story._id)
-                        done()
-                    })
-                });
         })
     })
 
@@ -228,6 +196,7 @@ describe("Story", () => {
                         StoryModel.find(story._id, (err, story) => {
                             expect(err).to.be.null
                             expect(story).to.not.be.null
+                            done()
                         })
                     });
             }).catch(err => {console.error(err)})
@@ -244,6 +213,7 @@ describe("Story", () => {
                     StoryModel.find(test_env.story._id, (err, story) => {
                         expect(err).to.be.null
                         expect(story).to.not.be.null
+                        done()
                     })
                 });
         })
@@ -264,7 +234,7 @@ describe("Story", () => {
                             res.should.have.status(200);
                             res.body.should.have.property("error")
                             res.body.error.should.equals(errors.StoryNotFound);
-                            done()
+                            assertNoLastStory(test_env.cookie, done)
                         });
                 })
         })
@@ -306,7 +276,7 @@ describe("Story", () => {
                 },
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(201)
-                    await StoryModel.findById(test_env.storyId, (err, story) => {
+                    await StoryModel.findById(test_env.story.id, (err, story) => {
                         if (err) {
                             console.error(err)
                         }
@@ -340,11 +310,11 @@ describe("Story", () => {
                     return
                 },
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
-                    await StoryModel.findById(test_env.storyId, (err, story) => {
+                    await StoryModel.findById(test_env.story.id, (err, story) => {
                         if (err) {
                             console.error(err)
                         }
-                        story!.authors!.should.contain(test_env.users[1].id)
+                        story!.authors!.should.contain(test_env.users[0].id)
 
                         switch (permissionLevel) {
                             case 1:
@@ -381,11 +351,11 @@ describe("Story", () => {
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(401)
                     res.body.should.be.empty
-                    await StoryModel.findById(test_env.storyId, (err, story) => {
+                    await StoryModel.findById(test_env.story.id, (err, story) => {
                         if (err) {
                             console.error(err)
                         }
-                        story!.editors!.should.contain(test_env.users[1].id)
+                        story!.editors!.should.contain(test_env.users[0].id)
 
                         switch (permissionLevel) {
                             case 1:
@@ -416,11 +386,11 @@ describe("Story", () => {
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(401)
                     res.body.should.be.empty
-                    await StoryModel.findById(test_env.storyId, (err, story) => {
+                    await StoryModel.findById(test_env.story.id, (err, story) => {
                         if (err) {
                             console.error(err)
                         }
-                        story!.viewers!.should.contain(test_env.users[1].id)
+                        story!.viewers!.should.contain(test_env.users[0].id)
 
                         switch (permissionLevel) {
                             case 1:
@@ -450,7 +420,7 @@ describe("Story", () => {
                 },
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(204)
-                    await StoryModel.findById(test_env.storyId, (err, story) => {
+                    await StoryModel.findById(test_env.story.id, (err, story) => {
                         if (err) {
                             console.error(err)
                         }
@@ -488,7 +458,7 @@ describe("Story", () => {
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(401)
                     res.body.should.be.empty
-                    await StoryModel.findById(test_env.storyId, (err, story) => {
+                    await StoryModel.findById(test_env.story.id, (err, story) => {
                         if (err) {
                             console.error(err)
                         }
@@ -511,7 +481,7 @@ describe("Story", () => {
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(401)
                     res.body.should.be.empty
-                    await StoryModel.findById(test_env.storyId, (err, story) => {
+                    await StoryModel.findById(test_env.story.id, (err, story) => {
                         if (err) {
                             console.error(err)
                         }
@@ -532,7 +502,7 @@ describe("Story", () => {
                     return
                 },
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
-                    await StoryModel.findById(test_env.storyId, (err, story) => {
+                    await StoryModel.findById(test_env.story.id, (err, story) => {
                         if (err) {
                             console.error(err)
                         }
@@ -572,7 +542,7 @@ describe("Story", () => {
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(401)
                     res.body.should.be.empty
-                    await StoryModel.findById(test_env.storyId, (err, story) => {
+                    await StoryModel.findById(test_env.story.id, (err, story) => {
                         if (err) {
                             console.error(err)
                         }
@@ -605,7 +575,7 @@ describe("Story", () => {
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(401)
                     res.body.should.be.empty
-                    await StoryModel.findById(test_env.storyId, (err, story) => {
+                    await StoryModel.findById(test_env.story.id, (err, story) => {
                         if (err) {
                             console.error(err)
                         }
@@ -754,7 +724,7 @@ describe("Story", () => {
             it(test.name, done => {
                 addUserPermission(test_env.users[0].id, test_env.story._id, test.subjectsPermission).then(() => {
                     addUserPermission(test_env.users[2].id, test_env.story._id, test.objectsPermission).then(() => {
-                        let objectIndex = 1;
+                        let objectIndex = 0;
                         if (test.removeObject) {
                             objectIndex = 2;
                         }
