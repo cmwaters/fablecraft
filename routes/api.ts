@@ -91,8 +91,8 @@ router.delete("/story/:id/permissions", async (req, res) => {
     graph.send(res);
 });
 
-router.get("/cards", async (req, res) => {
-    let graph = await Graph.loadFromStory(req.user as User, req.body.story);
+router.get("/cards/:storyID", async (req, res) => {
+    let graph = await Graph.loadFromStory(req.user as User, req.params.storyID);
     await graph.cards();
     graph.send(res);
 });

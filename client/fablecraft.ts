@@ -17,16 +17,17 @@ window.onload = () => {
         .then(function (response) {
             console.log(response);
             const token = response.data.token;
-            Axios.get("/api/stories/", { params: { token: token } })
+            Axios.get("/api/story/last", { withCredentials: true })
                 .then(function (response) {
-                    console.log(response.data.stories);
-                    let storyInfo = response.data.stories[0];
+                    console.log(response.data);
+                    let storyInfo = response.data;
                     id = storyInfo._id
                     console.log("id: " + id)
-                    new Story(storyInfo.title, "", storyInfo.cards, token, storyInfo._id);
-                    Axios.get("/api/story/" + id, { params: { token: token } })
+                    
+                    Axios.get("/api/cards/" + id, { withCredentials: true, data: { story: id }})
                         .then(function (response) {
-                            console.log(response.data.story);
+                            console.log(response.data);
+                            new Story(storyInfo.title, "", response.data, token, storyInfo._id);
                         })
                         .catch(function (error) {
                             console.log(error);
