@@ -5,8 +5,18 @@ body {
 }
 
 h1 {
-    padding-left: 20px;
-    font-family: Arial, sans-serif;
+    font-weight: 200;
+    letter-spacing: 2px;
+    font-family: Garamond, serif;
+    /* font-style: italic; */
+    text-align: center;
+}
+
+.login {
+    width: 200px;
+    height: 200px;
+    margin: auto;
+    margin-top: calc(50vh - 100px)
 }
 
 .custom-toolbar {
