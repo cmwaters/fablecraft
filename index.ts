@@ -51,7 +51,7 @@ let authenticated = (req: any, res: any, next: any) => {
 
 clientRouter.get('/', (req, res, next) => {
   console.log("Starting client")
-  res.render('index')
+  res.render('index', { title: process.env.FABLECRAFT_TITLE})
 })
 
 clientRouter.get('/test', (req, res, next) => {

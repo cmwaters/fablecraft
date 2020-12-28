@@ -7,6 +7,22 @@ let devMode = process.env.NODE_ENV == "development"
 
 export namespace Server {
 
+    export function login(username: string, password: string): Promise<User> {
+        return new Promise<User>((resolve, reject) => {
+            Axios.post("/auth/login", {
+                data: { username: username, password: password}
+            })
+            .then(response => {
+                if (devMode) console.log(response.data)
+                resolve(response.data)
+            })
+            .catch(err => {
+                if (devMode) console.log(err)
+                reject(err)
+            })
+        })
+    }
+
     export function getStory(storyId: any): Promise<Story> {
         return new Promise<Story>((resolve, reject) => {
             Axios.get("/api/story/" + storyId, { withCredentials: true })

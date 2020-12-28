@@ -4,19 +4,78 @@ body {
     overflow: hidden;
 }
 
-h1 {
-    font-weight: 200;
-    letter-spacing: 2px;
-    font-family: Garamond, serif;
-    /* font-style: italic; */
-    text-align: center;
-}
-
-.login {
-    width: 200px;
+.authentication {
+    width: 220px;
     height: 200px;
     margin: auto;
     margin-top: calc(50vh - 100px)
+}
+
+.authentication h1 {
+    margin-bottom:30px;
+    font-size: 36px;
+    font-weight: 200;
+    letter-spacing: 2px;
+    font-family: Garamond, serif;
+    text-align: center;
+}
+
+.field {
+    width: calc(100%-30px);
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    height: 32px;
+    margin: 15px;
+}
+
+.field svg {
+    display: inline;
+    width: 18px; 
+    padding: 7px;
+    border-right: 1px solid #ccc
+}
+
+.field input {
+    display: inline;
+    outline: none;
+    float: right; 
+    border: none;
+    font-size: 12px;
+    font-family: "Open Sans", Arial, sans-serif;
+    margin: 7px;
+    letter-spacing: 0.5px;
+    width: calc(100% - 52px);
+}
+
+.authentication button {
+    display: block;
+    width: 190px;
+    margin: 15px;
+    height: 32px;
+    color: white;
+    background-color: #333;
+    border-radius: 5px;
+    outline: none;
+    border: none; 
+    cursor: pointer;
+}
+
+.navbar {
+    position:absolute;
+    top: 10px;
+    right: 12px;
+    
+}
+
+.navbar button {
+    outline: none;
+    border: none;
+    font-family: "Open Sans", Arial, sans-serif;
+    font-size: 12px;
+    padding-left: 10px;
+    padding-right: 10px;
+    background: transparent;
+    cursor: pointer;
 }
 
 .custom-toolbar {

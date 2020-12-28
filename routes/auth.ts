@@ -21,8 +21,8 @@ router.post("/signup", async (req, res, next) => {
         // we have created the user now we login by creating a token that we can return them
         req.logIn(user, async (error) => {
           if( error ) return next(error)
-          // Send back acknowledgement of created user
-          return res.status(201).send()
+          // Send back acknowledgement and the newly created user
+          return res.status(201).send(user)
         });
       } catch (error) {
         return next(error)
@@ -41,7 +41,7 @@ router.post('/login', async (req, res, next) => {
     } else { 
       req.login(user, (err) => {
         if (err) { return next(err) }
-        return res.status(200).send('You were authenticated & logged in!\n')
+        return res.status(200).send(user)
       })
     }
   })(req, res, next);
