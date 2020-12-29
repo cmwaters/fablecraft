@@ -6,9 +6,9 @@ body {
 
 .authentication {
     width: 220px;
-    height: 200px;
+    height: 300px;
     margin: auto;
-    margin-top: calc(50vh - 100px)
+    margin-top: calc(50vh - 150px)
 }
 
 .authentication h1 {

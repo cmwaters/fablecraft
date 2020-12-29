@@ -2,11 +2,14 @@ import mongoose from "mongoose";
 import { Story } from "./story";
 
 export interface User extends mongoose.Document {
-    email: string;
+    username: string;
     password: string;
+    email: string;
     name: string;
     stories: Story[];
     lastStory: any;
+
+    withoutPassword(): any;
 }
 
 export const UserSchema = new mongoose.Schema({
@@ -19,9 +22,8 @@ export const UserSchema = new mongoose.Schema({
     // their password
     email: {
         type: String,
-        required: true,
-        // unique: true,
         lowercase: true,
+        required: true,
     },
     password: {
         // this is a hash of the actual users password
@@ -42,5 +44,15 @@ export const UserSchema = new mongoose.Schema({
         ref: "Story",
     },
 });
+
+UserSchema.methods.withoutPassword = function(): any {
+    return {
+        username: this.username,
+        email: this.email,
+        name: this.name, 
+        stories: this.stories,
+        lastStory: this.lastStory,
+    }
+}
 
 export const UserModel = mongoose.model<User>("User", UserSchema);

@@ -4,7 +4,7 @@ import { Config } from "../config"
 export class Login implements RedomComponent {
     el: RedomComponent | HTMLElement | SVGElement
 
-    constructor(loginFunc: (username: string, password: string) => any) {
+    constructor(callback: (username: string, password: string) => void) {
         this.el = el("div.authentication", [
             el("h1", Config.name),
             el(".field", [
@@ -20,13 +20,14 @@ export class Login implements RedomComponent {
                 let passwordString = (document.getElementById("password") as HTMLInputElement).value;
                 console.log(usernameString)
                 console.log(passwordString)
-                loginFunc(usernameString, passwordString) 
+                callback(usernameString, passwordString) 
             }})
         ])
     }
-    // update?(item: any, index: number, data: any, context?: any): void {
-    //     // throw new Error('Method not implemented.')
-    // }
+    update(data: any): void {
+        console.log(data)
+        // throw new Error('Method not implemented.')
+    }
     // onmount?(): void {
     //     // throw new Error('Method not implemented.')
     // }
@@ -41,26 +42,33 @@ export class Login implements RedomComponent {
 export class Signup implements RedomComponent {
     el: RedomComponent | HTMLElement | SVGElement
 
-    constructor() {
-        this.el = el("div.authentication", [
+    constructor(callback: (username: string, email: string, password: string) => void) {
+        this.el = el("div.authentication", { style: { height: "400px" }}, [
             el("h1", Config.name),
             el(".field", [
                 svg("svg", { viewBox: "0 0 16 16", fill: "#bbb" }, svg("path", { d: "M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" })),
-                el("input", { type: "username", autofocus: true, placeholder: "Username" }),
+                el("input", { id: "username", type: "username", autofocus: true, placeholder: "Username" }),
             ]),
             el(".field", [
-                svg("svg", { viewBox: "0 0 16 16", fill: "#bbb" }, svg("path", { d: "M7 1.414V4H2a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h5v6h2v-6h3.532a1 1 0 0 0 .768-.36l1.933-2.32a.5.5 0 0 0 0-.64L13.3 4.36a1 1 0 0 0-.768-.36H9V1.414a1 1 0 0 0-2 0zM12.532 5l1.666 2-1.666 2H2V5h10.532z" })),
-                el("input", { type: "email", placeholder: "Email" }),
-            ]),
-            el(".field", [
-                svg("svg", { viewBox: "0 0 16 16", fill: "#bbb" }, svg("path", { d: "M3.5 11.5a3.5 3.5 0 1 1 3.163-5H14L15.5 8 14 9.5l-1-1-1 1-1-1-1 1-1-1-1 1H6.663a3.5 3.5 0 0 1-3.163 2zM2.5 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" })),
-                el("input", { type: "passoword", placeholder: "Password" }),
+                svg("svg", { viewBox: "0 0 16 16", fill: "#bbb" }, svg("path", { d: "M.05 3.555A2 2 0 0 1 2 2h12a2 2 0 0 1 1.95 1.555L8 8.414.05 3.555zM0 4.697v7.104l5.803-3.558L0 4.697zM6.761 8.83l-6.57 4.027A2 2 0 0 0 2 14h12a2 2 0 0 0 1.808-1.144l-6.57-4.027L8 9.586l-1.239-.757zm3.436-.586L16 11.801V4.697l-5.803 3.546z" })),
+                el("input", { id: "email", type: "email", placeholder: "Email" }),
             ]),
             el(".field", [
                 svg("svg", { viewBox: "0 0 16 16", fill: "#bbb" }, svg("path", { d: "M3.5 11.5a3.5 3.5 0 1 1 3.163-5H14L15.5 8 14 9.5l-1-1-1 1-1-1-1 1-1-1-1 1H6.663a3.5 3.5 0 0 1-3.163 2zM2.5 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" })),
-                el("input", { type: "password", placeholder: "Confirm Password" }),
+                el("input", { id: "password", type: "password", placeholder: "Password" }),
             ]),
-            el("button", "Sign Up", { onclick: () => { alert("Congrats for joining") } })
+            el(".field", [
+                svg("svg", { viewBox: "0 0 16 16", fill: "#bbb" }, svg("path", { d: "M3.5 11.5a3.5 3.5 0 1 1 3.163-5H14L15.5 8 14 9.5l-1-1-1 1-1-1-1 1-1-1-1 1H6.663a3.5 3.5 0 0 1-3.163 2zM2.5 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" })),
+                el("input", { id: "confirm-password", type: "password", placeholder: "Confirm Password" }),
+            ]),
+            el("button", "Sign Up", { onclick: () => { 
+                let usernameString = (document.getElementById("username") as HTMLInputElement).value;
+                let passwordString = (document.getElementById("password") as HTMLInputElement).value;
+                let confirmPasswordString = (document.getElementById("confirm-password") as HTMLInputElement).value;
+                let emailString = (document.getElementById("email") as HTMLInputElement).value;
+                alert("Congrats for joining") 
+                callback(usernameString, emailString, passwordString)
+            }})
         ])
     }
 }

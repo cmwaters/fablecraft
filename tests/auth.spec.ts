@@ -4,10 +4,11 @@ import * as dotenv from 'dotenv'
 import * as argon2 from "argon2";
 import { randomBytes } from "crypto";
 import { User, UserModel } from "../models/user"
-import { setupUsersAndSession, SessionEnv } from "./test_utils";
+import { setupUsersAndSession, SessionEnv, TEST_PASSWORD } from "./test_utils";
 let should = chai.should();
 dotenv.config({ path: `config/.env.${process.env.NODE_ENV}` })
 import { app } from "../index";
+import { errors } from "../routes/errors"
 import { expect } from "chai"
 
 chai.use(chaiHttp);
@@ -32,8 +33,9 @@ describe("Authentication", () => {
   describe("/POST signup", () => {
     it("creates a user account", done => {
       let user = {
-        email: "test@example.com",
-        password: "test"
+        username: "test",
+        email: "test@gmail.com",
+        password: TEST_PASSWORD,
       }
       chai
         .request(app)
@@ -43,13 +45,20 @@ describe("Authentication", () => {
           if (err) {
             console.error(err)
           }
+          console.log(res.body)
           res.should.have.status(201);
-          res.body.should.be.empty
+          // we should never return the users password
+          res.body.should.not.have.property("password")
+          res.body.should.have.property("username", user.username)
+          res.body.should.have.property("email", user.email)
           // make sure the password is correctly hashed
           UserModel.find({ email: user.email }, (err, users) => {
             if (err) { console.error(err) }
             users.should.have.length(1)
             users[0].email.should.equals(user.email)
+            argon2.verify(users[0].password, user.password).then((valid: boolean) => {
+              valid.should.be.true
+            });
             done()
           })
         });
@@ -60,33 +69,50 @@ describe("Authentication", () => {
       {
         test: "should not allow empty emails",
         user: {
-          password: "test"
+          username: "test",
+          password: TEST_PASSWORD,
         },
         assertions: (res: any) => {
           res.should.have.status(200)
           res.body.should.have.property("error")
-          res.body.error.should.equals("Missing credentials")
+          res.body.error.should.equals(errors.MissingCredentials)
+        }
+      },
+      {
+        test: "should not allow empty username",
+        user: {
+          email: "test@example.com",
+          password: TEST_PASSWORD,
+        },
+        assertions: (res: any) => {
+          res.should.have.status(200)
+          res.body.should.have.property("error")
+          res.body.error.should.equals(errors.MissingCredentials)
         }
       },
       {
         test: "should not allow empty password",
-        user: { email: "test3@example.com" },
+        user: {
+          password: TEST_PASSWORD,
+          email: "test3@example.com",
+        },
         assertions: (res: any) => {
           res.should.have.status(200)
           res.body.should.have.property("error")
-          res.body.error.should.equals("Missing credentials")
+          res.body.error.should.equals(errors.MissingCredentials)
         }
       },
       {
         test: "should not allow duplicate accounts",
         user: {
-          email: "test@example.com",
-          password: "test"
+          username: "test",
+          email: "test@gmail.com",
+          password: TEST_PASSWORD,
         },
         assertions: (res: any) => {
           res.should.have.status(200)
           res.body.should.have.property("error")
-          res.body.error.should.equals("User already exists")
+          res.body.error.should.equals(errors.UserAlreadyExists)
         }
       }
     ]
@@ -116,7 +142,7 @@ describe("Authentication", () => {
         user = resp.users[0]
         done()
       })
-      .catch((err) => {console.error(err)})
+        .catch((err) => { console.error(err) })
     })
 
     it("logs users in with correct cridentials", done => {
@@ -138,8 +164,8 @@ describe("Authentication", () => {
               res.body.should.have.property("email")
               res.body.email.should.equals(user.email)
               done()
-          })
-          
+            })
+
         })
     });
 

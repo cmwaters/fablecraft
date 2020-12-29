@@ -10,7 +10,8 @@ import chaiHttp from "chai-http";
 import { PermissionGroup } from "../services/permissions";
 import { errors } from "../routes/errors"
 
-const defaultCardText = "default test card text";
+export const DEFAULT_CARD_TEXT = "default test card text";
+export const TEST_PASSWORD = "TrustN01"
 
 // XXX: Perhaps it's better to use something else than the test framework for creating users and tokens
 chai.use(chaiHttp);
@@ -22,9 +23,10 @@ export async function setupUsersAndSession(users: number): Promise<SessionEnv> {
         }
         for (let i = 0; i < users; i++) {
             const salt = randomBytes(32);
-            const passwordHashed = await argon2.hash("user" + i, { salt });
+            const passwordHashed = await argon2.hash(TEST_PASSWORD + i, { salt });
 
             resp.users.push(await UserModel.create({
+                username: "user" + i,
                 email: "user" + i + "@example.com",
                 password: passwordHashed,
                 name: "user" + i,
@@ -134,7 +136,7 @@ export async function createCardColumn(storyID: any, length: number, depth: numb
         for (let i = 0; i < length; i++) {
             cards.push(await CardModel.create({
                 story: storyID,
-                text: defaultCardText,
+                text: DEFAULT_CARD_TEXT,
                 depth: depth,
                 index: i
             }))

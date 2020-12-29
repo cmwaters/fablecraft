@@ -10,7 +10,8 @@ export namespace Server {
     export function login(username: string, password: string): Promise<User> {
         return new Promise<User>((resolve, reject) => {
             Axios.post("/auth/login", {
-                data: { username: username, password: password}
+                 username: username, 
+                 password: password
             })
             .then(response => {
                 if (devMode) console.log(response.data)
@@ -20,6 +21,24 @@ export namespace Server {
                 if (devMode) console.log(err)
                 reject(err)
             })
+        })
+    }
+
+    export function signup(username: string, email: string, password: string): Promise<User> {
+        return new Promise<User>((resolve, reject) => {
+            Axios.post("/auth/signup", {
+                username: username,
+                email: email,
+                password: password
+            })
+                .then(response => {
+                    if (devMode) console.log(response.data)
+                    resolve(response.data)
+                })
+                .catch(err => {
+                    if (devMode) console.log(err)
+                    reject(err)
+                })
         })
     }
 
