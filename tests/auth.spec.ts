@@ -2,14 +2,12 @@ import chai from "chai"
 import chaiHttp from "chai-http";
 import * as dotenv from 'dotenv'
 import * as argon2 from "argon2";
-import { randomBytes } from "crypto";
 import { User, UserModel } from "../models/user"
 import { setupUsersAndSession, SessionEnv, TEST_PASSWORD } from "./test_utils";
 let should = chai.should();
 dotenv.config({ path: `config/.env.${process.env.NODE_ENV}` })
 import { app } from "../index";
 import { errors } from "../routes/errors"
-import { expect } from "chai"
 
 chai.use(chaiHttp);
 describe("Authentication", () => {

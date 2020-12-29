@@ -11,8 +11,6 @@ import PasswordValidator from 'password-validator'
 
 dotenv.config({ path: `.env.${process.env.NODE_ENV}` })
 
-const MAX_USERNAME_LENGTH = 20
-
 const passwordValidator = new PasswordValidator()
 
 passwordValidator
@@ -23,33 +21,13 @@ passwordValidator
   .has().digits(2)                                // Must have at least 2 digits
   .has().not().spaces()                           // Should not have spaces
 
-// Create a passport middleware to handle user registration
-passport.use('signup', new LocalStrategy.Strategy(
-  async (username, password, done) => {
-    try {
-      // make sure an account of the same email doesn't already exist
-      const existingUser = await UserModel.findOne({ username: username})
-      if (existingUser) {
-        return done(null, false, { message: "User already exists" })
-      }
-    
-      const salt = randomBytes(32);
-      const passwordHashed = await argon2.hash(password, { salt });
-      //Save the information provided by the user to the the database
-      const user = await UserModel.create({ 
-        username: username,
-        password: passwordHashed,
-        email: "",
-        name: "",
-        stories: [],
-        lastStory: undefined, 
-      });
-      //Send the user information to the next middleware
-      return done(null, user);
-    } catch (error) {
-      return done(error);
-    }
-}));
+const usernameValidator = new PasswordValidator()
+
+usernameValidator
+  .is().min(4)                                    // Minimum length 4
+  .is().max(20)                                   // Maximum length 20
+  .has().not().spaces()                           // Should not have spaces
+  .has().not().symbols()                          // Should not have symbols
 
 export async function signUp(username: string, password: string, email: string): Promise<User> {
   return new Promise<User>(async (resolve, reject) => {
@@ -93,7 +71,7 @@ function validateUsername(username: string): string | undefined {
   if (!username) {
     return errors.MissingCredentials
   }
-  if (username.length >= MAX_USERNAME_LENGTH) {
+  if (!usernameValidator.validate(username)) {
     return errors.InvalidUsername
   }
   return undefined
@@ -151,23 +129,3 @@ passport.deserializeUser((id, done) => {
   })
 })
 
-//This verifies that the token sent by the user is valid
-// passport.use('jwt', new Strategy({
-//   //secret we used to sign our JWT
-//   secretOrKey : process.env.SECRET,
-//   //we expect the user to send the token as a query parameter with the name 'token'
-//   jwtFromRequest : ExtractJwt.fromUrlQueryParameter('token')
-// }, async (token: any, done: Function) => {
-//   try {
-//     //Pass the user details to the next middleware
-//     UserModel.findById(token.user._id, (err, user) => {
-//       if (err) {
-//         return done(err)
-//       } else {
-//         return done(null, user)
-//       }
-//     })
-//   } catch (error) {
-//     return done(error);
-//   }
-// }));
