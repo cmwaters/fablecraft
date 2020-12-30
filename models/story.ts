@@ -1,13 +1,11 @@
 import { PermissionGroup } from "../services/permissions";
 import mongoose from "mongoose";
-import { Card, CardSchema } from "./card";
 import { User } from "./user";
 export interface Story extends mongoose.Document {
 	title: string;
 	owner: User;
 
 	description?: string;
-	rootCard?: Card;
 	authors?: User[];
 	editors?: User[];
 	viewers?: User[];

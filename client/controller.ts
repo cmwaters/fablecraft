@@ -1,43 +1,91 @@
-import { User } from '../models/user';
+import { User } from './model/user';
 import { View } from './view'
-import { Model } from './model'
+import { Model } from './model/model'
 import { Server } from './server'
-import { Story } from '../models/story';
 
 export class Controller {
     model: Model
     view: View
 
+    shiftMode: boolean = false;
+    ctrlMode: boolean = false;
+    doubleCtrl: boolean = false;
+
     constructor(model: Model, view: View) {
         this.model = model
         this.view = view
 
-        if (this.model.user === undefined) {
-            this.getUserProfile().then((user) => {
-                this.initModel(user)
-            }).catch((err) => {
-                if (err.response.status === 401) {
-                    this.view.login(this.initModel)
-                } else {
-                    console.error(err)
-                }
-            })
+        document.onkeydown = (e: KeyboardEvent) => {
+            this.handleKeyDown(e)
+        }
+
+        document.onkeyup = (e: KeyboardEvent) => {
+            this.handleKeyUp(e)
         }
     }
 
-    getUserProfile(): Promise<User> {
-        return Server.getUserProfile()
+    async init() {
+        if (this.model.user === undefined) {
+            let user = await this.getUserProfile()
+            if (!user) {
+                user = await this.view.login()
+            }
+            await this.model.init(user)
+        }
+        if (this.view.cli) {
+            this.view.cli.setCommands([
+                { 
+                    name: "Settings",
+                    aliases: [],
+                    cmd: () => {
+                        this.view.settings()
+                    }
+                }
+            ])
+        }
     }
 
-    initModel(user: User): void {
-        this.model.user = user
-        Server.getLastStory().then((story: Story) => {
-            this.model.story = story
-            Server.getCards(this.model.story._id).then(cards => {
-                this.model.cards = cards
-            })
-        }) 
+    async getUserProfile(): Promise<User | undefined> {
+        return await Server.getUserProfile()
     }
 
+    handleKeyDown(e: KeyboardEvent) {
+        console.log(e.key)
+        switch(e.key) {
+            case "Meta":
+            case "Control":
+                if (this.doubleCtrl) {
+                    if (this.view.cli) {
+                        this.view.cli.focus()
+                        this.view.context = this.view.cli
+                    }
+                }
+                this.doubleCtrl = true;
+                this.ctrlMode = true;
+                setTimeout(() => {
+                    this.doubleCtrl = false
+                }, 500)
+                break;
+            case "Shift":
+                this.shiftMode = true;
+                break;
+            case "Escape":
+                if (this.view.context) {
+                    this.view.context.blur()
+                }
+        }
+    }
+
+    handleKeyUp(e: KeyboardEvent) {
+        switch (e.key) {
+            case "Meta":
+            case "Control":
+                this.ctrlMode = false;
+                break;
+            case "Shift":
+                this.shiftMode = false;
+                break;
+        }
+    }
  
 }

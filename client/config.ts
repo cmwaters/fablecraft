@@ -1,7 +1,7 @@
 import { Size } from "./types"
 
 export const Config = {
-    name: "Fablecraft",
+    name: "Typecraft",
     card: {
       width: {
           min: 400,

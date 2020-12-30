@@ -28,30 +28,6 @@ router.post("/signup", async (req, res, next) => {
         next(err)
     }
   })
-
-  // passport.authenticate('signup', async (err, user, info) => {
-  //   if (err) {
-  //     const error = new Error('An Error occurred: ' + err.message);
-  //     return next(error);
-  //   } else if (info) {
-  //     return res.status(200).send({
-  //       error: info.message
-  //     })
-  //   } else {
-  //     try {
-  //       req.logIn(user, async (error) => {
-  //         if (error) return next(error)
-  //         // Send back acknowledgement and the newly created user
-  //         if (req.body.email) {
-
-  //         }
-  //         return res.status(201).send(user)
-  //       });
-  //     } catch (error) {
-  //       return next(error)
-  //     }
-  //   }
-  // })(req, res, next)
 });
 
 router.post('/login', async (req, res, next) => {
@@ -65,7 +41,7 @@ router.post('/login', async (req, res, next) => {
     } else {
       req.login(user, (err) => {
         if (err) { return next(err) }
-        return res.status(200).send(user)
+        return res.status(200).send(user.withoutPassword())
       })
     }
   })(req, res, next);

@@ -1,15 +1,14 @@
-import { Card } from "./card";
-import { Size, Vector, Geometry } from "./types";
-import { Config } from "./config";
+import { Card } from "../models/card";
 import { Window } from "./components/window";
-import { Story, Node } from "./story";
+import { Story } from "./model/story";
 import { el, mount, RedomComponent, unmount } from "redom";
 import { Notifications } from "./components/notifier";
 import { Panel } from "./components/panel";
 import { CommandLine } from "./components/command";
 import { Login, Signup } from "./components/authentication"
-import { User } from "../models/user";
+import { User } from "./model/user";
 import { Server } from "./server";
+import { ViewComponent } from "./components/view_component"
 
 export class View {
     screen: HTMLElement
@@ -17,6 +16,7 @@ export class View {
     notifier: Notifications
     panel: Panel
     cli: CommandLine
+    context: ViewComponent
 
     constructor() {
         this.screen = document.createElement("body")
@@ -33,47 +33,81 @@ export class View {
         mount(this.screen, component)
     }
 
-    login(loginFunc: (user: User) => void) {
-        console.log("showing login page")
-        this.clear()
-        let loginPage = new Login((username: string, password: string) => {
-            Server.login(username, password).then((user: User) => {
-                loginFunc(user)
-            }).catch((error: any) => {
-                console.log(error)
-                loginPage.update(error.message)
+    login(): Promise<User> {
+        return new Promise<User>((resolve, reject) => {
+            console.log("showing login page")
+            this.clear()
+            let loginPage = new Login((username: string, password: string) => {
+                Server.login(username, password).then((user: User) => {
+                    resolve(user)
+                }).catch((error: any) => {
+                    console.log(error)
+                    loginPage.update(error.message)
+                })
             })
+            this.add(loginPage)
+            let navbar = el(".navbar", [
+                el("button", "Use Incognito", { style: { borderRight: "1px solid black" }, onclick: () => { 
+                    resolve(this.incognitoMode())
+                } }),
+                el("button", "Sign Up", {
+                    onclick: () => {
+                        resolve(this.signup())
+                    }
+                })
+            ])
+            this.add(navbar)
         })
-        this.add(loginPage)
-        let navbar = el(".navbar", [
-            el("button", "Use Incognito", { style: { borderRight: "1px solid black" } }),
-            el("button", "Sign Up", {
-                onclick: () => {
-                    this.signup(loginFunc)
-                }
-            })
-        ])
-        this.add(navbar)
+        
     }
 
-    signup(signupFunc: (user: User) => void) {
-        console.log("showing sign up page")
-        this.clear()
-        let signupPage = new Signup((username: string, email:string, password: string) => {
-            Server.signup(username, email, password).then((user: User) => {
-                signupFunc(user)
-            })
-        });
-        this.add(signupPage)
-        let navbar = el(".navbar", [
-            el("button", "Use Incognito", { style: { borderRight: "1px solid black" } }),
-            el("button", "Login", {
-                onclick: () => {
-                    this.login(signupFunc)
-                }
-            })
-        ])
-        this.add(navbar)
+    incognitoMode(): Promise<User> {
+        return Promise.resolve({ 
+            id: undefined,
+            username: "annonymous",
+            lastStory: undefined,
+            stories: []
+        })
+    }
 
+    signup(): Promise<User> {
+        return new Promise<User>((resolve, reject) => {
+            console.log("showing sign up page")
+            this.clear()
+            let signupPage = new Signup((username: string, email: string, password: string) => {
+                Server.signup(username, email, password).then((user: User) => {
+                    resolve(user)
+                })
+            });
+            this.add(signupPage)
+            let navbar = el(".navbar", [
+                el("button", "Use Incognito", {
+                    style: { borderRight: "1px solid black" }, onclick: () => {
+                        resolve(this.incognitoMode())
+                    }
+                }),
+                el("button", "Login", {
+                    onclick: () => {
+                        resolve(this.login())
+                    }
+                })
+            ])
+            this.add(navbar)
+        })
+    }
+
+    load(story: Story, cards: Card[], user: User) {
+        this.clear()
+        this.cli = new CommandLine(user.username, story.title)
+        this.cli.el.onclick = () => {
+            this.context = this.cli
+            this.cli.focus()
+        }
+        this.add(this.cli)
+    }
+
+    settings() {
+        this.panel = new Panel()
     }
 }
+

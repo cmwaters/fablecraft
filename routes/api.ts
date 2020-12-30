@@ -56,6 +56,8 @@ router.get("/story/last", async (req, res) => {
 
 router.post("/story", async (req, res) => {
     const { title, description } = req.body;
+    console.log("Creating story")
+    console.log(req.body)
     let graph = await Graph.createStory(req.user as User, title, description);
     graph.send(res);
 });

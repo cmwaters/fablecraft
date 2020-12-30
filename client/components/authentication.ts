@@ -5,7 +5,12 @@ export class Login implements RedomComponent {
     el: RedomComponent | HTMLElement | SVGElement
 
     constructor(callback: (username: string, password: string) => void) {
-        this.el = el("div.authentication", [
+        this.el = el("div.authentication", { onkeydown: (e: KeyboardEvent) => {
+            if (e.key === "Enter") {
+                let { username, password } = this.getAndVerify()
+                callback(username, password)
+            }
+        }}, [
             el("h1", Config.name),
             el(".field", [
                 svg("svg", { viewBox: "0 0 16 16", fill: "#bbb" }, svg("path", { d: "M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"})),
@@ -16,17 +21,22 @@ export class Login implements RedomComponent {
                 el("input", { id: "password", type: "password", autofocus: true, placeholder: "Password" }),
             ]),
             el("button", "Login", { onclick: () => { 
-                let usernameString = (document.getElementById("username") as HTMLInputElement).value;
-                let passwordString = (document.getElementById("password") as HTMLInputElement).value;
-                console.log(usernameString)
-                console.log(passwordString)
-                callback(usernameString, passwordString) 
+                let { username, password } = this.getAndVerify()
+                callback(username, password)
             }})
         ])
     }
     update(data: any): void {
         console.log(data)
         // throw new Error('Method not implemented.')
+    }
+
+    getAndVerify() {
+        let username = (document.getElementById("username") as HTMLInputElement).value;
+        let password = (document.getElementById("password") as HTMLInputElement).value;
+        console.log(username)
+        console.log(password)
+        return { username, password}
     }
     // onmount?(): void {
     //     // throw new Error('Method not implemented.')
@@ -62,13 +72,20 @@ export class Signup implements RedomComponent {
                 el("input", { id: "confirm-password", type: "password", placeholder: "Confirm Password" }),
             ]),
             el("button", "Sign Up", { onclick: () => { 
-                let usernameString = (document.getElementById("username") as HTMLInputElement).value;
-                let passwordString = (document.getElementById("password") as HTMLInputElement).value;
-                let confirmPasswordString = (document.getElementById("confirm-password") as HTMLInputElement).value;
-                let emailString = (document.getElementById("email") as HTMLInputElement).value;
-                alert("Congrats for joining") 
-                callback(usernameString, emailString, passwordString)
+                let {username, password, email} = this.getAndVerify()
+                alert("Congrats for joining")
+                callback(username, password, email)
+            }, onkeydown: () => {
+                alert("Hello World ")
             }})
         ])
+    }
+
+    getAndVerify(): any {
+        let usernameString = (document.getElementById("username") as HTMLInputElement).value;
+        let passwordString = (document.getElementById("password") as HTMLInputElement).value;
+        let confirmPasswordString = (document.getElementById("confirm-password") as HTMLInputElement).value;
+        let emailString = (document.getElementById("email") as HTMLInputElement).value;
+        return {usernameString, emailString, passwordString}
     }
 }

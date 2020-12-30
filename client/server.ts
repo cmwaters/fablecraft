@@ -1,7 +1,8 @@
 import Axios from 'axios'
-import { Story } from '../models/story'
+import { Story } from './model/story'
 import { Card } from '../models/card'
-import { User } from '../models/user'
+import { User } from './model/user'
+import { resolve } from '../webpack.config'
 
 let devMode = process.env.NODE_ENV == "development"
 
@@ -34,6 +35,23 @@ export namespace Server {
                 .then(response => {
                     if (devMode) console.log(response.data)
                     resolve(response.data)
+                })
+                .catch(err => {
+                    if (devMode) console.log(err)
+                    reject(err)
+                })
+        })
+    }
+
+    export function createStory(title: string, description?: string): Promise<{story: Story, rootCard: Card}> {
+        return new Promise<{story: Story, rootCard: Card}>((resolve, reject) => {
+            Axios.post("/api/story", {
+                title: title,
+                description: description,
+            })
+                .then(response => {
+                    if (devMode) console.log(response.data)
+                    resolve(response.data as {story: Story, rootCard: Card})
                 })
                 .catch(err => {
                     if (devMode) console.log(err)
@@ -83,15 +101,25 @@ export namespace Server {
         })
     }
 
-    export function getUserProfile(): Promise<User> {
-        return new Promise<User>((resolve, reject) => {
+    export function getUserProfile(): Promise<User | undefined> {
+        return new Promise<User | undefined>((resolve, reject) => {
             Axios.get("/api/user").then(response => {
                 if (devMode) console.log(response.data)
                 resolve(response.data as User)
             }).catch(err => {
                 if (devMode) console.log(err)
+                if (err.response) {
+                    // no user is logged in at the moment
+                    if (err.response.status === 401) {
+                        resolve(undefined)
+                    }
+                }
                 reject(err)
             })
         })
+    }
+
+    function processErr(err: any) {
+
     }
 }

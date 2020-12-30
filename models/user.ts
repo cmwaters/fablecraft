@@ -47,6 +47,7 @@ export const UserSchema = new mongoose.Schema({
 
 UserSchema.methods.withoutPassword = function(): any {
     return {
+        id: this.id,
         username: this.username,
         email: this.email,
         name: this.name, 
