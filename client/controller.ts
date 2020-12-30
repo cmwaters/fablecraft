@@ -2,11 +2,12 @@ import { User } from './model/user';
 import { View } from './view'
 import { Model } from './model/model'
 import { Server } from './server'
+import { ViewComponent } from "./components/view_component"
 
 export class Controller {
     model: Model
     view: View
-
+    context: ViewComponent
     shiftMode: boolean = false;
     ctrlMode: boolean = false;
     doubleCtrl: boolean = false;
@@ -25,6 +26,7 @@ export class Controller {
     }
 
     async init() {
+        // initialize the model
         if (this.model.user === undefined) {
             let user = await this.getUserProfile()
             if (!user) {
@@ -32,17 +34,8 @@ export class Controller {
             }
             await this.model.init(user)
         }
-        if (this.view.cli) {
-            this.view.cli.setCommands([
-                { 
-                    name: "Settings",
-                    aliases: [],
-                    cmd: () => {
-                        this.view.settings()
-                    }
-                }
-            ])
-        }
+        // set up the cli
+        this.setup.cli()
     }
 
     async getUserProfile(): Promise<User | undefined> {
@@ -54,10 +47,12 @@ export class Controller {
         switch(e.key) {
             case "Meta":
             case "Control":
-                if (this.doubleCtrl) {
-                    if (this.view.cli) {
+                if (this.view.cli) {
+                    if (this.view.cli.hasFocus()) {
                         this.view.cli.focus()
-                        this.view.context = this.view.cli
+                    } else if (this.doubleCtrl) {
+                        this.view.cli.focus()
+                        this.context = this.view.cli
                     }
                 }
                 this.doubleCtrl = true;
@@ -70,8 +65,8 @@ export class Controller {
                 this.shiftMode = true;
                 break;
             case "Escape":
-                if (this.view.context) {
-                    this.view.context.blur()
+                if (this.context) {
+                    this.context.blur()
                 }
         }
     }
@@ -85,6 +80,27 @@ export class Controller {
             case "Shift":
                 this.shiftMode = false;
                 break;
+        }
+    }
+
+    setup = {
+        cli: () => {
+            if (this.view.cli) {
+                this.view.cli.terminal.onclick(() => {
+                    this.context = this.view.cli.terminal
+                    this.view.cli.terminal.focus()
+                })
+                // set all the commands
+                this.view.cli.terminal.setCommands([
+                    {
+                        name: "Settings",
+                        aliases: [],
+                        cmd: () => {
+                            this.view.settings()
+                        }
+                    }
+                ])
+            }
         }
     }
  

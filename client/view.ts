@@ -8,7 +8,6 @@ import { CommandLine } from "./components/command";
 import { Login, Signup } from "./components/authentication"
 import { User } from "./model/user";
 import { Server } from "./server";
-import { ViewComponent } from "./components/view_component"
 
 export class View {
     screen: HTMLElement
@@ -16,7 +15,6 @@ export class View {
     notifier: Notifications
     panel: Panel
     cli: CommandLine
-    context: ViewComponent
 
     constructor() {
         this.screen = document.createElement("body")
@@ -98,15 +96,14 @@ export class View {
 
     load(story: Story, cards: Card[], user: User) {
         this.clear()
-        this.cli = new CommandLine(user.username, story.title)
-        this.cli.el.onclick = () => {
-            this.context = this.cli
-            this.cli.focus()
-        }
+        this.windows.push(new Window(story, cards))
+        this.add(this.windows[this.windows.length - 1])
+        this.cli = new CommandLine(user.username, story.title, 1)
         this.add(this.cli)
     }
 
     settings() {
+        console.log("showing settings")
         this.panel = new Panel()
     }
 }

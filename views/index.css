@@ -100,24 +100,18 @@ body {
     color: #333;
 }
 
+.cli .img {
+    display: inline-block;
+    margin: 15px;
+    width: 20px;
+}
+
 .cli #username {
     display: inline-block;
 }
 
-.cli #storyImg {
-    display: inline-block;
-    margin: 15px;
-    width: 20px;
-}
-
 .cli #storyname {
     display: inline-block;
-}
-
-.cli #commandImg {
-    display: inline-block;
-    margin: 15px;
-    width: 20px;
 }
 
 .cli input {
@@ -128,4 +122,17 @@ body {
     color: #333;
     border: none;
     outline: none;
+}
+
+.cli .card {
+    font-size: 11px;
+    display: inline-block;
+    height: 20px;
+    padding-left: 4px;
+    padding-right: 4px;
+    padding-top: 2px;
+    padding-bottom: 0px;
+    border: 1px solid #333;
+    border-radius: 3px;
+    margin: 2px;
 }

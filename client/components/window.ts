@@ -2,11 +2,13 @@ import { Card } from "../card";
 import { Size, Vector, Geometry } from "../types";
 import { Config } from "../config";
 import { Story, Node } from "../story";
+import { RedomComponent } from "redom";
+import { ViewComponent } from "./view_component"
 
 let g = Geometry;
 const inverseScrollSpeed = 2;
 
-export class Window {
+export class Window implements RedomComponent, ViewComponent {
     // location: Vector; represents where the view is (not currently used)
     cards: Card[][] = [];
     margin: Size;
@@ -22,7 +24,7 @@ export class Window {
     story: Story;
 
     // note that the view struct itself doesn't store the node data but passes them on to the respective cards to handle
-    constructor(element: HTMLElement, story: Story) {
+    constructor(cards: Card[]) {
         this.element = element;
         console.log(this.element.style.width);
         this.cardWidth = this.calculateCardWidth();
