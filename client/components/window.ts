@@ -1,18 +1,18 @@
-import { Card } from "../card";
+import { Card } from "../../models/card";
 import { Size, Vector, Geometry } from "../types";
 import { Config } from "../config";
 import { Story, Node } from "../story";
-import { RedomComponent } from "redom";
+import { Pillar } from "./pillar";
+import { RedomComponent, el } from "redom";
 import { ViewComponent } from "./view_component"
 
 let g = Geometry;
 const inverseScrollSpeed = 2;
 
 export class Window implements RedomComponent, ViewComponent {
-    // location: Vector; represents where the view is (not currently used)
-    cards: Card[][] = [];
-    margin: Size;
-    element: HTMLElement;
+    pillars: Pillar[] = [];
+    el: HTMLElement;
+
     currentIndex: number = 0;
     currentDepth: number = 0;
     cardWidth: number = 0;
@@ -25,17 +25,9 @@ export class Window implements RedomComponent, ViewComponent {
 
     // note that the view struct itself doesn't store the node data but passes them on to the respective cards to handle
     constructor(cards: Card[]) {
-        this.element = element;
-        console.log(this.element.style.width);
+        this.el = el("div.window")
         this.cardWidth = this.calculateCardWidth();
-        console.log(this.cardWidth);
-        this.story = story;
-        let cardX = (this.element.clientWidth - this.cardWidth) / 2;
-        let cardY = 30;
-        console.log("x: " + cardX);
-        console.log("width: " + this.cardWidth);
-        console.log("center: " + this.element.offsetWidth / 2 + " y: " + this.element.offsetHeight / 2);
-        this.margin = Config.view.margin;
+        console.log(this.cardWidth)
 
         window.onmousewheel = (e: WheelEvent) => {
             if (this.shiftMode) {
@@ -51,34 +43,42 @@ export class Window implements RedomComponent, ViewComponent {
             }
         };
 
-        let nodeIndex = 0
-        for (let i = 0; i < this.story.depthSizes.length; i++) {
-            let cardColumn: Card[] = [];
-            for (let index = 0; index < this.story.depthSizes[i]; index++) {
-                // console.log(cardY);
-                let newCard = new Card(this, { x: cardX, y: cardY }, this.cardWidth, this.story.nodes[nodeIndex]);
-                // console.log("pos: " + newCard.pos().y);
-                newCard.deactivate();
-                // console.log(newCard.height());
-                cardY += newCard.height() + this.margin.height;
-                cardColumn.push(newCard);
-                nodeIndex++
+        let buf: Card[] = []
+        let depth = 0
+        for (let i = 0; i < cards.length; i++) {
+            if (cards[i].depth === depth) {
+                buf.push(cards[i])
+            } else {
+                this.pillars.push(new Pillar(buf))
+                buf = [];
+                depth++
             }
-            this.cards.push(cardColumn);
-            cardX += this.cardWidth + this.margin.width
+            // let cardColumn: Card[] = [];
+            // for (let index = 0; index < this.story.depthSizes[i]; index++) {
+            //     // console.log(cardY);
+            //     let newCard = new Card(this, { x: cardX, y: cardY }, this.cardWidth, this.story.nodes[nodeIndex]);
+            //     // console.log("pos: " + newCard.pos().y);
+            //     newCard.deactivate();
+            //     // console.log(newCard.height());
+            //     cardY += newCard.height() + this.margin.height;
+            //     cardColumn.push(newCard);
+            //     nodeIndex++
+            // }
+            // this.cards.push(cardColumn);
+            // cardX += this.cardWidth + this.margin.width
         }
         
 
-        element.onclick = (e: MouseEvent) => {
-            this.handleClick(e);
-        };
+        // element.onclick = (e: MouseEvent) => {
+        //     this.handleClick(e);
+        // };
 
-        console.log(this.cards[0].length);
+        // console.log(this.cards[0].length);
 
-        this.currentCard = this.cards[this.currentDepth][this.currentIndex];
-        this.currentCard.activate();
-        this.slideBottom(Config.card.toolbarHeight);
-        this.center(this.currentDepth, this.currentIndex);
+        // this.currentCard = this.cards[this.currentDepth][this.currentIndex];
+        // this.currentCard.activate();
+        // this.slideBottom(Config.card.toolbarHeight);
+        // this.center(this.currentDepth, this.currentIndex);
     }
 
     // keydown parses any input that is passed through to the view.
@@ -230,7 +230,7 @@ export class Window implements RedomComponent, ViewComponent {
     }
 
     calculateCardWidth(): number {
-        return Math.min(Math.max(0.5 * this.element.clientWidth, Config.card.width.min), Config.card.width.max);
+        return Math.min(Math.max(0.5 * this.el.clientWidth, Config.card.width.min), Config.card.width.max);
     }
 
     up(): void {

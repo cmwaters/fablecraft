@@ -1,7 +1,7 @@
 import { RedomComponent } from "redom";
 import { ViewComponent } from "./view_component";
 
-export class Panel implements RedomComponent, ViewComponent {
+export class Card implements RedomComponent, ViewComponent {
     el: HTMLElement;
 
     constructor() {

@@ -96,7 +96,7 @@ export class View {
 
     load(story: Story, cards: Card[], user: User) {
         this.clear()
-        this.windows.push(new Window(story, cards))
+        this.windows.push(new Window(cards))
         this.add(this.windows[this.windows.length - 1])
         this.cli = new CommandLine(user.username, story.title, 1)
         this.add(this.cli)

@@ -1,10 +1,11 @@
+import { Card } from '../../models/card'
 import { RedomComponent } from "redom";
 import { ViewComponent } from "./view_component";
 
-export class Panel implements RedomComponent, ViewComponent {
+export class Pillar implements RedomComponent, ViewComponent {
     el: HTMLElement;
 
-    constructor() {
+    constructor(cards: Card[]) {
 
     }
     
