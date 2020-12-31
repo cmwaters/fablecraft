@@ -1,11 +1,16 @@
 import { RedomComponent } from "redom";
 import { ViewComponent } from "./view_component";
+import { Node } from "./node";
+import { Card } from "../../models/card";
 
 export class Family implements RedomComponent, ViewComponent {
     el: HTMLElement;
+    nodes: Node[] = [];
 
-    constructor() {
-
+    constructor(cards: Card[]) {
+        cards.forEach(card => {
+            this.nodes.push(new Node(card))
+        })
     }
     
     hasFocus(): boolean {

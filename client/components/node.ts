@@ -1,11 +1,13 @@
 import { RedomComponent } from "redom";
+import { Card } from "../../models/card";
 import { ViewComponent } from "./view_component";
 
-export class Card implements RedomComponent, ViewComponent {
+// we call this node instead of card to distinguish from the model and the view
+export class Node implements RedomComponent, ViewComponent {
     el: HTMLElement;
 
-    constructor() {
-
+    constructor(card: Card) {
+        
     }
     
     hasFocus(): boolean {

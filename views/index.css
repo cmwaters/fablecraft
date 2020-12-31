@@ -78,14 +78,6 @@ body {
     cursor: pointer;
 }
 
-.custom-toolbar {
-    display: inline-block;
-    padding-right: 8px;
-    border-right: 1px solid #ccc;
-    margin-right: 8px;
-    float: left;
-}
-
 .cli {
     position: absolute;
     bottom: 0px;

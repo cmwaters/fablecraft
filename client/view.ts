@@ -11,7 +11,7 @@ import { Server } from "./server";
 
 export class View {
     screen: HTMLElement
-    windows: Window[]
+    windows: Window[] = [];
     notifier: Notifications
     panel: Panel
     cli: CommandLine
@@ -94,7 +94,7 @@ export class View {
         })
     }
 
-    load(story: Story, cards: Card[], user: User) {
+    load(story: Story, cards: Card[][], user: User) {
         this.clear()
         this.windows.push(new Window(cards))
         this.add(this.windows[this.windows.length - 1])
