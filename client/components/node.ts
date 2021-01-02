@@ -1,4 +1,4 @@
-import { RedomComponent } from "redom";
+import { RedomComponent, el } from "redom";
 import { Card } from "../../models/card";
 import { ViewComponent } from "./view_component";
 
@@ -7,7 +7,7 @@ export class Node implements RedomComponent, ViewComponent {
     el: HTMLElement;
 
     constructor(card: Card) {
-        
+        this.el = el("div.card", card.text)
     }
     
     hasFocus(): boolean {

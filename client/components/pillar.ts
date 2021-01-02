@@ -12,7 +12,18 @@ export class Pillar implements RedomComponent, ViewComponent {
         if (!cards[0].parent) {
             // it is the root. Hence this pillar only supports a single family
             this.families = [new Family(cards)]
-        }
+        } else {
+            // divide the pillar based on slices of cards that share the same parent (i.e. a Family)
+            let parent = cards[0].parent
+            let priorIndex = 0;
+            for (let index = 0; index < cards.length; index++) {
+                if (cards[index].parent !== parent) {
+                    this.families.push(new Family(cards.slice(priorIndex,index)))
+                    priorIndex = index
+                    parent = cards[index].parent
+                }
+            }
+        }   
     }
     
     hasFocus(): boolean {

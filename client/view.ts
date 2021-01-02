@@ -8,6 +8,7 @@ import { CommandLine } from "./components/command";
 import { Login, Signup } from "./components/authentication"
 import { User } from "./model/user";
 import { Server } from "./server";
+import { Header } from "./components/header";
 
 export class View {
     screen: HTMLElement
@@ -15,6 +16,7 @@ export class View {
     notifier: Notifications
     panel: Panel
     cli: CommandLine
+    header: Header
 
     constructor() {
         this.screen = document.createElement("body")
@@ -98,8 +100,15 @@ export class View {
         this.clear()
         this.windows.push(new Window(cards))
         this.add(this.windows[this.windows.length - 1])
-        this.cli = new CommandLine(user.username, story.title, 1)
+        this.notifier = new Notifications()
+        this.add(this.notifier)
+        this.notifier.info("Welcome to Fablecraft", "This is cool right", () => { alert("you clicked me") })
+        this.notifier.warning("Unable to establish connection")
+        this.notifier.error("Server Error")
+        this.cli = new CommandLine()
         this.add(this.cli)
+        this.header = new Header(user.username, story.title)
+        this.add(this.header)
     }
 
     settings() {

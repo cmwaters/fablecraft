@@ -88,7 +88,7 @@ body {
     align-items: center;
     font-family: "Open Sans", Arial, sans-serif;
     letter-spacing: 1px;
-    font-size: 12px;;
+    font-size: 12px;
     color: #333;
 }
 
@@ -96,14 +96,6 @@ body {
     display: inline-block;
     margin: 15px;
     width: 20px;
-}
-
-.cli #username {
-    display: inline-block;
-}
-
-.cli #storyname {
-    display: inline-block;
 }
 
 .cli input {
@@ -127,4 +119,57 @@ body {
     border: 1px solid #333;
     border-radius: 3px;
     margin: 2px;
+}
+
+.notifier {
+    position: absolute;
+    right: 0px;
+    top: 0px;
+    width: 300px;
+    height: 100%;
+}
+
+.notification {
+    display: block;
+    width: 240px;
+    margin: 20px;
+    background-color: yellow;
+    padding: 10px;
+    font-family: "Open Sans", Arial, sans-serif;
+    font-size: 11px;
+    border-radius: 3px;
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+    transition: 0.3s;
+}
+
+.notification:hover {
+    box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+}
+
+.notification h1 {
+    margin-top: 5px;
+    font-weight: bold;
+    font-family: "Open Sans", Arial, sans-serif;
+    font-size: 12px;
+}
+
+.header {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    display: flex; 
+    color: #999;
+}
+
+.header .img {
+    display: inline-block;
+    margin: 5px;
+    width: 15px;
+}
+
+.header div {
+    display: inline-block;
+    font-family: "Open Sans", Arial, sans-serif;
+    margin-top: 5px;
+    font-size: 11px;
 }

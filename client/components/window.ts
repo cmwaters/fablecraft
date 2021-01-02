@@ -45,6 +45,7 @@ export class Window implements RedomComponent, ViewComponent {
         };
 
         for (let i = 0; i < cards.length; i++) {
+            console.log("creating a new pillar")
             this.pillars.push(new Pillar(cards[i]))
         }
         

@@ -2,5 +2,10 @@
     position: absolute;
     width: 100%;
     height: 100vh;
-    background-color: #ccc
+}
+
+.card {
+    height: 50;
+    width: 100px;
+    background-color: yellow;
 }

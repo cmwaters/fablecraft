@@ -86,12 +86,12 @@ export class Controller {
     setup = {
         cli: () => {
             if (this.view.cli) {
-                this.view.cli.terminal.onclick(() => {
-                    this.context = this.view.cli.terminal
-                    this.view.cli.terminal.focus()
+                this.view.cli.onclick(() => {
+                    this.context = this.view.cli
+                    this.view.cli.focus()
                 })
                 // set all the commands
-                this.view.cli.terminal.setCommands([
+                this.view.cli.setCommands([
                     {
                         name: "Settings",
                         aliases: [],

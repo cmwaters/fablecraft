@@ -1,7 +1,5 @@
-import { Size } from "./types"
-
 export const Config = {
-    name: "Typecraft",
+    name: "Fablecraft",
     card: {
       width: {
           min: 400,
@@ -9,7 +7,10 @@ export const Config = {
       },
       toolbarHeight: 42
     },
-    
+
+    notifier: {
+      displayTimeMS: 6000
+    },
     
     view: {
         margin: {width: 60, height: 20},
