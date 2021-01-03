@@ -40,6 +40,8 @@ export const CardSchema = new mongoose.Schema({
 			ref: "Card",
 		},
 	],
+	// it is arguable that having both above and below is unnecessary and perhaps
+	// just having a reference to the above card is all that is needed. 
 	above: {
 		// siblings
 		type: mongoose.Schema.Types.ObjectId,

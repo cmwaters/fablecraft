@@ -7,7 +7,7 @@ import { Server } from '../server'
 export class Model {
     user?: User
     story?: Story
-    // cards ordered by depth and then index into a 2D array
+    // cards ordered by horizontal (depth) and then vertical position into a 2D array
     cards: Card[][] = []  
     cardIdToPosMap: { [id: string]: CardPos } = {};
     view: View
@@ -95,35 +95,48 @@ function insertSort(cards: Card[]): Card[] {
         if (buckets[0].length === 0) {
             startIndex = 1
         } 
-        for (let bucketIdx = startIndex; bucketIdx < buckets.length; bucketIdx) {
-            
+        for (let bucketIdx = startIndex; bucketIdx < buckets.length; bucketIdx++) {
+            console.log("bucket index:" + bucketIdx)
             if (!cards[index].above) {
                 // if this card does not have any card above it, it is therefore the 
                 // first card and goes in it's own bucket
                 buckets[0] = [cards[index]]
+                break;
             }
             let last = buckets[bucketIdx].length - 1
-            if (buckets[bucketIdx][last].below! === cards[index].above) {
+            if (buckets[bucketIdx][last]._id === cards[index].above) {
                 // if this connects with the last card of the bucket then add it to that bucket
                 buckets[bucketIdx].push(cards[index])
                 break;
             } else if (bucketIdx === buckets.length - 1) {
                 // if this is the last bucket that we have tried to match then just append this new card to the end
                 buckets.push([cards[index]])
+                break;
             }
         }
     }
+    console.log("dine")
     return merge(buckets)
 }
 
 function merge(buckets: Card[][]): Card[] {
+    console.log(buckets)
+    console.log("merge")
+    // return buckets[0]
+    
     while (buckets.length > 1) {
+        console.log(buckets[0][buckets[0].length - 1]._id)
         for (let i = 1; i < buckets.length; i++) {
-            if (buckets[i][0].above! === buckets[0][buckets[0].length - 1].below!) {
+            console.log(i)
+            console.log(buckets[i][0].above!)
+            if (buckets[i][0].above! === buckets[0][buckets[0].length - 1]._id) {
+                console.log("here")
                 buckets[0].push(...buckets[i])
-                buckets.slice(i, 1)
+                buckets.splice(i, 1)
+                console.log(buckets)
             }
         }
+        // return buckets[0]
     }
     return buckets[0]
 }
