@@ -93,7 +93,7 @@ export namespace Server {
             Axios.get("/api/cards/" + storyId, { withCredentials: true })
                 .then(response => {
                     if (devMode) console.log(response.data)
-                    resolve(response.data as Card[])
+                    resolve(response.data.cards as Card[])
                 }).catch(err => {
                     if (devMode) console.log(err)
                     reject(err)

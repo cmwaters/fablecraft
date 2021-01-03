@@ -22,7 +22,7 @@ const lorem = new LoremIpsum({
 dotenv.config({ path: `config/.env.development` })
 
 const devUser = {
-    name: "test",
+    username: "test",
     email: "test@example.com",
     password: "test"
 }
@@ -46,9 +46,10 @@ db.once('open', async () => {
 
         console.log("Creating user")
         let user = await UserModel.create({ 
+            username: devUser.username,
             email: devUser.email, 
             password: passwordHashed,
-            name: devUser.name, 
+            name: devUser.username, 
             stories: [],
             lastStory: undefined,
         })

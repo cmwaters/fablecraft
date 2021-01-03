@@ -30,7 +30,9 @@ export class Notifications implements RedomComponent {
         let notification = new Notification(header, color, subtext, pointer)
         this.notifications.push(notification);
         notification.el.onmouseleave = () => {
-            unmount(this.el, notification.el)
+            setTimeout(() => {
+                unmount(this.el, notification.el)
+            }, 300)
         }
         setTimeout(() => {
             unmount(this.el, notification.el)

@@ -98,7 +98,8 @@ export class View {
 
     load(story: Story, cards: Card[][], user: User) {
         this.clear()
-        this.windows.push(new Window(cards))
+        let size = { width: document.body.clientWidth, height: document.body.clientHeight}
+        this.windows.push(new Window(cards, {x: 0, y: 0}, size))
         this.add(this.windows[this.windows.length - 1])
         this.notifier = new Notifications()
         this.add(this.notifier)

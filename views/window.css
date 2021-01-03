@@ -4,8 +4,11 @@
     height: 100vh;
 }
 
+.pillar{
+    position: absolute;
+}
+
 .card {
-    height: 50;
-    width: 100px;
+    height: 50px;
     background-color: yellow;
 }
