@@ -17,7 +17,7 @@ import { app } from "../index";
 import { expect } from "chai";
 import { Story } from '../models/story'
 import { Card, CardModel } from "../models/card";
-import { PermissionGroup, permissionString } from "../services/permissions";
+import { permissionString } from "../services/permissions";
 import { errors } from "../routes/errors";
 
 const defaultCardText = "default test card text";

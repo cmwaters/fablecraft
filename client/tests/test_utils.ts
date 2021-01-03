@@ -6,6 +6,9 @@ const TEST_CARD_TEXT = "This is a test card"
 
 export function createCardFamily(story: string, quantity: number, startingIndex?: number,
     depth?: number, parent?: string, above?: string, below?: string): Card[] {
+    if (!startingIndex) {
+        startingIndex = 0
+    }
     let cards: Card[] = [];
     for (let i = 0; i < quantity; i++) {
         cards.push(createCard(story, startingIndex + i, depth))
@@ -14,13 +17,16 @@ export function createCardFamily(story: string, quantity: number, startingIndex?
 }
 
 export function createCard(story: string, index?: number, depth?: number): Card {
-    return {
+    let card = {
         _id: story,
         text: TEST_CARD_TEXT,
         story: story,
-        index: index | 0,
-        depth: depth | 0,
+        index: 0,
+        depth: 0,
     }
+    if (index) card.index = index
+    if (depth) card.depth = depth
+    return card
 }
 
 export function combineCards(cards: Card[], parent?: string, above?: string, below?: string): Card[] {

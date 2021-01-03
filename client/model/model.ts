@@ -5,8 +5,8 @@ import { View } from '../view'
 import { Server } from '../server'
 
 export class Model {
-    user: User
-    story: Story
+    user?: User
+    story?: Story
     // cards ordered by depth and then index into a 2D array
     cards: Card[][] = []  
     cardIdToPosMap: { [id: string]: CardPos } = {};
@@ -14,8 +14,8 @@ export class Model {
 
     constructor(view: View, user?: User, story?: Story) {
         this.view = view
-        this.user = user
-        this.story = story
+        if (user) this.user = user
+        if (story) this.story = story
     }
 
     async init(user: User) {

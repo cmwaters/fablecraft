@@ -15,10 +15,8 @@ import { setupUsersAndSession,
     assertNoLastStory,
 } from "./test_utils"
 import { errors } from "../routes/errors";
-import { UserModel } from "../models/user";
 import { Story, StoryModel } from "../models/story";
 import { PermissionGroup, permissionString } from "../services/permissions";
-import { Test } from "mocha";
 
 let should = chai.should();
 let expect = chai.expect;

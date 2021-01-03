@@ -4,6 +4,7 @@
   "description": "",
   "private": true,
   "scripts": {
+    "test-client": "cd client && mocha --timeout 10000",
     "test": "NODE_ENV=test mocha --timeout 10000",
     "init-dev-db": "ts-node scripts/dev.ts",
     "build-server": "tsc",
