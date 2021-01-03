@@ -1,4 +1,4 @@
-import { Card } from "../models/card";
+import { Card } from "./model/card";
 import { Window } from "./components/window";
 import { Story } from "./model/story";
 import { el, mount, RedomComponent, unmount } from "redom";
@@ -63,7 +63,7 @@ export class View {
 
     incognitoMode(): Promise<User> {
         return Promise.resolve({ 
-            id: undefined,
+            _id: undefined,
             username: "annonymous",
             lastStory: undefined,
             stories: []

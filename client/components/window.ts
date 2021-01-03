@@ -1,4 +1,4 @@
-import { Card } from "../../models/card";
+import { Card } from "../model/card";
 import { CardPos } from "../model/model"
 import { Size, Vector, Geometry } from "../geometry";
 import { Config } from "../config";

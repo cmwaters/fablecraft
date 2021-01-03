@@ -1,4 +1,4 @@
-import { Card } from '../../models/card'
+import { Card } from '../model/card'
 import { Story } from './story'
 import { User } from './user'
 import { View } from '../view'
@@ -62,7 +62,7 @@ export type CardPos = {
 // into their corresponding depths and then performs an insertion sort for each column to make sure they 
 // are in the correct order i.e. card.bottom refers to the card with one index greater and card.top
 // refers to the card with one index lower. 
-function order(cards: Card[]): Card[][] {
+export function order(cards: Card[]): Card[][] {
     let result: Card[][] = [];
     // we assume that depth always starts at 0
     let depth = 0

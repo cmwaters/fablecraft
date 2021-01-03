@@ -1,6 +1,6 @@
 import { RedomComponent, el } from "redom";
 import Quill from "quill"
-import { Card } from "../../models/card";
+import { Card } from "../model/card";
 import { ViewComponent } from "./view_component";
 
 // we call this node instead of card to distinguish from the model and the view

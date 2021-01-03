@@ -1,4 +1,4 @@
-import { Card } from '../../models/card'
+import { Card } from '../model/card'
 import { Config } from '../config'
 import { Vector } from '../geometry'
 import { RedomComponent, el, mount } from "redom";

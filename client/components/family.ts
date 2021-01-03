@@ -1,7 +1,7 @@
 import { RedomComponent, el, mount } from "redom";
 import { ViewComponent } from "./view_component";
 import { Node } from "./node";
-import { Card } from "../../models/card";
+import { Card } from "../model/card";
 
 export class Family implements RedomComponent, ViewComponent {
     el: HTMLElement;

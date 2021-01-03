@@ -1,6 +1,6 @@
 import Axios from 'axios'
 import { Story } from './model/story'
-import { Card } from '../models/card'
+import { Card } from './model/card'
 import { User } from './model/user'
 import { resolve } from '../webpack.config'
 
