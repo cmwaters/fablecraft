@@ -6,7 +6,7 @@
   "scripts": {
     "test-client": "cd client && mocha --timeout 10000",
     "test": "NODE_ENV=test mocha --timeout 10000",
-    "init-dev-db": "ts-node scripts/dev.ts",
+    "init-dev": "ts-node scripts/dev.ts",
     "build-server": "tsc",
     "build-client": "webpack",
     "build-dev": "NODE_ENV=development concurrently --kill-others-on-fail \"tsc --watch --preserveWatchOutput\" \"webpack --watch\"",

@@ -70,37 +70,37 @@ export function validateCards(cards: Card[][]): boolean {
     return true
 }
 
-export function validateCardFamily(cards: Card[], depth?: number, parent?: string): boolean {
+export function validateCardFamily(cards: Card[], depth?: number, parent?: string, above?: string, below?: string): string {
     for (let i = 0; i < cards.length; i++) {
         // validate depth
         if (depth && depth != cards[i].depth) {
-            return false
+            return "invalid depth"
         }
         // validate parent
         if (parent && (cards[i].parent === undefined || cards[i].parent !== parent)) {
-            return false
+            return "invalid parent"
         }
         // validate above
         if (i === 0 ) {
-            if (cards[i].above !== undefined) {
-                return false
+            if (cards[i].above !== above) {
+                return "invalid above - should be " + above
             }
         } else {
             if (cards[i].above !== cards[i-1]._id) {
-                return false
+                return "invalid above - should be " + cards[i-1]._id
             }
         }
         // validate below
         if (i === cards.length - 1) {
-            if (cards[i].below !== undefined) {
-                return false
+            if (cards[i].below !== below) {
+                return "invalid below - should be " + below
             }
         } else {
             if (cards[i].below !== cards[i + 1]._id) {
-                return false
+                return "invalid below - should be " + cards[i + 1]._id
             }
         }
 
     }
-    return true
+    return "valid"
 }

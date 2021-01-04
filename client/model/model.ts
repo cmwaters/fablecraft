@@ -96,7 +96,6 @@ function insertSort(cards: Card[]): Card[] {
             startIndex = 1
         } 
         for (let bucketIdx = startIndex; bucketIdx < buckets.length; bucketIdx++) {
-            console.log("bucket index:" + bucketIdx)
             if (!cards[index].above) {
                 // if this card does not have any card above it, it is therefore the 
                 // first card and goes in it's own bucket
@@ -115,28 +114,17 @@ function insertSort(cards: Card[]): Card[] {
             }
         }
     }
-    console.log("dine")
     return merge(buckets)
 }
 
-function merge(buckets: Card[][]): Card[] {
-    console.log(buckets)
-    console.log("merge")
-    // return buckets[0]
-    
+function merge(buckets: Card[][]): Card[] {    
     while (buckets.length > 1) {
-        console.log(buckets[0][buckets[0].length - 1]._id)
         for (let i = 1; i < buckets.length; i++) {
-            console.log(i)
-            console.log(buckets[i][0].above!)
             if (buckets[i][0].above! === buckets[0][buckets[0].length - 1]._id) {
-                console.log("here")
                 buckets[0].push(...buckets[i])
                 buckets.splice(i, 1)
-                console.log(buckets)
             }
         }
-        // return buckets[0]
     }
     return buckets[0]
 }
