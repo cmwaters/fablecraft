@@ -67,6 +67,13 @@ export class Generator {
             this.documents[title].cards = await generateCards(this.documents[title].story._id, 0, cards)
         } catch (error) { throw error }
         this.curretStory = title
+        if (!u.stories) {
+            u.stories = [this.documents[title].story._id]
+        } else {
+            u.stories.push(this.documents[title].story._id)
+        }
+        u.lastStory = this.documents[title].story._id
+        await u.save()
         return this
     }
 
@@ -79,6 +86,8 @@ export class Generator {
             s.editors = [u]
         }
         await this.documents[story].story.save()
+        u.stories.push(this.documents[story].story._id)
+        await u.save()
         return this
     }
 }

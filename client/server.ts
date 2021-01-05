@@ -16,7 +16,10 @@ export namespace Server {
             })
             .then(response => {
                 if (devMode) console.log(response.data)
-                resolve(response.data)
+                if (response.data.error) {
+                    reject(response.data.error)
+                }
+                resolve(response.data as User)
             })
             .catch(err => {
                 if (devMode) console.log(err)
@@ -34,6 +37,9 @@ export namespace Server {
             })
                 .then(response => {
                     if (devMode) console.log(response.data)
+                    if (response.data.error) {
+                        reject(response.data.error)
+                    }
                     resolve(response.data)
                 })
                 .catch(err => {

@@ -42,7 +42,7 @@ export class View {
                     resolve(user)
                 }).catch((error: any) => {
                     console.log(error)
-                    loginPage.update(error.message)
+                    loginPage.update(error)
                 })
             })
             this.add(loginPage)

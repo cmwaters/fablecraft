@@ -3,12 +3,17 @@ import { Config } from "../config"
 
 export class Login implements RedomComponent {
     el: RedomComponent | HTMLElement | SVGElement
+    error: HTMLElement
 
     constructor(callback: (username: string, password: string) => void) {
+        this.error = el("div.error")
         this.el = el("div.authentication", { onkeydown: (e: KeyboardEvent) => {
             if (e.key === "Enter") {
                 let { username, password } = this.getAndVerify()
                 callback(username, password)
+            }
+            if (this.error.style.display !== "none") {
+                this.error.style.display = "none"
             }
         }}, [
             el("h1", Config.name),
@@ -20,15 +25,17 @@ export class Login implements RedomComponent {
                 svg("svg", { viewBox: "0 0 16 16", fill: "#bbb" }, svg("path", { d: "M3.5 11.5a3.5 3.5 0 1 1 3.163-5H14L15.5 8 14 9.5l-1-1-1 1-1-1-1 1-1-1-1 1H6.663a3.5 3.5 0 0 1-3.163 2zM2.5 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" })),
                 el("input", { id: "password", type: "password", autofocus: true, placeholder: "Password" }),
             ]),
+            this.error,
             el("button", "Login", { onclick: () => { 
                 let { username, password } = this.getAndVerify()
                 callback(username, password)
             }})
         ])
     }
-    update(data: any): void {
-        console.log(data)
-        // throw new Error('Method not implemented.')
+    update(error: any): void {
+        console.log("Login: " + error)
+        this.error.style.display = "block";
+        this.error.innerText = error
     }
 
     getAndVerify() {

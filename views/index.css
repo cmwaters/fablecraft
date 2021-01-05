@@ -61,6 +61,20 @@ body {
     cursor: pointer;
 }
 
+.authentication .error {
+    font-family: "Open Sans", Arial, sans-serif;
+    text-align: center;
+    padding: 7px;
+    font-size: 12px;
+    display: none;
+    width: 176px;
+    margin: 15px;
+    color: #ff1919;
+    background-color: #ffe5de;
+    border-radius: 5px;
+    
+}
+
 .navbar {
     position:absolute;
     top: 10px;
