@@ -17,7 +17,7 @@ const lorem = new LoremIpsum({
 });
 
 type Document = {
-    cards: Card[],
+    cards: Card[][],
     story: Story
 }
 
@@ -25,7 +25,7 @@ export class Generator {
     documents: { [title: string]: Document } = {};
     users: { [name: string]: User } = {};
 
-    curretStory: string = "";
+    currentStory: string = "";
     pillarRatio: number[] = [0.4, 0.2, 0.4];
     cardsPerParent: number = 3;
 
@@ -64,9 +64,9 @@ export class Generator {
                 }),
                 cards: [],
             }
-            this.documents[title].cards = await generateCards(this.documents[title].story._id, 0, cards)
+            this.documents[title].cards.push(await generateCards(this.documents[title].story._id, 0, cards))
         } catch (error) { throw error }
-        this.curretStory = title
+        this.currentStory = title
         if (!u.stories) {
             u.stories = [this.documents[title].story._id]
         } else {
@@ -74,6 +74,30 @@ export class Generator {
         }
         u.lastStory = this.documents[title].story._id
         await u.save()
+        return this
+    }
+
+    card(depth: number, index: number, story?: string) {
+        if (story) {
+            return this.documents[story].cards[depth][index]
+        }
+        return this.documents[this.currentStory].cards[depth][index]
+    }
+
+    // CONTRACT: the parent card should always be below any other parents that have children
+    async addCardFamily(parent: Card, cards: number, story?: string): Promise<Generator> {
+        if (!story) story = this.currentStory
+        let newCards: Card[] = await generateCards(this.documents[story].story._id, parent.depth + 1, cards)
+        if (this.documents[story].cards.length === parent.depth + 1) {
+            this.documents[story].cards.push(newCards)
+        } else {
+            let pillarLength = this.documents[story].cards[parent.depth + 1].length
+            this.documents[story].cards[parent.depth + 1][pillarLength - 1].below = newCards[0]._id
+            await this.documents[story].cards[parent.depth + 1][pillarLength - 1].save()
+            newCards[0].above = this.documents[story].cards[parent.depth + 1][pillarLength - 1]._id
+            await newCards[0].save()
+            this.documents[story].cards[parent.depth + 1].push(...newCards)
+        }
         return this
     }
 

@@ -9,8 +9,8 @@ export class Pillar implements RedomComponent, ViewComponent {
     families: Family[] = [];
     pos: Vector;
 
-    constructor(cards: Card[], pos: Vector, size: Size, config: PillarConfig) {
-        this.el = el("div.pillar", { style: { left: pos.x, top: pos.y, width: size.width, height: size.height } });
+    constructor(cards: Card[], pos: Vector, width: number, config: PillarConfig) {
+        this.el = el("div.pillar", { style: { left: pos.x, top: pos.y, width: width} });
         this.pos = pos
         let top = 0
         // first decide whether this is the root pillar
@@ -44,9 +44,8 @@ export class Pillar implements RedomComponent, ViewComponent {
         this.el.style.top = this.pos.y + "px"
     }
 
-    resize(size: Size) {
-        this.el.style.width = size.width + "px"
-        this.el.style.height = size.height + "px"
+    resize(width: number) {
+        this.el.style.width = width + "px"
     }
     
     hasFocus(): boolean {

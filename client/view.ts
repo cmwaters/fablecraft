@@ -106,8 +106,6 @@ export class View {
         this.notifier = new Notifications()
         this.add(this.notifier)
         this.notifier.info("Welcome to Fablecraft", "This is cool right", () => { alert("you clicked me") })
-        this.notifier.warning("Unable to establish connection")
-        this.notifier.error("Server Error")
         this.cli = new CommandLine()
         this.add(this.cli)
         this.header = new Header(user.username, story.title)
@@ -127,7 +125,7 @@ export class View {
     }
 
     splitWindowHorizontally() {
-        
+
     }
 
     settings() {

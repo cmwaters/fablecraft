@@ -42,8 +42,10 @@ db.once('open', async () => {
     try {
         await db.dropDatabase()
 
+        console.log("Creating Users and Stories")
         await Generator.createUsers(["jimmy", "amanda"])
             .then(gen => gen.createStory("jimmy", "Test Story", 10))
+            .then(gen => gen.addCardFamily(gen.card(0, 3), 4))
             .then(gen => gen.addEditor("amanda", "Test Story"))
             .catch(err => console.error(err))
 

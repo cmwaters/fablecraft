@@ -1,8 +1,6 @@
 import { Card } from "../model/card";
 import { CardPos } from "../model/model"
 import { Size, Vector, Geometry } from "../geometry";
-import { Config } from "../config";
-import { Story, Node } from "../story";
 import { Pillar } from "./pillar";
 import { RedomComponent, el, mount } from "redom";
 import { ViewComponent } from "./view_component"
@@ -23,7 +21,6 @@ export class Window implements RedomComponent, ViewComponent {
     movementInterval: NodeJS.Timeout | null = null;
     listeningToClick: boolean = true;
     currentCard: Card;
-    story: Story;
 
     // note that the view struct itself doesn't store the node data but passes them on to the respective cards to handle
     constructor(cards: Card[][], pos: Vector, size: Size, config: WindowConfig) {
@@ -43,9 +40,7 @@ export class Window implements RedomComponent, ViewComponent {
         for (let i = 0; i < cards.length; i++) {
             console.log("creating a new pillar")
             let pillarPos = { x: this.centerPoint.x - this.cardWidth/2 + (i * (this.cardWidth + this.config.margin.pillar)), y: 0}
-            let pillarSize = { width: this.cardWidth, height: size.height}
-            
-            this.pillars.push(new Pillar(cards[i], pillarPos , pillarSize, pillarConfig))
+            this.pillars.push(new Pillar(cards[i], pillarPos , this.cardWidth, pillarConfig))
             mount(this.el, this.pillars[this.pillars.length - 1].el)
         }
     }
