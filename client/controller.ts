@@ -3,6 +3,9 @@ import { View } from './view'
 import { Model } from './model/model'
 import { Server } from './server'
 import { ViewComponent } from "./components/view_component"
+import { Vector } from './geometry'
+
+const inverseScrollSpeed = 2;
 
 export class Controller {
     model: Model
@@ -23,6 +26,20 @@ export class Controller {
         document.onkeyup = (e: KeyboardEvent) => {
             this.handleKeyUp(e)
         }
+
+        window.onmousewheel = (e: WheelEvent) => {
+            if (this.shiftMode) {
+                this.wheelSlide({
+                    x: -e.deltaY / inverseScrollSpeed,
+                    y: -e.deltaX / inverseScrollSpeed,
+                });
+            } else {
+                this.wheelSlide({
+                    x: -e.deltaX / inverseScrollSpeed,
+                    y: -e.deltaY / inverseScrollSpeed,
+                });
+            }
+        };
     }
 
     async init() {
@@ -81,6 +98,10 @@ export class Controller {
                 this.shiftMode = false;
                 break;
         }
+    }
+
+    wheelSlide(delta: Vector) {
+        this.view.shiftActiveWindow(delta)
     }
 
     setup = {

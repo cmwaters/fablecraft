@@ -1,5 +1,5 @@
 import { Card } from "./model/card";
-import { Window } from "./components/window";
+import { Window, WindowConfig } from "./components/window";
 import { Story } from "./model/story";
 import { el, mount, RedomComponent, unmount } from "redom";
 import { Notifications } from "./components/notifier";
@@ -8,7 +8,9 @@ import { CommandLine } from "./components/command";
 import { Login, Signup } from "./components/authentication"
 import { User } from "./model/user";
 import { Server } from "./server";
+import { Config } from "./config"
 import { Header } from "./components/header";
+import { Vector } from './geometry'
 
 export class View {
     screen: HTMLElement
@@ -64,7 +66,7 @@ export class View {
     incognitoMode(): Promise<User> {
         return Promise.resolve({ 
             _id: undefined,
-            username: "annonymous",
+            username: "anonymous",
             lastStory: undefined,
             stories: []
         })
@@ -99,7 +101,7 @@ export class View {
     load(story: Story, cards: Card[][], user: User) {
         this.clear()
         let size = { width: document.body.clientWidth, height: document.body.clientHeight}
-        this.windows.push(new Window(cards, {x: 0, y: 0}, size))
+        this.windows.push(new Window(cards, {x: 0, y: 0}, size, this.defaultWindowConfig()))
         this.add(this.windows[this.windows.length - 1])
         this.notifier = new Notifications()
         this.add(this.notifier)
@@ -112,9 +114,32 @@ export class View {
         this.add(this.header)
     }
 
+    shiftActiveWindow(delta: Vector) {
+        for (const window of this.windows) {
+            if (window.hasFocus()) {
+                window.shift(delta)
+            }
+        }
+    } 
+
+    splitWindowVertically() {
+
+    }
+
+    splitWindowHorizontally() {
+        
+    }
+
     settings() {
         console.log("showing settings")
         this.panel = new Panel()
+    }
+
+    defaultWindowConfig(): WindowConfig {
+        return {
+            margin: Config.margin,
+            card: Config.card,
+        }
     }
 }
 

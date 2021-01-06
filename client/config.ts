@@ -8,6 +8,12 @@ export const Config = {
       toolbarHeight: 42
     },
 
+    margin: {
+      pillar: 60,
+      family: 30,
+      card: 20,
+    },
+
     notifier: {
       displayTimeMS: 6000
     },

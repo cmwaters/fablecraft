@@ -8,10 +8,11 @@ export class Node implements RedomComponent, ViewComponent {
     el: HTMLElement;
     editor: Quill;
 
-    constructor(card: Card) {
+    constructor(card: Card, margin: number) {
         console.log("creating node: " + card)
-        this.el = el("div.card")
+        this.el = el("div.card", { style: { marginBottom: margin}})
         this.editor = new Quill(this.el as Element)
+        this.editor.setText(card.text)
     }
     
     hasFocus(): boolean {

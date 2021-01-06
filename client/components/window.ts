@@ -8,12 +8,12 @@ import { RedomComponent, el, mount } from "redom";
 import { ViewComponent } from "./view_component"
 
 let g = Geometry;
-const inverseScrollSpeed = 2;
 
 export class Window implements RedomComponent, ViewComponent {
     pillars: Pillar[] = [];
     el: HTMLElement;
     centerPoint: Vector;
+    config: WindowConfig
 
     currentIndex: number = 0;
     currentDepth: number = 0;
@@ -26,31 +26,26 @@ export class Window implements RedomComponent, ViewComponent {
     story: Story;
 
     // note that the view struct itself doesn't store the node data but passes them on to the respective cards to handle
-    constructor(cards: Card[][], pos: Vector, size: Size) {
-        console.log(cards)
+    constructor(cards: Card[][], pos: Vector, size: Size, config: WindowConfig) {
+        this.config = config;
         this.el = el("div.window", { style: { width: size.width, height: size.height, left: pos.x, top: pos.y}})
         this.cardWidth = this.calculateCardWidth();
         this.centerPoint = g.add(pos, g.center(size))
         console.log(this.centerPoint)
         console.log(this.cardWidth)
 
-        window.onmousewheel = (e: WheelEvent) => {
-            if (this.shiftMode) {
-                this.shift({
-                    x: -e.deltaY / inverseScrollSpeed,
-                    y: -e.deltaX / inverseScrollSpeed,
-                });
-            } else {
-                this.shift({
-                    x: -e.deltaX / inverseScrollSpeed,
-                    y: -e.deltaY / inverseScrollSpeed,
-                });
+        let pillarConfig = { 
+            margin: { 
+                family: config.margin.family, 
+                card: config.margin.card
             }
-        };
-
+        }
         for (let i = 0; i < cards.length; i++) {
             console.log("creating a new pillar")
-            this.pillars.push(new Pillar(cards[i], this.cardWidth, this.centerPoint.x))
+            let pillarPos = { x: this.centerPoint.x - this.cardWidth/2 + (i * (this.cardWidth + this.config.margin.pillar)), y: 0}
+            let pillarSize = { width: this.cardWidth, height: size.height}
+            
+            this.pillars.push(new Pillar(cards[i], pillarPos , pillarSize, pillarConfig))
             mount(this.el, this.pillars[this.pillars.length - 1].el)
         }
     }
@@ -78,7 +73,7 @@ export class Window implements RedomComponent, ViewComponent {
     }
 
     calculateCardWidth(): number {
-        return Math.min(Math.max(0.5 * this.el.clientWidth, Config.card.width.min), Config.card.width.max);
+        return Math.min(Math.max(0.5 * this.el.clientWidth, this.config.card.width.min), this.config.card.width.max);
     }
 
     // shift shifts the entire view by a delta vector. This is primarily
@@ -86,5 +81,19 @@ export class Window implements RedomComponent, ViewComponent {
     // does not change the current depth and index
     shift(delta: Vector): void {
         this.pillars.forEach(p => p.shift(delta))
+    }
+}
+
+export type WindowConfig = {
+    margin: {
+        pillar: number,
+        family: number, 
+        card: number
+    }
+    card: {
+        width: {
+            min: number, 
+            max: number
+        }
     }
 }
