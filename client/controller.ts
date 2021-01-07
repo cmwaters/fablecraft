@@ -29,15 +29,9 @@ export class Controller {
 
         window.onmousewheel = (e: WheelEvent) => {
             if (this.shiftMode) {
-                this.wheelSlide({
-                    x: -e.deltaY / inverseScrollSpeed,
-                    y: -e.deltaX / inverseScrollSpeed,
-                });
+                this.wheelSlide(new Vector(-e.deltaY, -e.deltaX).divide(inverseScrollSpeed))
             } else {
-                this.wheelSlide({
-                    x: -e.deltaX / inverseScrollSpeed,
-                    y: -e.deltaY / inverseScrollSpeed,
-                });
+                this.wheelSlide(new Vector(-e.deltaX, -e.deltaY).divide(inverseScrollSpeed))
             }
         };
     }
@@ -85,6 +79,20 @@ export class Controller {
                 if (this.context) {
                     this.context.blur()
                 }
+                break;
+            case "ArrowUp":
+                this.view.window.up()
+                break
+            case "ArrowDown":
+                this.view.window.down()
+                break
+            case "ArrowLeft":
+                this.view.window.left()
+                break;
+            case "ArrowRight":
+                this.view.window.right()
+                break;
+
         }
     }
 

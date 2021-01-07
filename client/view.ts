@@ -10,10 +10,11 @@ import { User } from "./model/user";
 import { Server } from "./server";
 import { Config } from "./config"
 import { Header } from "./components/header";
-import { Vector } from './geometry'
+import { Vector, Size } from './geometry'
 
 export class View {
     screen: HTMLElement
+    window: Window
     windows: Window[] = [];
     notifier: Notifications
     panel: Panel
@@ -100,9 +101,10 @@ export class View {
 
     load(story: Story, cards: Card[][], user: User) {
         this.clear()
-        let size = { width: document.body.clientWidth, height: document.body.clientHeight}
-        this.windows.push(new Window(cards, {x: 0, y: 0}, size, this.defaultWindowConfig()))
-        this.add(this.windows[this.windows.length - 1])
+        let size = new Size(document.body.clientWidth, document.body.clientHeight)
+        this.window = new Window(cards, new Vector(), size, this.defaultWindowConfig())
+        this.windows.push(this.window)
+        this.add(this.window)
         this.notifier = new Notifications()
         this.add(this.notifier)
         this.notifier.info("Welcome to Fablecraft", "This is cool right", () => { alert("you clicked me") })

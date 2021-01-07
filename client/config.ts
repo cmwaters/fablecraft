@@ -18,9 +18,8 @@ export const Config = {
       displayTimeMS: 6000
     },
     
-    view: {
-        margin: {width: 60, height: 20},
-        branchGap: 40
+    window: {
+      refreshRate: 30,
     },
     
     header: {

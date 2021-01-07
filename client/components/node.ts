@@ -2,7 +2,7 @@ import { RedomComponent, el } from "redom";
 import Quill from "quill"
 import { Card } from "../model/card";
 import { ViewComponent } from "./view_component";
-import { Vector } from '../geometry'
+import { Size, Vector } from '../geometry'
 
 // we call this node instead of card to distinguish from the model and the view
 export class Node implements RedomComponent, ViewComponent {
@@ -17,7 +17,15 @@ export class Node implements RedomComponent, ViewComponent {
     }
 
     pos(): Vector {
-        return { x: this.el.clientLeft, y: this.el.clientTop }
+        return new Vector(this.el.clientLeft, this.el.clientTop)
+    }
+
+    height(): number {
+        return this.el.clientHeight
+    }
+
+    center(): Vector {
+        return this.pos().add(new Size(this.el.clientWidth, this.el.clientHeight).center())
     }
     
     hasFocus(): boolean {
