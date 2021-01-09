@@ -9,20 +9,27 @@ import { Node } from './node'
 export class Window implements RedomComponent, ViewComponent {
     pillars: Pillar[] = [];
     el: HTMLElement;
+    reference: HTMLElement
     centerPoint: Vector;
     config: WindowConfig
+    cardIndexer: { [index: string]: {
+        depth: number
+        index: number
+    }} = {}
 
     cardWidth: number = 0;
     current: CardPos = { depth: 0, index: 0};
+    node: Node
 
     // note that the view struct itself doesn't store the node data but passes them on to the respective cards to handle
-    constructor(cards: Card[][], pos: Vector, size: Size, config: WindowConfig) {
+    constructor(parent: HTMLElement, cards: Card[][], pos: Vector, size: Size, config: WindowConfig) {
         this.config = config;
         this.el = el("div.window", { style: { width: size.width, height: size.height, left: pos.x, top: pos.y}})
+        mount(parent, this.el)
+        this.reference = el("div.reference")
+        mount(this.el, this.reference)
         this.cardWidth = this.calculateCardWidth();
         this.centerPoint = pos.add(size.center())
-        console.log(this.centerPoint)
-        console.log(this.cardWidth)
 
         let pillarConfig = { 
             margin: { 
@@ -31,15 +38,102 @@ export class Window implements RedomComponent, ViewComponent {
             }
         }
         for (let i = 0; i < cards.length; i++) {
-            console.log("creating a new pillar")
-            let pillarPos = Vector.x(this.centerPoint.x - this.cardWidth/2 + (i * (this.cardWidth + this.config.margin.pillar)))
-            let pillar = new Pillar(cards[i], pillarPos , this.cardWidth, pillarConfig)
-            let height = pillar.nodes[0].height()
-            pillar.shift(new Vector(0, this.centerPoint.y - height/2))
-            this.bind(this.pillars[this.pillars.length - 1], pillar)
+            // add a pillar
+            let left = this.centerPoint.x - this.cardWidth/2 + (i * (this.cardWidth + this.config.margin.pillar))
+            let pillar = new Pillar(this.reference, cards[i], left, this.cardWidth, pillarConfig)
+            if (this.pillars.length > 0) {
+                pillar.align(this.pillars[this.pillars.length -1])
+            }
             this.pillars.push(pillar)
-            mount(this.el, pillar.el)
+            
+
+            // index the cards by id
+            for (let j = 0; j < cards[i].length; j++) {
+                this.cardIndexer[cards[i][j]._id] = {
+                    depth: i,
+                    index: j
+                }
+            }
         }
+        this.node = this.pillars[0].nodes[0]
+    }
+
+    focusOnCardById(id: string) {
+        let pos = this.cardIndexer[id]
+        this.focusOnCard(pos.depth, pos.index)
+    }
+
+    focusOnCard(depth: number, index: number): void {
+        this.current.depth = depth
+        this.current.index = index
+        this.node.el.style.backgroundColor = "lightblue";
+        this.node = this.pillars[depth].nodes[index]
+        this.node.el.style.backgroundColor = "blue"
+        this.resetReference()
+        let offset = this.pillars[depth].centerCard(index)
+        let parentIndex = index
+        for (let i = depth - 1; i >= 0 ; i++) {
+            let parentId = this.pillars[i+1].nodes[parentIndex].parent
+            parentIndex = this.cardIndexer[parentId].index
+            this.pillars[i].centerCard(parentIndex)
+        }
+        let childrenIndex = index
+        for (let i = depth + 1; i < this.pillars.length; i++) {
+            this.pillars[i].slideDown(offset)
+            this.pillars[i].families.forEach(family => family.desired += offset)
+            if (this.pillars[i-1].nodes[childrenIndex].children.length === 0) {
+                if (i === depth + 1) {
+                    console.log("no children, clearing center")
+                    this.pillars[i].clearCenter()
+                }
+                break
+            }
+            let childrenId = this.pillars[i-1].nodes[childrenIndex].children[0]
+            childrenIndex = this.cardIndexer[childrenId].index
+            this.pillars[i].centerFamily(childrenIndex)
+        }
+    }
+    
+    resetReference() {
+        this.reference.style.left = "0px"
+        this.reference.style.top = "0px"
+    }
+
+    calculateCardWidth(): number {
+        return Math.min(Math.max(0.5 * this.el.clientWidth, this.config.card.width.min), this.config.card.width.max);
+    }
+
+    // pan moves the view of the window. It does not displace any of the cards individually rather
+    // moves everything uniformly
+    pan(delta: Vector): void {
+        this.reference.style.left = (this.reference.offsetLeft + delta.x) + "px"
+        this.reference.style.top = (this.reference.offsetTop + delta.y) + "px"
+    }
+
+    switch(depth: number, index: number) {
+
+    }
+
+    down() {
+        if (this.current.index < this.pillars[this.current.depth].nodes.length - 1) {
+            this.focusOnCard(this.current.depth, this.current.index + 1)
+        }
+    }
+    
+    up() {
+        if (this.current.index > 1) {
+            this.focusOnCard(this.current.depth, this.current.index - 1)
+        }
+    }
+
+    left() {
+        console.log("left")
+
+    }
+
+    right() {
+        console.log("right")
+
     }
 
     // resize centers the object again (we may want to change the card width in the future)
@@ -57,58 +151,6 @@ export class Window implements RedomComponent, ViewComponent {
     }
 
     blur(): void {
-
-    }
-
-    node(depth?: number, index?: number): Node {
-        if (!depth) depth = this.current.depth
-        if (!index) index = this.current.index
-        return this.pillars[depth].nodes[index]
-    }
-
-    calculateCardWidth(): number {
-        return Math.min(Math.max(0.5 * this.el.clientWidth, this.config.card.width.min), this.config.card.width.max);
-    }
-
-    // shift shifts the entire view by a delta vector. This is primarily
-    // used to traverse along the tree an focus on different cards.
-    // does not change the current depth and index
-    shift(delta: Vector): void {
-        this.pillars.forEach(p => p.shift(delta))
-    }
-
-    bind(parent: Pillar, child: Pillar): void {
-
-    }
-
-    switch(depth: number, index: number) {
-
-    }
-
-    down() {
-        console.log("down")
-        // check that the card is not the last in the pillar
-        if (this.current.index < this.pillars[this.current.depth].nodes.length - 1) {
-            let delta = this.node().height()/2
-            delta += this.config.margin.card
-            this.current.index++
-            delta += this.node().height()/2
-            this.pillars[this.current.depth].shift(Vector.y(-delta))
-        }
-    }
-    
-    up() {
-        console.log("up")
-
-    }
-
-    left() {
-        console.log("left")
-
-    }
-
-    right() {
-        console.log("right")
 
     }
 }

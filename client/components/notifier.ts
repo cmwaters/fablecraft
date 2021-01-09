@@ -10,8 +10,9 @@ export class Notifications implements RedomComponent {
     notifications: Notification[] = []; 
     el: HTMLElement
 
-    constructor() {
+    constructor(parent: HTMLElement) {
         this.el = el("div.notifier")
+        mount(parent, this.el)
     }
 
     info(header: string, subtext?: string, pointer?: () => void) {

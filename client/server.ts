@@ -11,8 +11,8 @@ export namespace Server {
     export function login(username: string, password: string): Promise<User> {
         return new Promise<User>((resolve, reject) => {
             Axios.post("/auth/login", {
-                 username: username, 
-                 password: password
+                username: username, 
+                password: password
             })
             .then(response => {
                 if (devMode) console.log(response.data)
@@ -99,7 +99,11 @@ export namespace Server {
             Axios.get("/api/cards/" + storyId, { withCredentials: true })
                 .then(response => {
                     if (devMode) console.log(response.data)
-                    resolve(response.data.cards as Card[])
+                    if (response.data.cards) {
+                        resolve(response.data.cards as Card[])
+                    } else {
+                        reject(response.data)
+                    }
                 }).catch(err => {
                     if (devMode) console.log(err)
                     reject(err)

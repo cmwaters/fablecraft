@@ -109,7 +109,7 @@ export class Controller {
     }
 
     wheelSlide(delta: Vector) {
-        this.view.shiftActiveWindow(delta)
+        this.view.window.pan(delta)
     }
 
     setup = {

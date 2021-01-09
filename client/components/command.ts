@@ -1,4 +1,4 @@
-import { el, svg, RedomComponent } from 'redom'
+import { el, svg, RedomComponent, mount } from 'redom'
 import { ViewComponent } from './view_component'
 
 export class CommandLine implements RedomComponent, ViewComponent {
@@ -8,7 +8,7 @@ export class CommandLine implements RedomComponent, ViewComponent {
     private active: boolean = false;
     private commands: Command[] = [];
 
-    constructor() {
+    constructor(parent: HTMLElement) {
         this.txt = el("input")
         this.icon = svg("svg", { viewBox: "0 0 16 16", fill: "#333", class: "img" }, [
             svg("path", { d: "M6 9a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3A.5.5 0 0 1 6 9zM3.854 4.146a.5.5 0 1 0-.708.708L4.793 6.5 3.146 8.146a.5.5 0 1 0 .708.708l2-2a.5.5 0 0 0 0-.708l-2-2z" }),
@@ -18,6 +18,7 @@ export class CommandLine implements RedomComponent, ViewComponent {
             this.icon,
             this.txt
         ])
+        mount(parent, this.el)
     }
 
     onclick(func: () => void) {

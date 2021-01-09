@@ -32,10 +32,6 @@ export class View {
         mount(document.body, this.screen)
     }
 
-    add(component: RedomComponent | HTMLElement) {
-        mount(this.screen, component)
-    }
-
     login(): Promise<User> {
         return new Promise<User>((resolve, reject) => {
             console.log("showing login page")
@@ -48,7 +44,7 @@ export class View {
                     loginPage.update(error)
                 })
             })
-            this.add(loginPage)
+            mount(this.screen, loginPage)
             let navbar = el(".navbar", [
                 el("button", "Use Incognito", { style: { borderRight: "1px solid black" }, onclick: () => { 
                     resolve(this.incognitoMode())
@@ -59,7 +55,7 @@ export class View {
                     }
                 })
             ])
-            this.add(navbar)
+            mount(this.screen, navbar)
         })
         
     }
@@ -82,7 +78,7 @@ export class View {
                     resolve(user)
                 })
             });
-            this.add(signupPage)
+            mount(this.screen, signupPage)
             let navbar = el(".navbar", [
                 el("button", "Use Incognito", {
                     style: { borderRight: "1px solid black" }, onclick: () => {
@@ -95,32 +91,21 @@ export class View {
                     }
                 })
             ])
-            this.add(navbar)
+            mount(this.screen, navbar)
         })
     }
 
     load(story: Story, cards: Card[][], user: User) {
         this.clear()
         let size = new Size(document.body.clientWidth, document.body.clientHeight)
-        this.window = new Window(cards, new Vector(), size, this.defaultWindowConfig())
+        this.window = new Window(this.screen, cards, new Vector(), size, this.defaultWindowConfig())
         this.windows.push(this.window)
-        this.add(this.window)
-        this.notifier = new Notifications()
-        this.add(this.notifier)
+        this.window.focusOnCard(0, 0)
+        this.notifier = new Notifications(this.screen)
         this.notifier.info("Welcome to Fablecraft", "This is cool right", () => { alert("you clicked me") })
-        this.cli = new CommandLine()
-        this.add(this.cli)
-        this.header = new Header(user.username, story.title)
-        this.add(this.header)
+        this.cli = new CommandLine(this.screen)
+        this.header = new Header(this.screen, user.username, story.title)
     }
-
-    shiftActiveWindow(delta: Vector) {
-        for (const window of this.windows) {
-            if (window.hasFocus()) {
-                window.shift(delta)
-            }
-        }
-    } 
 
     splitWindowVertically() {
 

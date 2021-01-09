@@ -98,6 +98,9 @@ export class Generator {
             await newCards[0].save()
             this.documents[story].cards[parent.depth + 1].push(...newCards)
         }
+        // update parent
+        parent.children = newCards
+        await parent.save()
         return this
     }
 

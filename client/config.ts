@@ -1,3 +1,6 @@
+
+// Global config
+// TODO: maybe represent this as a JSON file
 export const Config = {
     name: "Fablecraft",
     card: {
@@ -21,9 +24,10 @@ export const Config = {
     window: {
       refreshRate: 30,
     },
-    
-    header: {
-      height: 80
-    }
+
+    movement: {
+      proportionalGain: 0.18,
+      integralGain: 0.005,
+    },
 
 }

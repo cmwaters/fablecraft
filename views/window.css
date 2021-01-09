@@ -3,9 +3,18 @@
     overflow: hidden;
 }
 
+.reference {
+    position: absolute;
+    height: 100vh;
+    width: 100%;
+    background-color: #eee
+}
+
 .pillar{
     position: absolute;
-    background-color: burlywood;
+    top: 0px;
+    height: 100%;
+    background-color: beige;
 }
 
 .family {
