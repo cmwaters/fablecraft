@@ -46,6 +46,7 @@ db.once('open', async () => {
         await Generator.createUsers(["jimmy", "amanda"])
             .then(gen => gen.createStory("jimmy", "Test Story", 10))
             .then(gen => gen.addCardFamily(gen.card(0, 3), 4))
+            .then(gen => gen.addCardFamily(gen.card(0, 5), 3))
             .then(gen => gen.addEditor("amanda", "Test Story"))
             .catch(err => console.error(err))
 

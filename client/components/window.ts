@@ -84,7 +84,7 @@ export class Window implements RedomComponent, ViewComponent {
             if (this.pillars[i-1].nodes[childrenIndex].children.length === 0) {
                 if (i === depth + 1) {
                     console.log("no children, clearing center")
-                    this.pillars[i].clearCenter()
+                    // this.pillars[i].clearCenter()
                 }
                 break
             }

@@ -87,7 +87,7 @@ export class Generator {
     // CONTRACT: the parent card should always be below any other parents that have children
     async addCardFamily(parent: Card, cards: number, story?: string): Promise<Generator> {
         if (!story) story = this.currentStory
-        let newCards: Card[] = await generateCards(this.documents[story].story._id, parent.depth + 1, cards)
+        let newCards: Card[] = await generateCards(this.documents[story].story._id, parent.depth + 1, cards, parent)
         if (this.documents[story].cards.length === parent.depth + 1) {
             this.documents[story].cards.push(newCards)
         } else {

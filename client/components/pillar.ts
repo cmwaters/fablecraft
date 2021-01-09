@@ -65,6 +65,11 @@ export class Pillar implements RedomComponent {
             if (node.children.length > 0) {
                 console.log("node " + i + " has children")
                 this.families[index].set(verticalPosition)
+                if (index > 0) {
+                    let delta = (this.families[index -1].bottom + this.config.margin.family) - this.families[index].top
+                    this.families[index].slideDown(Math.max(0, delta))
+                }
+                index++
             }
             console.log(verticalPosition)
             verticalPosition += node.el.offsetHeight + this.config.margin.card
@@ -165,6 +170,7 @@ export class Pillar implements RedomComponent {
                         let desiredDelta = this.families[j].desired - this.families[j].top
                         let space = centerBottom - this.families[j].top
                         this.families[j].slideDown(Math.max(desiredDelta, space))
+                        centerBottom = this.families[j].bottom + this.config.margin.family
                     }
                 } else {
                     // slide downwards
@@ -180,17 +186,20 @@ export class Pillar implements RedomComponent {
                         let desiredDelta = this.families[j].desired - this.families[j].top
                         let space = centerTop - this.families[j].bottom
                         this.families[j].slideDown(Math.min(desiredDelta, space)) 
+                        centerTop = this.families[j].top
                     }
                 }
                 
             }
         }
         if (!displaced) {
-            // pull cards below if they want to go up
+            console.log("no cards were displaced initially")
+            // pull cards below upwards if they want to go up
             for (let j = 0; j < this.families.length; j++) {
                 if (this.families[j].top > centerBottom) {
                     let desiredDelta = this.families[j].desired - this.families[j].top
                     let space = centerBottom - this.families[j].top
+                    console.log("moving by " + Math.max(desiredDelta, space))
                     this.families[j].slideDown(Math.max(desiredDelta, space))
                     centerBottom = this.families[j].bottom + this.config.margin.family
                 }
