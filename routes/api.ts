@@ -48,12 +48,6 @@ router.get("/story", async (req, res) => {
     graph.send(res);
 });
 
-// This retrieves the last story that the user was working on
-router.get("/story/last", async (req, res) => {
-    let graph = await Graph.loadFromStory(req.user as User, (req.user as User).lastStory);
-    graph.send(res);
-});
-
 router.post("/story", async (req, res) => {
     const { title, description } = req.body;
     console.log("Creating story")

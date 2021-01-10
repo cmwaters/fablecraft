@@ -11,11 +11,10 @@ export class Pillar implements RedomComponent {
     nodes: Node[] = [];
 
 
-    movement: NodeJS.Timeout
-    tick: number
+    movement: NodeJS.Timeout | null = null;
+    tick: number = 0;
     frameRate: number = Config.window.refreshRate
     left: number;
-    target: Vector;
     config: PillarConfig
 
     clearing: number = 150;
@@ -41,7 +40,7 @@ export class Pillar implements RedomComponent {
                     let family = this.append(cards.slice(priorIndex, index), top)
                     // reset the index and parent
                     priorIndex = index
-                    parent = cards[index].parent
+                    parent = cards[index].parent!
                     top += (family.el.offsetHeight + config.margin.card)
                 }
             }
@@ -90,128 +89,109 @@ export class Pillar implements RedomComponent {
             let length = this.families[i].nodes.length
             idx += length
             if (idx > index) {
-                let offset = this.families[i].getCardOffset(idx - length + index)
+                let offset = this.families[i].getCardOffset(index - (idx - length))
                 this.slideDown((this.el.offsetHeight / 2) - offset)
+                // this.families[i].desired = this.families[i].top
                 return (this.el.offsetHeight / 2) - offset
             }
         }
+        return 0
     }
 
     centerFamily(index: number) {
         let idx = 0;
-        let familyIdx = 0;
+        let familyIdx = -1;
         for (let i = 0; i < this.families.length; i++) {
             let length = this.families[i].nodes.length
             idx += length
             if (idx > index) { 
                 familyIdx = i
+                break
             }
         }
 
         console.log("center: " + this.el.clientHeight / 2)
-        console.log(this.families[familyIdx].desired)
+        console.log("desired: " + this.families[familyIdx].desired)
+        console.log("top: " + this.families[familyIdx].top)
         let offset = this.families[familyIdx].desired - this.families[familyIdx].top
-        console.log("centering family by: " + offset)
         this.families[familyIdx].slideDown(offset)
         if (offset > 0) {
+            console.log("sliding down")
             // the family went down we must push cards below and potentially pull cards above
-            // first push cards below
-            for (let i = familyIdx + 1; i < this.families.length; i++) {
-                let delta = this.families[i].top - this.families[i-1].bottom + this.config.margin.family
-                if (delta > 0) {
-                    this.families[i].slideDown(delta)
-                }
-            }
-            // then pull the cards above down if they want to go down
-            for (let i = familyIdx - 1; i >= 0; i--) {
-                let desiredDelta = this.families[i].desired - this.families[i].top
-                let space = this.families[i + 1].top - (this.families[i].bottom + this.config.margin.family)
-                this.families[i].slideDown(Math.min(desiredDelta, space)) 
-            }
+            this.pushBelowDownwards(familyIdx)
         } else {
+            console.log("sliding up")
             // the family went up so we must push cards above and potentially pull cards below
-            // first push cards above
-            for (let i = familyIdx - 1; i >= 0; i--) {
-                let delta = this.families[i].top - (this.families[i-1].bottom + this.config.margin.family)
-                if (delta < 0) {
-                    this.families[i].slideDown(delta)
-                }
-            }
-            // then pull the cards below up if they want to go up
-            for (let i = familyIdx + 1; i < this.families.length; i++) {
-                let desiredDelta = this.families[i].desired - this.families[i].top
-                let space = this.families[i].top - (this.families[i - 1].bottom + this.config.margin.family)
-                this.families[i].slideDown(Math.max(desiredDelta, space))
-            }
+            this.pushAboveUpwards(familyIdx)
         }
+        this.pullAboveDown(familyIdx)
+        this.pullBelowUp(familyIdx)
     }
 
     clearCenter() {
-        console.log("height: " + this.el.offsetHeight)
         let centerTop = (this.el.offsetHeight - this.clearing)/2
         let centerBottom = (this.el.offsetHeight + this.clearing)/2
-        let displaced = false
         for (let i = 0; i < this.families.length; i++) {
-            console.log("center top: " + centerTop)
-            console.log("family bottom: " + this.families[i].bottom)
             if (this.families[i].bottom > centerTop && this.families[i].top < centerBottom) {
-                displaced = true
                 if (this.families[i].top < centerTop) {
                     // slide upwards
                     this.families[i].slideDown(centerTop - this.families[i].bottom) 
-                    for (let j = i - 1; j >= 0; j--) {
-                        let delta = this.families[j].top - (this.families[j-1].bottom + this.config.margin.family)
-                        if (delta < 0) {
-                            this.families[j].slideDown(delta)
-                        }
-                    }
-                    // pull cards below if they want to go up
-                    for (let j = i + 1; j < this.families.length; j++) {
-                        let desiredDelta = this.families[j].desired - this.families[j].top
-                        let space = centerBottom - this.families[j].top
-                        this.families[j].slideDown(Math.max(desiredDelta, space))
-                        centerBottom = this.families[j].bottom + this.config.margin.family
-                    }
+                    this.pushAboveUpwards(i)
+                    this.pullBelowUp(i)
                 } else {
                     // slide downwards
                     this.families[i].slideDown(centerBottom  - this.families[i].top)
-                    for (let j = i + 1; j < this.families.length; j++) {
-                        let delta = this.families[j].top - this.families[j-1].bottom + this.config.margin.family
-                        if (delta > 0) {
-                            this.families[j].slideDown(delta)
-                        }
-                    }
-                    // pull cards above if they have the space
-                    for (let j = i - 1; j >= 0; j--) {
-                        let desiredDelta = this.families[j].desired - this.families[j].top
-                        let space = centerTop - this.families[j].bottom
-                        this.families[j].slideDown(Math.min(desiredDelta, space)) 
-                        centerTop = this.families[j].top
-                    }
+                    this.pushBelowDownwards(i)
+                    this.pullAboveDown(i)
                 }
                 
             }
         }
-        if (!displaced) {
-            console.log("no cards were displaced initially")
-            // pull cards below upwards if they want to go up
-            for (let j = 0; j < this.families.length; j++) {
-                if (this.families[j].top > centerBottom) {
-                    let desiredDelta = this.families[j].desired - this.families[j].top
-                    let space = centerBottom - this.families[j].top
-                    console.log("moving by " + Math.max(desiredDelta, space))
-                    this.families[j].slideDown(Math.max(desiredDelta, space))
-                    centerBottom = this.families[j].bottom + this.config.margin.family
-                }
+    }
+
+
+    private pullAboveDown(index: number, floor?: number): void {
+        if (!floor) {
+            floor = this.families[index].top - this.config.margin.family
+        }
+        for (let j = index - 1; j >= 0; j--) {
+            if (this.families[j].bottom < floor) {
+                let desiredDelta = this.families[j].desired - this.families[j].top
+                let space = floor - this.families[j].bottom
+                this.families[j].slideDown(Math.min(desiredDelta, space)) 
+                floor = this.families[j].top - this.config.margin.family
             }
-            // pull cards above down if they want to go down
-            for (let j = this.families.length - 1; j >= 0; j--) {
-                if (this.families[j].bottom < centerTop) {
-                    let desiredDelta = this.families[j].desired - this.families[j].top
-                    let space = centerTop - this.families[j].bottom
-                    this.families[j].slideDown(Math.min(desiredDelta, space)) 
-                    centerTop = this.families[j].top
-                }
+        }
+    }
+
+    private pullBelowUp(index: number, ceiling?: number): void {
+        if (!ceiling) {
+            ceiling = this.families[index].bottom + this.config.margin.family
+        }
+        for (let j = index + 1; j < this.families.length; j++) {
+            if (this.families[j].top > ceiling) {
+                let desiredDelta = this.families[j].desired - this.families[j].top
+                let space = ceiling - this.families[j].top
+                this.families[j].slideDown(Math.max(desiredDelta, space))
+                ceiling = this.families[j].bottom + this.config.margin.family
+            }
+        }
+    }
+
+    private pushAboveUpwards(index: number): void {
+        for (let i = index - 1; i >= 0; i--) {
+            let delta = this.families[i + 1].top - (this.families[i].bottom + this.config.margin.family)
+            if (delta < 0) {
+                this.families[i].slideDown(delta)
+            }
+        }
+    }
+
+    private pushBelowDownwards(index: number): void {
+        for (let i = index + 1; i < this.families.length; i++) {
+            let delta = this.families[i-1].bottom + this.config.margin.family - this.families[i].top
+            if (delta > 0) {
+                this.families[i].slideDown(delta)
             }
         }
     }
@@ -227,23 +207,21 @@ export class Pillar implements RedomComponent {
         let constant = new Vector((delta.x/2) / (halfTimeSteps * halfTimeSteps), (delta.y/2)/ (halfTimeSteps * halfTimeSteps))
         console.log(constant)
         this.tick = 0;
-        if (!this.movement) {
-            this.movement = setInterval(() => {
-                this.tick++
-                if (this.tick > timeSteps) {
-                    clearInterval(this.movement)
-                    this.movement = null
-                }
-                if (this.tick > halfTimeSteps) {
-                    let adjustedTick = halfTimeSteps - (this.tick % halfTimeSteps)
-                    this.slideRight((constant.x * 2 * adjustedTick) - constant.x)
-                    this.slideDown((constant.y * 2 * adjustedTick) - constant.y)
-                } else {
-                    this.slideRight((constant.x * 2 * this.tick) - constant.x)
-                    this.slideDown((constant.y * 2 * this.tick) - constant.y)
-                }
-            }, this.frameRate)
-        }
+        this.movement = setInterval(() => {
+            this.tick++
+            if (this.tick > timeSteps) {
+                clearInterval(this.movement!)
+                this.movement = null
+            }
+            if (this.tick > halfTimeSteps) {
+                let adjustedTick = halfTimeSteps - (this.tick % halfTimeSteps)
+                this.slideRight((constant.x * 2 * adjustedTick) - constant.x)
+                this.slideDown((constant.y * 2 * adjustedTick) - constant.y)
+            } else {
+                this.slideRight((constant.x * 2 * this.tick) - constant.x)
+                this.slideDown((constant.y * 2 * this.tick) - constant.y)
+            }
+        }, this.frameRate)
     }
 
     slideRight(deltaX: number): void {

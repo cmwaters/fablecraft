@@ -6,7 +6,7 @@ let should = chai.should();
 
 const DEFAULT_TEST_TITLE = "Test Title"
 
-describe.only("Model", () => {
+describe("Model", () => {
     describe('Card Ordering', () => {
         it("can order a single card", done => {
             let cards = order([createCard(DEFAULT_TEST_TITLE)])

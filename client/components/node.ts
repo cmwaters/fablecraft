@@ -1,11 +1,10 @@
 import { RedomComponent, el, mount } from "redom";
 import Quill from "quill"
 import { Card } from "../model/card";
-import { ViewComponent } from "./view_component";
 import { Size, Vector } from '../geometry'
 
 // we call this node instead of card to distinguish from the model and the view
-export class Node implements RedomComponent, ViewComponent {
+export class Node implements RedomComponent {
     el: HTMLElement;
     id: string
     children: string[] = []
@@ -18,7 +17,7 @@ export class Node implements RedomComponent, ViewComponent {
         this.editor = new Quill(this.el as Element)
         this.editor.setText(card.text)
         this.id = card._id
-        this.children = card.children
+        if (card.children) this.children = card.children
         this.parent = card.parent
     }
 
@@ -26,14 +25,16 @@ export class Node implements RedomComponent, ViewComponent {
         return new Size(this.el.clientWidth, this.el.clientHeight).center()
     }
     
-    hasFocus(): boolean {
-        throw new Error("Method not implemented.");
-    }
     focus(): void {
-        throw new Error("Method not implemented.");
+        this.el.style.backgroundColor = "blue";
     }
+
+    highlight(): void {
+
+    }
+
     blur(): void {
-        throw new Error("Method not implemented.");
+        this.el.style.backgroundColor = "lightblue";
     }
 
 }

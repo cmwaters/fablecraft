@@ -22,7 +22,7 @@ export class Model {
         this.user = user
         // try fetch a story if there is one available 
         if (this.user.lastStory) {
-            this.story = await Server.getLastStory()
+            this.story = await Server.getStory(this.user.lastStory)
         } else if (this.user.stories.length > 0) {
             this.story = await Server.getStory(this.user.stories[0])
         }

@@ -100,7 +100,6 @@ export class View {
         let size = new Size(document.body.clientWidth, document.body.clientHeight)
         this.window = new Window(this.screen, cards, new Vector(), size, this.defaultWindowConfig())
         this.windows.push(this.window)
-        this.window.focusOnCard(0, 0)
         this.notifier = new Notifications(this.screen)
         this.notifier.info("Welcome to Fablecraft", "This is cool right", () => { alert("you clicked me") })
         this.cli = new CommandLine(this.screen)
