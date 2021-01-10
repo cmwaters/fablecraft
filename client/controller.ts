@@ -59,9 +59,7 @@ export class Controller {
             case "Meta":
             case "Control":
                 if (this.view.cli) {
-                    if (this.view.cli.hasFocus()) {
-                        this.view.cli.focus()
-                    } else if (this.doubleCtrl) {
+                    if (this.doubleCtrl) {
                         this.view.cli.focus()
                         this.context = this.view.cli
                     }
@@ -91,6 +89,9 @@ export class Controller {
                 break;
             case "ArrowRight":
                 this.view.window.right()
+                break;
+            case "Enter":
+                this.view.window.edit()
                 break;
 
         }

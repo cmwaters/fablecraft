@@ -26,7 +26,7 @@ export class Node implements RedomComponent {
     }
     
     focus(): void {
-        this.el.style.backgroundColor = "blue";
+        this.el.style.backgroundColor = "lightcoral";
     }
 
     highlight(): void {
@@ -34,6 +34,7 @@ export class Node implements RedomComponent {
     }
 
     blur(): void {
+        this.editor.blur()
         this.el.style.backgroundColor = "lightblue";
     }
 

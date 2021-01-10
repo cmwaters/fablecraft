@@ -159,7 +159,9 @@ export class Window implements RedomComponent, ViewComponent {
         this.reference.style.top = this.reference.offsetTop + delta.y + "px";
     }
 
-    switch(depth: number, index: number) {}
+    edit(): void {
+        this.node.editor.focus()
+    }
 
     down() {
         if (this.current.index < this.pillars[this.current.depth].nodes.length - 1) {
@@ -224,10 +226,16 @@ export class Window implements RedomComponent, ViewComponent {
 
     // focus on this particular window. It is relevant when we use split view
     focus(): void {
-        // currently NOP
+        this.node.focus()
     }
 
-    blur(): void {}
+    blur(): void {
+        if (this.node.editor.hasFocus()) {
+            this.node.editor.blur()
+        } else {
+            this.node.blur()
+        }
+    }
 }
 
 export type WindowConfig = {
