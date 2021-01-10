@@ -131,8 +131,10 @@ export class Pillar implements RedomComponent {
     clearCenter() {
         let centerTop = (this.el.offsetHeight - this.clearing)/2
         let centerBottom = (this.el.offsetHeight + this.clearing)/2
+        let moved = false;
         for (let i = 0; i < this.families.length; i++) {
             if (this.families[i].bottom > centerTop && this.families[i].top < centerBottom) {
+                moved = true;
                 if (this.families[i].top < centerTop) {
                     // slide upwards
                     this.families[i].slideDown(centerTop - this.families[i].bottom) 
@@ -146,6 +148,10 @@ export class Pillar implements RedomComponent {
                 }
                 
             }
+        }
+        if (!moved) {
+            this.pullAboveDown(this.families.length, centerTop)
+            // this.pullBelowUp(0, centerBottom)
         }
     }
 
