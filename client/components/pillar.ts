@@ -17,8 +17,6 @@ export class Pillar implements RedomComponent {
     left: number;
     config: PillarConfig
 
-    clearing: number = 150;
-
     constructor(parent: HTMLElement, cards: Card[], left: number, width: number, config: PillarConfig) {
         this.el = el("div.pillar", { style: { left: left, width: width} });
         mount(parent, this.el)
@@ -128,9 +126,9 @@ export class Pillar implements RedomComponent {
         this.pullBelowUp(familyIdx)
     }
 
-    clearCenter() {
-        let centerTop = (this.el.offsetHeight - this.clearing)/2
-        let centerBottom = (this.el.offsetHeight + this.clearing)/2
+    clearCenter(clearance: number) {
+        let centerTop = (this.el.offsetHeight - clearance)/2
+        let centerBottom = (this.el.offsetHeight + clearance)/2
         let moved = false;
         for (let i = 0; i < this.families.length; i++) {
             if (this.families[i].bottom > centerTop && this.families[i].top < centerBottom) {

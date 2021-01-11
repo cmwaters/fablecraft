@@ -75,18 +75,21 @@ export class Window implements RedomComponent, ViewComponent {
     focusOnCard(depth: number, index: number): void {
         // unlock on the previous card
         this.node.blur()
+        this.node.dull()
 
         // if the user has moved off the origin then reset the screen
         // back to the reference point
         this.resetReference();
 
+        // realign all offspring pillars
+        for (let i = depth; i < this.pillars.length - 1; i++) {
+            this.pillars[i+1].align(this.pillars[i])
+        }
+
         // if there has been a change in depth then move the pillars across
         if (depth !== this.current.depth) {
             let deltaX =  (this.current.depth - depth) * (this.cardWidth + this.config.margin.pillar)
             this.pillars.forEach(pillar => pillar.slideRight(deltaX))
-            for (let i = depth; i < this.current.depth; i++) {
-                this.pillars[i+1].align(this.pillars[i])
-            }
         }
 
         // update and focus on the new card
@@ -94,7 +97,7 @@ export class Window implements RedomComponent, ViewComponent {
         this.current.index = index;
         this.node = this.pillars[depth].nodes[index];
         this.pillar = this.pillars[this.current.depth]
-        this.node.focus()
+        this.node.spotlight()
         
         // shift the current pillar to vertically center on the locked card
         let offset = this.pillars[depth].centerCard(index);
@@ -130,7 +133,7 @@ export class Window implements RedomComponent, ViewComponent {
             if (this.pillars[i - 1].nodes[index].children.length === 0) {
                 if (i === depth + 1) {
                     console.log("no children, clearing center");
-                    this.pillars[i].clearCenter();
+                    this.pillars[i].clearCenter(this.pillars[depth].nodes[index].el.offsetHeight);
                 }
                 break;
             }
@@ -225,15 +228,30 @@ export class Window implements RedomComponent, ViewComponent {
     }
 
     // focus on this particular window. It is relevant when we use split view
-    focus(): void {
-        this.node.focus()
+    focus(switchContext: (newContext: ViewComponent | null) => void): void {
+        this.node.spotlight()
     }
 
     blur(): void {
-        if (this.node.editor.hasFocus()) {
-            this.node.editor.blur()
-        } else {
-            this.node.blur()
+        this.node.dull()
+    }
+
+    key(key: string, shiftMode: boolean, ctrlMode: boolean): void {
+        switch (key) {
+            case "ArrowUp":
+                this.up()
+                break;
+            case "ArrowDown":
+                this.down()
+                break;
+            case "ArrowLeft":
+                this.left()
+                break;
+            case "ArrowRight":
+                this.right()
+                break;
+            case "Enter":
+                this.node.focus()
         }
     }
 }

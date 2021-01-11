@@ -11,8 +11,9 @@ import { Server } from "./server";
 import { Config } from "./config"
 import { Header } from "./components/header";
 import { Vector, Size } from './geometry'
+import { ViewComponent } from "./components/view_component";
 
-export class View {
+export class View implements ViewComponent {
     screen: HTMLElement
     window: Window
     windows: Window[] = [];
@@ -24,6 +25,22 @@ export class View {
     constructor() {
         this.screen = document.createElement("body")
         mount(document.body, this.screen)
+    }
+
+    hasFocus(): boolean {
+        return false
+    }
+
+    focus(switchContext: (newContext: ViewComponent | null) => void): void {
+        switchContext(this.window)
+    }
+
+    blur() : void {
+        return
+    }
+
+    key(key: string, shiftMode: boolean, ctrlMode: boolean): void {
+        return
     }
 
     clear() {

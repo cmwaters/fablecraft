@@ -49,6 +49,10 @@ export class CommandLine implements RedomComponent, ViewComponent {
         this.commands = commands;
     }
 
+    key(key: string, shiftMode: boolean, ctrlMode: boolean) {
+        
+    }
+
 }
 
 export type Command = {

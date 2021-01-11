@@ -26,6 +26,11 @@ export class Node implements RedomComponent {
     }
     
     focus(): void {
+        setTimeout(() => {
+            this.editor.focus()
+            this.editor.setSelection(this.editor.getLength(), 0, "user")
+        }, 100)
+        
         this.el.style.backgroundColor = "lightcoral";
     }
 
@@ -33,9 +38,16 @@ export class Node implements RedomComponent {
 
     }
 
+    spotlight(): void {
+        this.el.style.backgroundColor = "lightcoral";
+    }
+
+    dull(): void {
+        this.el.style.backgroundColor = "lightblue";
+    }
+
     blur(): void {
         this.editor.blur()
-        this.el.style.backgroundColor = "lightblue";
     }
 
 }
