@@ -1,53 +1,55 @@
 import { RedomComponent, el, mount } from "redom";
 import { ViewComponent } from "./view_component";
-import { Node } from "./node";
+import { Node, NodeConfig } from "./node";
 import { Card } from "../model/card";
 import { Vector } from '../geometry'
 import { Config } from "../config"
 
 export class Family implements RedomComponent {
     el: HTMLElement;
-    top: number
-    desired: number
-    bottom: number
-    margin: number
-    // movement: PIC
+    margin: number;
     nodes: Node[] = [];
 
-    // we don't know the height up front. This must be calculated by creating
-    // all the cards and returning the height so that the pillar controlling
-    // the family can position it appropriately.
-    constructor(parent: HTMLElement, cards: Card[], top: number, margin: number) {
-        this.el = el("div.family", { style: { top: top}})
+    constructor(parent: HTMLElement, cards: Card[], config: FamilyConfig) {
+        this.el = el("div.family", { style: { marginBottom: config.margin, marginTop: config.margin}})
         mount(parent, this.el)
         cards.forEach((card) => {
-            let node = new Node(this.el, card, margin)
+            let node = new Node(this.el, card, config.card)
             this.nodes.push(node)
             mount(this.el, node.el)
         })
-        this.margin = margin
-        this.top = top
-        this.desired = top
-        this.bottom = top + this.el.clientHeight
+        this.margin = config.margin
     }
 
-    slideDown(deltaY: number) {
-        this.top += deltaY
-        this.el.style.top = this.top + "px"
-        this.bottom += deltaY
+    // separateCardsIntoFamilies takes an array of cards (usually meant as part of a pillar)
+    // and groups the cards by family whilst still retaining order
+    static separateCardsIntoFamilies(cards: Card[]): Card[][] {
+        let output: Card[][] = []
+        if (!cards[0].parent) {
+            // it is the root. Hence there is only a single family
+            output = [cards]
+        } else {
+            // divide the cards based on slices of cards that share the same parent (i.e. a Family)
+            let parent = cards[0].parent
+            let priorIndex = 0;
+            for (let index = 0; index < cards.length; index++) {
+                if (cards[index].parent !== parent) {
+                    // add the family from the slice
+                    output.push(cards.slice(priorIndex, index))
+                    // reset the index and parent
+                    priorIndex = index
+                    parent = cards[index].parent!
+                }
+            }
+            // add the remaining cards together as a family
+            output.push(cards.slice(priorIndex, cards.length))
+        } 
+        return output
     }
 
-    set(target: number) {
-        this.desired = target
-        this.slideDown(target - this.top)
-    }
+}
 
-    getCardOffset(index: number) {
-        let offset = this.top
-        for (let i = 0; i < index; i++) {
-            offset += this.nodes[i].el.offsetHeight + this.margin
-        }
-        return offset + this.nodes[index].el.offsetHeight/2
-    }
-
+export type FamilyConfig = {
+    card: NodeConfig
+    margin: number
 }

@@ -13,13 +13,11 @@
 .pillar{
     position: absolute;
     top: 0px;
-    height: 100%;
     background-color: beige;
 }
 
 .family {
-    position: absolute;
-    left: 0px;
+    position: relative;
     width: 100%;
     background-color: lightgreen;
 }

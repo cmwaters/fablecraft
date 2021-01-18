@@ -13,8 +13,8 @@ export const Config = {
 
     margin: {
       pillar: 60,
-      family: 30,
-      card: 20,
+      family: 20,
+      card: 10,
     },
 
     notifier: {

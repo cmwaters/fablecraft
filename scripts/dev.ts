@@ -47,6 +47,9 @@ db.once('open', async () => {
             .then(gen => gen.createStory("jimmy", "Test Story", 10))
             .then(gen => gen.addCardFamily(gen.card(0, 3), 4))
             .then(gen => gen.addCardFamily(gen.card(0, 5), 3))
+            .then(gen => gen.addCardFamily(gen.card(1, 2), 3))
+            .then(gen => gen.addCardFamily(gen.card(1, 4), 7))
+            .then(gen => gen.addCardFamily(gen.card(1, 6), 4))
             .then(gen => gen.addEditor("amanda", "Test Story"))
             .catch(err => console.error(err))
 

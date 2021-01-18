@@ -11,8 +11,8 @@ export class Node implements RedomComponent {
     parent?: string
     editor: Quill;
 
-    constructor(parent: HTMLElement, card: Card, margin: number) {
-        this.el = el("div.card", { style: { marginBottom: margin}})
+    constructor(parent: HTMLElement, card: Card, config: NodeConfig) {
+        this.el = el("div.card", { style: { marginBottom: config.margin, marginTop: config.margin}})
         mount(parent, this.el)
         this.editor = new Quill(this.el as Element)
         this.editor.setText(card.text)
@@ -50,4 +50,8 @@ export class Node implements RedomComponent {
         this.editor.blur()
     }
 
+}
+
+export type NodeConfig = {
+    margin: number
 }

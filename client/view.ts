@@ -5,15 +5,14 @@ import { el, mount, RedomComponent, unmount } from "redom";
 import { Notifications } from "./components/notifier";
 import { Panel } from "./components/panel";
 import { CommandLine } from "./components/command";
-import { Login, Signup } from "./components/authentication"
+import { Login, Signup, Navbar } from "./components/authentication"
 import { User } from "./model/user";
-import { Server } from "./server";
+import { Client } from "./client";
 import { Config } from "./config"
 import { Header } from "./components/header";
 import { Vector, Size } from './geometry'
-import { ViewComponent } from "./components/view_component";
 
-export class View implements ViewComponent {
+export class View {
     screen: HTMLElement
     window: Window
     windows: Window[] = [];
@@ -27,89 +26,27 @@ export class View implements ViewComponent {
         mount(document.body, this.screen)
     }
 
-    hasFocus(): boolean {
-        return false
-    }
-
-    focus(switchContext: (newContext: ViewComponent | null) => void): void {
-        switchContext(this.window)
-    }
-
-    blur() : void {
-        return
-    }
-
-    key(key: string, shiftMode: boolean, ctrlMode: boolean): void {
-        return
-    }
-
     clear() {
         unmount(document.body, this.screen)
         this.screen = document.createElement("body")
         mount(document.body, this.screen)
     }
 
-    login(): Promise<User> {
-        return new Promise<User>((resolve, reject) => {
-            console.log("showing login page")
-            this.clear()
-            let loginPage = new Login((username: string, password: string) => {
-                Server.login(username, password).then((user: User) => {
-                    resolve(user)
-                }).catch((error: any) => {
-                    console.log(error)
-                    loginPage.update(error)
-                })
-            })
-            mount(this.screen, loginPage)
-            let navbar = el(".navbar", [
-                el("button", "Use Incognito", { style: { borderRight: "1px solid black" }, onclick: () => { 
-                    resolve(this.incognitoMode())
-                } }),
-                el("button", "Sign Up", {
-                    onclick: () => {
-                        resolve(this.signup())
-                    }
-                })
-            ])
-            mount(this.screen, navbar)
-        })
-        
+    loginPage(callback: (username: string, password: string) => void): Login {
+        this.clear()
+        return new Login(this.screen, callback)
     }
 
-    incognitoMode(): Promise<User> {
-        return Promise.resolve({ 
-            _id: undefined,
-            username: "anonymous",
-            lastStory: undefined,
-            stories: []
-        })
+    navbar(buttons: {name: string, func: () => void}[]): Navbar {
+        let navbar = new Navbar(this.screen, buttons[0].name, buttons[0].func)
+        for (let i = 1; i < buttons.length; i++) {
+            navbar.add(buttons[i].name, buttons[i].func)
+        }
+        return navbar
     }
 
-    signup(): Promise<User> {
-        return new Promise<User>((resolve, reject) => {
-            console.log("showing sign up page")
-            this.clear()
-            let signupPage = new Signup((username: string, email: string, password: string) => {
-                Server.signup(username, email, password).then((user: User) => {
-                    resolve(user)
-                })
-            });
-            mount(this.screen, signupPage)
-            let navbar = el(".navbar", [
-                el("button", "Use Incognito", {
-                    style: { borderRight: "1px solid black" }, onclick: () => {
-                        resolve(this.incognitoMode())
-                    }
-                }),
-                el("button", "Login", {
-                    onclick: () => {
-                        resolve(this.login())
-                    }
-                })
-            ])
-            mount(this.screen, navbar)
-        })
+    signupPage(callback: (username: string, email: string, password: string, confirmPassword: string) => void): Signup {
+        return new Signup(this.screen, callback);
     }
 
     load(story: Story, cards: Card[][], user: User) {

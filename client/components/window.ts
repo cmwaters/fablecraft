@@ -2,6 +2,7 @@ import { Card } from "../model/card";
 import { CardPos } from "../model/model";
 import { Size, Vector } from "../geometry";
 import { Pillar } from "./pillar";
+import { Family } from "./family";
 import { RedomComponent, el, mount } from "redom";
 import { ViewComponent } from "./view_component";
 import { Node } from "./node";
@@ -17,12 +18,14 @@ export class Window implements RedomComponent, ViewComponent {
         [index: string]: {
             depth: number;
             index: number;
+            family: number;
         };
     } = {};
 
     cardWidth: number = 0;
     current: CardPos = { depth: 0, index: 0 };
     node: Node;
+    private active: boolean = false;
 
     // note that the view struct itself doesn't store the node data but passes them on to the respective cards to handle
     constructor(parent: HTMLElement, cards: Card[][], pos: Vector, size: Size, config: WindowConfig) {
@@ -35,36 +38,63 @@ export class Window implements RedomComponent, ViewComponent {
         this.centerPoint = pos.add(size.center());
 
         let pillarConfig = {
-            margin: {
-                family: config.margin.family,
-                card: config.margin.card,
+            family: {
+                margin: config.margin.family,
+                card: {
+                    margin: config.margin.card,
+                },
             },
+            width: this.cardWidth,
+            center: this.centerPoint.y
         };
+
+        // add all the pillars
         for (let i = 0; i < cards.length; i++) {
-            // add a pillar
             let left = this.centerPoint.x - this.cardWidth / 2 + i * (this.cardWidth + this.config.margin.pillar);
-            let pillar = new Pillar(this.reference, cards[i], left, this.cardWidth, pillarConfig);
-            if (this.pillars.length > 0) {
-                pillar.align(this.pillars[this.pillars.length - 1]);
-            }
-            this.pillars.push(pillar);
+            this.pillars.push(new Pillar(this.reference, left, pillarConfig));
+        }
 
-            // set on click events
-            pillar.nodes.forEach(node => node.el.onclick = () => {
+        this.pillars[0].appendFamily(cards[0]);
+        this.pillars[0].nodes.forEach((node, index) => {
+            node.el.onclick = () => {
                 this.focusOnCardById(node.id)
-            })
+            }
+            this.cardIndexer[node.id] = {
+                depth: 0,
+                index: index,
+                family: 0,
+            }
+        })
 
-            // index the cards by id
-            for (let j = 0; j < cards[i].length; j++) {
-                this.cardIndexer[cards[i][j]._id] = {
-                    depth: i,
-                    index: j,
-                };
+        for (let depth = 0; depth < cards.length - 1; depth++) {
+            let families = Family.separateCardsIntoFamilies(cards[depth + 1]);
+            let familyIdx = 0;
+            let cardIdx = 0;
+            for (let index = 0; index < cards[depth].length; index++) {
+                if (cards[depth][index].children.length > 0) {
+                    let family = this.pillars[depth + 1].appendFamily(families[familyIdx])
+                    familyIdx++;
+                    family.nodes.forEach(node => {
+                        node.el.onclick = () => {
+                            this.focusOnCardById(node.id)
+                        }
+                        this.cardIndexer[node.id] = {
+                            depth: depth + 1, 
+                            index: cardIdx,
+                            family: familyIdx
+                        }
+                        cardIdx++;
+                    })
+                } else {
+                    // add an empty family
+                    this.pillars[depth + 1].appendFamily()
+                }
             }
         }
-        this.pillar = this.pillars[0]
+
+        this.pillar = this.pillars[0];
         this.node = this.pillar.nodes[0];
-        this.focusOnCard(this.current.depth, this.current.index)
+        this.focusOnCard(this.current.depth, this.current.index);
     }
 
     focusOnCardById(id: string) {
@@ -74,76 +104,50 @@ export class Window implements RedomComponent, ViewComponent {
 
     focusOnCard(depth: number, index: number): void {
         // unlock on the previous card
-        this.node.blur()
-        this.node.dull()
+        this.node.blur();
+        this.node.dull();
 
         // if the user has moved off the origin then reset the screen
         // back to the reference point
         this.resetReference();
 
-        // realign all offspring pillars
-        for (let i = depth; i < this.pillars.length - 1; i++) {
-            this.pillars[i+1].align(this.pillars[i])
-        }
-
         // if there has been a change in depth then move the pillars across
         if (depth !== this.current.depth) {
-            let deltaX =  (this.current.depth - depth) * (this.cardWidth + this.config.margin.pillar)
-            this.pillars.forEach(pillar => pillar.slideRight(deltaX))
+            let deltaX = (this.current.depth - depth) * (this.cardWidth + this.config.margin.pillar);
+            this.pillars.forEach((pillar) => pillar.move(Vector.x(deltaX)));
         }
 
         // update and focus on the new card
         this.current.depth = depth;
         this.current.index = index;
         this.node = this.pillars[depth].nodes[index];
-        this.pillar = this.pillars[this.current.depth]
-        this.node.spotlight()
-        
+        this.pillar = this.pillars[this.current.depth];
+        this.node.spotlight();
+
         // shift the current pillar to vertically center on the locked card
-        let offset = this.pillars[depth].centerCard(index);
+        this.pillars[depth].centerCard(index);
 
         // shift the pillars to the left vertically so that the parent is
         // directly in line with the locked on card
-        this.adjustAncestorPillars(depth, index)
-        
+        this.adjustAncestorPillars(depth, index);
+
         // shift all the pillars to the right vertically so that the
         // children of the current card are aligned.
-        this.adjustOffspringPillars(depth, index, offset)
+        this.adjustOffspringPillars(depth, index);
     }
 
     private adjustAncestorPillars(depth: number, index: number) {
         for (let i = depth - 1; i >= 0; i--) {
-            let parentId = this.pillars[i + 1].nodes[index].parent!;
-            console.log("parent: " + parentId)
-            index = this.cardIndexer[parentId].index;
+            index = this.cardIndexer[this.pillars[i + 1].nodes[index].parent!].index;
             this.pillars[i].centerCard(index);
         }
     }
 
-    private adjustOffspringPillars(depth: number, index: number, offset: number) {
-        console.log("offset: " + offset)
-        console.log("desired: " + this.pillars[1].families[0].desired)
-        console.log("top: " + this.pillars[1].families[0].top)
+    private adjustOffspringPillars(depth: number, index: number) {
         for (let i = depth + 1; i < this.pillars.length; i++) {
-            this.pillars[i].slideDown(offset);
-            this.pillars[i].families.forEach((family) => {family.desired += offset});
-            console.log("slide")
-            console.log("desired: " + this.pillars[1].families[0].desired)
-            console.log("top: " + this.pillars[1].families[0].top)
-            if (this.pillars[i - 1].nodes[index].children.length === 0) {
-                if (i === depth + 1) {
-                    console.log("no children, clearing center");
-                    this.pillars[i].clearCenter(this.pillars[depth].nodes[index].el.offsetHeight);
-                }
-                break;
-            }
-            let childrenId = this.pillars[i - 1].nodes[index].children[0];
-            index = this.cardIndexer[childrenId].index;
-            console.log("children: " + index)
-            this.pillars[i].centerFamily(index);
+            index = this.findNearestChild(index, i - 1)
+            this.pillars[i].centerCard(index)
         }
-        console.log("desired: " + this.pillars[1].families[0].desired)
-        console.log("top: " + this.pillars[1].families[0].top)
     }
 
     resetReference() {
@@ -163,7 +167,7 @@ export class Window implements RedomComponent, ViewComponent {
     }
 
     edit(): void {
-        this.node.editor.focus()
+        this.node.editor.focus();
     }
 
     down() {
@@ -182,40 +186,43 @@ export class Window implements RedomComponent, ViewComponent {
     left() {
         console.log("left");
         if (this.current.depth > 0) {
-            let parentId = this.pillars[this.current.depth].nodes[this.current.index].parent!
-            this.focusOnCard(this.current.depth - 1, this.cardIndexer[parentId].index)
+            let parentId = this.pillars[this.current.depth].nodes[this.current.index].parent!;
+            this.focusOnCard(this.current.depth - 1, this.cardIndexer[parentId].index);
         }
     }
 
     // right jumps across to the card's first child. If the card doesn't have a child, yet there exists
-    // a pillar, then we jump instead to the last child of the next parent above 
+    // a pillar, then we jump instead to the last child of the next parent above
     right() {
         console.log("right");
         if (this.current.depth < this.pillars.length - 1) {
-            if (this.node.children.length > 0) {
-                let index = this.cardIndexer[this.node.children[0]].index
-                this.focusOnCard(this.current.depth + 1, index)
-            } else {
-                let index = -1
-                for (let i = this.current.index - 1; i >= 0; i--) {
-                    let length = this.pillar.nodes[i].children.length
-                    if (length > 0) {
-                        index = this.cardIndexer[this.pillar.nodes[i].children[length - 1]].index
-                        break
-                    }
-                }
-                if (index === -1) {
-                    for (let i = this.current.index + 1; i < this.pillar.nodes.length; i++) {
-                        let length = this.pillar.nodes[i].children.length
-                        if (length > 0) {
-                            index = this.cardIndexer[this.pillar.nodes[i].children[0]].index
-                            break
-                        }
-                    }
-                }
-                this.focusOnCard(this.current.depth + 1, index)
+            this.focusOnCard(
+                this.current.depth + 1, 
+                this.findNearestChild(this.current.index)
+            )
+        }
+    }
+
+    private findNearestChild(index: number, depth?: number): number {
+        if (!depth) depth = this.current.depth
+        let resp = -1;
+        for (let i = index; i >= 0; i--) {
+            let length = this.pillars[depth].nodes[i].children.length;
+            if (length > 0) {
+                resp = this.cardIndexer[this.pillars[depth].nodes[i].children[length - 1]].index;
+                break;
             }
         }
+        if (resp === -1) {
+            for (let i = index + 1; i < this.pillar.nodes.length; i++) {
+                let length = this.pillars[depth].nodes[i].children.length;
+                if (length > 0) {
+                    resp = this.cardIndexer[this.pillars[depth].nodes[i].children[0]].index;
+                    break;
+                }
+            }
+        }
+        return resp
     }
 
     // resize centers the object again (we may want to change the card width in the future)
@@ -228,30 +235,31 @@ export class Window implements RedomComponent, ViewComponent {
     }
 
     // focus on this particular window. It is relevant when we use split view
-    focus(switchContext: (newContext: ViewComponent | null) => void): void {
-        this.node.spotlight()
+    focus(): void {
+        // this.node.spotlight();
     }
 
     blur(): void {
-        this.node.dull()
+        // this.node.dull();
     }
 
     key(key: string, shiftMode: boolean, ctrlMode: boolean): void {
+        console.log(key)
         switch (key) {
             case "ArrowUp":
-                this.up()
+                this.up();
                 break;
             case "ArrowDown":
-                this.down()
+                this.down();
                 break;
             case "ArrowLeft":
-                this.left()
+                this.left();
                 break;
             case "ArrowRight":
-                this.right()
+                this.right();
                 break;
             case "Enter":
-                this.node.focus()
+                this.node.focus();
         }
     }
 }
