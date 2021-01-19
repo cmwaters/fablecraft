@@ -9,6 +9,8 @@ import { Vector } from './geometry'
 
 const inverseScrollSpeed = 2;
 
+const NEW_STORY_TITLE = "Untitled"
+
 export class Controller {
     model: Model
     view: View
@@ -16,9 +18,10 @@ export class Controller {
     shiftMode: boolean = false;
     ctrlMode: boolean = false;
     doubleCtrl: boolean = false;
+    // nothing is saved
+    incognito: boolean = false;
 
-    constructor(model: Model, view: View) {
-        this.model = model
+    constructor(view: View) {
         this.view = view
 
         document.onkeydown = (e: KeyboardEvent) => {
@@ -41,51 +44,36 @@ export class Controller {
         this.context = this.view.window
     }
 
-    async init() {
+    static async init(view: View) {
+        let controller = new Controller(view)
+
         // initialize the model
-        if (this.model.user === undefined) {
-            let user = await this.getUserProfile()
-            if (!user) {
-                user = await this.login()
+        if (!this.model.user) {
+            // check if the user is already logged in (prior session is saved and still valid)
+            let user = await Client.getUserProfile()
+            if (!this.model.user) {
+                // if not require the user to login (the user can also switch to signup)
+                this.model.user = await this.login()
             }
-
-            let story: Story
-            try {
-                if (user.lastStory) {
-                    story = await Client.getStory(user.lastStory)
-                } else if (user.stories.length > 0) {
-                    story = await Client.getStory(user.stories[0])
-                }
-            } catch (err) {
-                console.log(err)
-            }
-
-            let cards: Card[] = []
-            if (story) {
-                cards = await Client.getCards(story._id).catch((err) => {
-                    if (!err.error) {
-                        return Client.getCards(story._id)
-                    }
-                })
-            } else {
-                // else we create a new empty story
-                let { story, rootCard } = await Client.createStory("Untitled")
-                story = story
-                cards.push(rootCard)
-            }
-            await this.model.init(user, story, cards)
         }
+
+        // load either the most recent story in the db, the first available one
+        // in the db, or if there is either none or in incognito mode, create a new story.
+        let {story, cards} = await this.loadStory(this.model.user)
+
+        // init the model and load the view of the story
+        await this.model.init(this.model.user, story, cards)
+
         // set up the cli
         this.setup.cli()
-        this.context.focus()
-    }
 
-    async getUserProfile(): Promise<User | undefined> {
-        return await Client.getUserProfile()
+        // focus on the default window
+        this.context.focus()
     }
 
     async login(): Promise<User> {
         return new Promise<User>((resolve, reject) =>{
+            this.view.clear()
             let login = this.view.loginPage((username:string, password:string): void => {
                 // we should do some client side verifying here before making the request
                 Client.login(username, password)
@@ -94,15 +82,15 @@ export class Controller {
             })
             this.view.navbar([
                 {
-                    name: "Sign Up",
-                    func: () => {
-                        resolve(this.signup())
-                    }
-                },
-                {
                     name: "Incognito",
                     func: () => {
                         resolve(this.incognitoMode())
+                    }
+                },
+                {
+                    name: "Sign Up",
+                    func: () => {
+                        resolve(this.signup())
                     }
                 }
             ])
@@ -111,7 +99,11 @@ export class Controller {
 
     async signup(): Promise<User> {
         return new Promise<User>((resolve, reject) => {
+            this.view.clear()
             let signup = this.view.signupPage((username: string, email: string, password: string, confirmPassword: string) => {
+                if (password !== confirmPassword) {
+                    signup.error("Passwords don't match.")
+                }
                 // TODO: client side verification of the users sign up details
                 Client.signup(username, email, password)
                     .then((user: User) => resolve(user))
@@ -119,23 +111,77 @@ export class Controller {
             })
             this.view.navbar([
                 {
-                    name: "Log In",
-                    func: () => {
-                        resolve(this.login())
-                    }
-                },
-                {
                     name: "Incognito",
                     func: () => {
                         resolve(this.incognitoMode())
+                    }
+                }, 
+                {
+                    name: "Log In",
+                    func: () => {
+                        resolve(this.login())
                     }
                 }
             ])
         })
     }
 
+    async loadStory(user: User): Promise<{story: Story, cards: Card[]}> {
+        // if in incognito mode then create a new story locally
+        if (this.incognitoMode) {
+            return { 
+                story: {
+                    _id: undefined,
+                    title: NEW_STORY_TITLE,
+                    owner: user._id
+                },
+                cards: [
+                    {
+                        _id: undefined,
+                        text: " ",
+                        story: undefined,
+                        depth: 0, 
+                        index: 0,
+                    }
+                ]
+            }
+        }
+
+        // retrieve the last story the user has or the first in the
+        // list of stories the user is associated with
+        let story: Story
+        try {
+            if (user.lastStory) {
+                story = await Client.getStory(user.lastStory)
+            } else if (user.stories.length > 0) {
+                story = await Client.getStory(user.stories[0])
+            }
+        } catch (err) {
+            console.log(err)
+        }
+
+        // retrieve the corresponding cards to that story
+        let cards: Card[] = []
+        if (story) {
+            cards = await Client.getCards(story._id).catch((err) => {
+                if (!err.error) {
+                    return Client.getCards(story._id)
+                }
+            })
+        } else {
+            // else we create a new empty story
+            let { story, rootCard } = await Client.createStory(NEW_STORY_TITLE)
+            story = story
+            cards = [rootCard]
+        }
+        return { story, cards }
+    }
+
     incognitoMode(): Promise<User> {
+        this.incognito = true;
         return Promise.resolve({ 
+            // by checking _id, the client will know if the user is in incognito mode
+            // and wants to make requests to the server.
             _id: undefined,
             username: "anonymous",
             lastStory: undefined,

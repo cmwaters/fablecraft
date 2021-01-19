@@ -126,7 +126,7 @@ export class Navbar implements RedomComponent {
     }
 
     add(name, onclick: () => void) {
-        this.el.appendChild(el("button", name, { style: { borderRight: "1px solid black"}, onclick: () => {
+        this.el.appendChild(el("button", name, { style: { borderLeft: "1px solid black"}, onclick: () => {
             onclick()
         }}))
     }
