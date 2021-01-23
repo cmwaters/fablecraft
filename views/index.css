@@ -122,6 +122,13 @@ body {
     outline: none;
 }
 
+.cli-inner {
+    display: flex;
+    align-items: center;
+    border-radius: 3px;
+    background-color: white;
+}
+
 .cli .card {
     font-size: 11px;
     display: inline-block;
@@ -147,7 +154,6 @@ body {
     display: block;
     width: 240px;
     margin: 20px;
-    background-color: yellow;
     padding: 10px;
     font-family: "Open Sans", Arial, sans-serif;
     font-size: 11px;

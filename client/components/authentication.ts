@@ -1,7 +1,8 @@
 import { el, svg, RedomComponent, mount } from 'redom'
+import { ViewComponent } from './view_component'
 import { Config } from "../config"
 
-export class Login implements RedomComponent {
+export class Login implements RedomComponent, ViewComponent {
     el: RedomComponent | HTMLElement | SVGElement
     errorBar: HTMLElement
     callback: (username: string, password: string) => void
@@ -39,11 +40,11 @@ export class Login implements RedomComponent {
     }
 
     focus() {
-
+        this.active = true
     }
 
     blur() {
-
+        this.active = false
     }
 
     key(key: string, shiftMode: boolean, ctrlMode: boolean): void {
@@ -63,9 +64,10 @@ export class Login implements RedomComponent {
     }
 }
 
-export class Signup implements RedomComponent {
+export class Signup implements RedomComponent, ViewComponent {
     el: RedomComponent | HTMLElement | SVGElement
     errorBar: HTMLElement
+    active: boolean = false
     callback: (username: string, email: string, password: string, confirmPassword: string) => void
 
     constructor(parent: HTMLElement, callback: (username: string, email: string, password: string, confirmPassword: string) => void) {
@@ -86,12 +88,25 @@ export class Signup implements RedomComponent {
             }})
         ])
         mount(parent, this.el)
+        this.active = true;
     }
 
     error(error: any): void {
         console.log("Sign up: " + error)
         this.errorBar.style.display = "block";
         this.errorBar.innerText = error
+    }
+
+    focus(): void {
+        this.active = true;
+    }
+
+    hasFocus(): boolean {
+        return this.active
+    }
+
+    blur(): void {
+        this.active = false
     }
 
     key(key: string, shiftMode: boolean, ctrlMode: boolean): void {

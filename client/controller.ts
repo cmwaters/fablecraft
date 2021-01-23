@@ -14,15 +14,17 @@ const NEW_STORY_TITLE = "Untitled"
 export class Controller {
     model: Model
     view: View
-    context: ViewComponent
+    defaultContext: ViewComponent
+    context: ViewComponent = null
     shiftMode: boolean = false;
     ctrlMode: boolean = false;
     doubleCtrl: boolean = false;
     // nothing is saved
     incognito: boolean = false;
 
-    constructor(view: View) {
+    constructor(view: View, model: Model) {
         this.view = view
+        this.model = model
 
         document.onkeydown = (e: KeyboardEvent) => {
             this.handleKeyDown(e)
@@ -39,36 +41,6 @@ export class Controller {
                 this.wheelSlide(new Vector(-e.deltaX, -e.deltaY).divide(inverseScrollSpeed))
             }
         };
-
-        // set the initial context to be the 
-        this.context = this.view.window
-    }
-
-    static async init(view: View) {
-        let controller = new Controller(view)
-
-        // initialize the model
-        if (!this.model.user) {
-            // check if the user is already logged in (prior session is saved and still valid)
-            let user = await Client.getUserProfile()
-            if (!this.model.user) {
-                // if not require the user to login (the user can also switch to signup)
-                this.model.user = await this.login()
-            }
-        }
-
-        // load either the most recent story in the db, the first available one
-        // in the db, or if there is either none or in incognito mode, create a new story.
-        let {story, cards} = await this.loadStory(this.model.user)
-
-        // init the model and load the view of the story
-        await this.model.init(this.model.user, story, cards)
-
-        // set up the cli
-        this.setup.cli()
-
-        // focus on the default window
-        this.context.focus()
     }
 
     async login(): Promise<User> {
@@ -80,6 +52,7 @@ export class Controller {
                     .then((user: User) => resolve(user))
                     .catch((err: string) => login.error(err))
             })
+            this.focus(login)
             this.view.navbar([
                 {
                     name: "Incognito",
@@ -109,6 +82,7 @@ export class Controller {
                     .then((user: User) => resolve(user))
                     .catch((err: string) => signup.error(err))
             })
+            this.focus(signup)
             this.view.navbar([
                 {
                     name: "Incognito",
@@ -128,7 +102,7 @@ export class Controller {
 
     async loadStory(user: User): Promise<{story: Story, cards: Card[]}> {
         // if in incognito mode then create a new story locally
-        if (this.incognitoMode) {
+        if (this.incognito) {
             return { 
                 story: {
                     _id: undefined,
@@ -189,6 +163,30 @@ export class Controller {
         })
     }
 
+    focus(object?: ViewComponent): void {
+        if (this.context) {
+            this.context.blur()
+        }
+
+        if (object) {
+            this.context = object
+        } else if (this.defaultContext) {
+            this.context = this.defaultContext
+        }
+        if (this.context) {
+            this.context.focus()
+        }
+    }
+
+    escape(): void {
+        this.context.blur()
+        if (this.defaultContext) {
+            this.focus(this.defaultContext)
+        } else {
+            this.context = null
+        }
+    }
+
     handleKeyDown(e: KeyboardEvent) {
         console.log(e.key)
         switch(e.key) {
@@ -196,8 +194,7 @@ export class Controller {
             case "Control":
                 if (this.view.cli) {
                     if (this.doubleCtrl) {
-                        this.context = this.view.cli
-                        this.context.focus()
+                        this.focus(this.view.cli)
                     }
                 }
                 this.doubleCtrl = true;
@@ -211,13 +208,13 @@ export class Controller {
                 break;
             case "Escape":
                 if (this.context) {
-                    this.context.blur()
-                    this.context = this.view.window
-                    this.context.focus()
+                    this.escape()
                 }
                 break;
             default:
-                this.context.key(e.key, this.shiftMode, this.ctrlMode)
+                if (this.context) {
+                    this.context.key(e.key, this.shiftMode, this.ctrlMode)
+                }
         }
     }
 

@@ -18,18 +18,64 @@ export class Pillar implements RedomComponent {
     familyConfig: FamilyConfig
 
     constructor(parent: HTMLElement, xOffset: number, config: PillarConfig) {
-        this.el = el("div.pillar", { style: { left: xOffset, width: config.width} });
+        this.el = el("div.pillar", { style: { left: xOffset, width: config.width } });
         mount(parent, this.el)
         this.pos = new Vector(xOffset, 0)
         this.center = config.center
         this.familyConfig = config.family
     }
 
-    centerCard(index: number) {
+    // centerCard, centers the pillar around this card. The position of the card can be identified as either
+    // purely based on index or a combination of both the family index and the index
+    centerCard(index: number, familyIndex: number = 0) {
+        console.log("center card, index: " + index + " familyIndex: " + familyIndex)
         let yOffset = this.el.offsetTop;
-        for (let i = 0; i < index; i++) {
-            yOffset += this.families[i].el.offsetHeight
+        for (let i = 0; i < familyIndex; i++) {
+            if (this.families[i].nodes.length !== 0) {
+                yOffset += this.families[i].el.offsetHeight + this.familyConfig.margin
+            }
         }
+        let i = 0;
+        while (i <= index) {
+            // check if family is empty in which case we skip
+            if (this.families[familyIndex].nodes.length === 0) {
+                familyIndex++
+                continue
+            }
+
+            // termination condition: is the card of the index within this family
+            if (index - i < this.families[familyIndex].nodes.length) {
+                break
+            }
+
+            // increment the height of the family as well as the margin
+            yOffset += this.families[familyIndex].el.offsetHeight + this.familyConfig.margin
+            i += this.families[familyIndex].nodes.length
+            familyIndex++
+        }
+        // calculate the offset of the card itself within the family
+        yOffset += this.families[familyIndex].cardOffset(index - i)
+        this.move(Vector.y(this.center - yOffset))
+    }
+
+    // centers on the card that would 
+    centerBegin(height: number) {
+        console.log("center begin")
+        let yOffset = this.el.offsetTop + (height / 2)
+        this.move(Vector.y(this.center - yOffset))
+    }
+
+    // centers on the card that would be appended to the end of the pillar.
+    // height refers to the height of the parent
+    centerEnd(height: number) {
+        console.log("center end: " + height)
+        let yOffset = this.el.offsetTop
+        for (let i = 0; i < this.families.length; i++) {
+            if (this.families[i].nodes.length > 0) {
+                yOffset += this.families[i].el.offsetHeight + this.familyConfig.margin
+            }
+        }
+        yOffset += height/2
         this.move(Vector.y(this.center - yOffset))
     }
 
@@ -38,9 +84,8 @@ export class Pillar implements RedomComponent {
         for (let i = 0; i < this.families.length; i++) {
             let length = this.families[i].nodes.length
             idx += length
-            if (idx > cardIndex) { 
+            if (idx > cardIndex) {
                 return i
-                break
             }
         }
         return -1
@@ -70,8 +115,8 @@ export class Pillar implements RedomComponent {
             this.move(delta)
         }
         let timeSteps = periodMS / this.frameRate
-        let halfTimeSteps = timeSteps/2
-        let constant = new Vector((delta.x/2) / (halfTimeSteps * halfTimeSteps), (delta.y/2)/ (halfTimeSteps * halfTimeSteps))
+        let halfTimeSteps = timeSteps / 2
+        let constant = new Vector((delta.x / 2) / (halfTimeSteps * halfTimeSteps), (delta.y / 2) / (halfTimeSteps * halfTimeSteps))
         console.log(constant)
         this.tick = 0;
         this.movement = setInterval(() => {
@@ -87,6 +132,19 @@ export class Pillar implements RedomComponent {
                 this.move(constant.multiply(2).multiply(this.tick).subtract(constant))
             }
         }, this.frameRate)
+    }
+
+    // isEmpty checks to see if a range of families are empty
+    // if and end is not provided then isEmpty searches until the end.
+    // toIdx is exclusive.
+    isEmpty(fromIdx: number, toIdx?: number): boolean {
+        if (!toIdx) toIdx = this.families.length
+        for (let i = fromIdx; i < toIdx; i++) {
+            if (this.families[i].nodes.length > 0) {
+                return false
+            }
+        }
+        return true
     }
 
     move(delta: Vector): void {
