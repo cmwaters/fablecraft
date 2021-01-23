@@ -2,7 +2,7 @@ import { RedomComponent, el, mount, unmount, s } from "redom";
 import { ViewComponent } from "./view_component";
 import { Config } from "../config"
 
-const INFO_COLOR = "transparent"
+const INFO_COLOR = "white"
 const WARNING_COLOR = "#ffbc49"
 const ERROR_COLOR = "#f76060"
 

@@ -175,10 +175,17 @@ body {
 
 .header {
     position: absolute;
-    top: 5px;
-    left: 5px;
+    top: -5px;
+    left: -5px;
+    padding-left: 10px;
+    padding-top: 10px;
+    padding-right: 10px;
+    padding-bottom: 5px;
+    border-radius: 3px;
     display: flex; 
     color: #999;
+    background-color: white;
+
 }
 
 .header .img {
