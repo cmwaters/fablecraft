@@ -269,7 +269,11 @@ export class Window implements RedomComponent, ViewComponent {
         console.log("shiftDownwards")
     }
 
-    // resize centers the object again (we may want to change the card width in the future)
+    // resize centers the object and adjusts the card width dependent on the new window width
+    //
+    // TODO: Come up with a more intelligent resizing system. We should find out how many columns we
+    // can fit in the window 1/2/3 and then use that to calculate the width and positioning of each
+    // pillar so that it all fits nicely
     resize(size: Size): void {
         console.log("resizing");
         let delta = Size.fromEl(this.el).diff(size)
@@ -287,25 +291,17 @@ export class Window implements RedomComponent, ViewComponent {
         for (let i = this.current.depth + 1; i < this.pillars.length; i++) {
             this.pillars[i].changeWidth(this.cardWidth)
             console.log("width delta " + widthDelta)
-            let margin = new Vector((delta.width - (((i * 2) - this.current.depth - 1) * widthDelta))/2, delta.height/2)
+            let margin = new Vector(delta.width/2 - widthDelta/2 - ((i - this.current.depth - 1) * widthDelta), delta.height/2)
             console.log("margin: " + margin.string())
             this.pillars[i].move(margin)
         }
 
         // adjust the position and size of the pillars to the left
-        for (let i = this.current.depth - 1; i > 0; i--) {
+        for (let i = this.current.depth - 1; i >= 0; i--) {
             this.pillars[i].changeWidth(this.cardWidth)
+            let margin = new Vector(delta.width/2 + 1.5 * widthDelta, delta.height/2)
+            this.pillars[i].move(margin)
         }
-
-        // for (let i = this.current.depth; i < this.pillars.length; i++) {
-        //     this.pillars[i].changeWidth(this.cardWidth)
-        //     if (i < this.pillars.length - 1) {
-        //         let delta = (this.pillars[i].pos.x + this.cardWidth + this.config.margin.pillar) - this.pillars[i + 1].pos.x
-        //         console.log(delta)
-        //         this.pillars[i + 1].move(Vector.x(delta))
-        //     }
-        // }
-        // this.focusOnCard(this.current.depth, this.current.index)
     }
 
     changeLayout(layout: string) {
