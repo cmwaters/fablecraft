@@ -26,8 +26,7 @@ export const Config = {
     },
 
     movement: {
-      proportionalGain: 0.18,
-      integralGain: 0.005,
+      defaultTransitionTime: 300
     },
 
 }

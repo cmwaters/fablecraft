@@ -11,26 +11,33 @@ export class Pillar implements RedomComponent {
     families: Family[] = [];
     nodes: Node[] = [];
 
-    movement: NodeJS.Timeout | null = null;
-    tick: number = 0;
-    frameRate: number = Config.window.refreshRate
-    pos: Vector
-    center: number
-    familyConfig: FamilyConfig
+    private center: number
+    private familyConfig: FamilyConfig
+
+    // used for moving the pillar
+    private movement: NodeJS.Timeout | null = null;
+    private tick: number = 0;
+    private frameRate: number = Config.window.refreshRate
+    private pos: Vector
+    private alpha: Vector
+    private transitionTime: number
+    private target: Vector
 
     constructor(parent: HTMLElement, xOffset: number, config: PillarConfig) {
         this.el = el("div.pillar", { style: { left: xOffset, width: config.width } });
         mount(parent, this.el)
         this.pos = new Vector(xOffset, 0)
+        this.target = this.pos.copy()
         this.center = config.center
         this.familyConfig = config.family
+        this.transitionTime = config.transition
     }
 
     // centerCard, centers the pillar around this card. The position of the card can be identified as either
     // purely based on index or a combination of both the family index and the index
     centerCard(index: number) {
         console.log("center card, index: " + index)
-        let yOffset = this.el.offsetTop;
+        let yOffset = this.target.y;
         let i = 0;
         let familyIndex = 0;
         while (i <= index) {
@@ -51,15 +58,12 @@ export class Pillar implements RedomComponent {
             familyIndex++
         }
         // calculate the offset of the card itself within the family
-        console.log(yOffset)
-        console.log(familyIndex)
         yOffset += this.families[familyIndex].cardOffset(index - i) + this.familyConfig.margin
-        console.log(yOffset)
-        this.move(Vector.y(this.center - yOffset))
+        this.shift(Vector.y(this.center - yOffset), this.transitionTime)
     }
 
     centerFamily(familyIndex: number) {
-        let yOffset = this.el.offsetTop + this.familyConfig.margin
+        let yOffset = this.target.y + this.familyConfig.margin
         for (let i = 0; i < familyIndex; i++) {
             console.log("family height " + i + ": " + this.families[i].el.offsetHeight)
             if (this.families[i].nodes.length !== 0) {
@@ -67,28 +71,28 @@ export class Pillar implements RedomComponent {
             }
         }
         yOffset += this.families[familyIndex].el.offsetHeight / 2
-        this.move(Vector.y(this.center - yOffset))
+        this.shift(Vector.y(this.center - yOffset), this.transitionTime)
     }
 
     // centers on the card that would 
     centerBegin(height: number) {
         console.log("center begin")
-        let yOffset = this.el.offsetTop + (height / 2) + this.familyConfig.margin
-        this.move(Vector.y(this.center - yOffset))
+        let yOffset = this.target.y + (height / 2) + this.familyConfig.margin
+        this.shift(Vector.y(this.center - yOffset), this.transitionTime)
     }
 
     // centers on the card that would be appended to the end of the pillar.
     // height refers to the height of the parent
     centerEnd(height: number) {
         console.log("center end: " + height)
-        let yOffset = this.el.offsetTop
+        let yOffset = this.target.y
         for (let i = 0; i < this.families.length; i++) {
             if (this.families[i].nodes.length > 0) {
                 yOffset += this.families[i].el.offsetHeight + this.familyConfig.margin
             }
         }
         yOffset += height/2 + this.familyConfig.margin
-        this.move(Vector.y(this.center - yOffset))
+        this.shift(Vector.y(this.center - yOffset), this.transitionTime)
     }
 
     getFamilyIndex(cardIndex: number) {
@@ -126,27 +130,62 @@ export class Pillar implements RedomComponent {
         this.el.style.width = width + "px"
     }
 
+    // deletes the card at the respective index
+    deleteCard(index: number) {
+
+    }
+
+    // deletes the entire family at the respective index
+    deleteFamily(familyIndex: number) {
+
+    }
+
     // use a polynomial spline between current and target positions to move the pillar in a smooth manner
-    shift(delta: Vector, periodMS: number) {
+    // should be able to handle concurrent requests
+    shift(delta: Vector, periodMS: number = 0) {
+        this.target.shift(delta)
+        // if period is 0 the pillar jumps immediately to the target
         if (periodMS === 0) {
-            this.move(delta)
+            this.moveTo(this.target)
+            return 
         }
+        // if we were already performing a shift operation then we stop this one
+        // and calculate a new one (this should incorporate prior shifts)
+        if (this.movement) {
+            clearInterval(this.movement!)
+            this.movement = null
+            this.alpha = new Vector()
+        }
+
+        let actualDelta = this.target.subtract(this.pos)
         let timeSteps = periodMS / this.frameRate
-        let halfTimeSteps = timeSteps / 2
-        let constant = new Vector((delta.x / 2) / (halfTimeSteps * halfTimeSteps), (delta.y / 2) / (halfTimeSteps * halfTimeSteps))
-        console.log(constant)
+        let halfTimeStepsSquared = (timeSteps / 2) * (timeSteps / 2)
+        this.alpha = new Vector((actualDelta.x / 2) / halfTimeStepsSquared, (actualDelta.y / 2) / halfTimeStepsSquared)
         this.tick = 0;
+        
         this.movement = setInterval(() => {
             this.tick++
+            // termination condition. Once the sufficient incremental steps are
+            // taken we should have reached the target
             if (this.tick > timeSteps) {
+                if (!this.target.subtract(this.pos).isLessThan(new Vector(1, 1))) {
+                    console.error("move operation failed to reach target after required ticks. Target: " + this.target.string() + " Current: " + this.pos.string())
+                }
+                // this.moveTo(this.target)
                 clearInterval(this.movement!)
                 this.movement = null
+                return
             }
-            if (this.tick > halfTimeSteps) {
-                let adjustedTick = halfTimeSteps - (this.tick % halfTimeSteps)
-                this.move(constant.multiply(2).multiply(adjustedTick).subtract(constant))
+
+            // split the journey in two. On the front half we speed up and on the
+            // the back half we slow down
+            if (this.tick > (timeSteps / 2)) {
+                let adjustedTick = (timeSteps / 2) - (this.tick % (timeSteps / 2))
+                let step = this.alpha.multiply(2).multiply(adjustedTick).subtract(this.alpha)
+                this.moveBy(step)
             } else {
-                this.move(constant.multiply(2).multiply(this.tick).subtract(constant))
+                let step = this.alpha.multiply(2).multiply(this.tick).subtract(this.alpha)
+                this.moveBy(step)
             }
         }, this.frameRate)
     }
@@ -164,10 +203,14 @@ export class Pillar implements RedomComponent {
         return true
     }
 
-    move(delta: Vector): void {
+    private moveBy(delta: Vector): void {
         this.pos.shift(delta)
-        this.el.style.left = this.pos.x + "px"
-        this.el.style.top = this.pos.y + "px"
+        this.pos.updateEl(this.el)
+    }
+
+    private moveTo(target: Vector): void {
+        this.pos = target.copy()
+        this.pos.updateEl(this.el)
     }
 
     resize(width: number) {
@@ -179,4 +222,5 @@ export type PillarConfig = {
     family: FamilyConfig
     width: number,
     center: number
+    transition: number
 }

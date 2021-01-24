@@ -47,7 +47,8 @@ export class Window implements RedomComponent, ViewComponent {
                 },
             },
             width: this.cardWidth,
-            center: this.centerPoint.y
+            center: this.centerPoint.y,
+            transition: config.transition,
         };
 
         // add all the pillars
@@ -130,7 +131,7 @@ export class Window implements RedomComponent, ViewComponent {
         // if there has been a change in depth then move the pillars across
         if (depth !== this.current.depth) {
             let deltaX = (this.current.depth - depth) * (this.cardWidth + this.config.margin.pillar);
-            this.pillars.forEach((pillar) => pillar.move(Vector.x(deltaX)));
+            this.pillars.forEach((pillar) => pillar.shift(Vector.x(deltaX), this.config.transition));
         }
 
         // update and focus on the new card
@@ -150,6 +151,12 @@ export class Window implements RedomComponent, ViewComponent {
         // shift all the pillars to the right vertically so that the
         // children of the current card are aligned.
         this.adjustOffspringPillars(depth, index);
+    }
+
+    // deletes the card and recursively deletes all the offspring of that card
+    // also removes the card from the indexer
+    deleteCard(depth: number, index: number): void {
+        this.pillars[depth].deleteCard(index)
     }
 
     resetReference() {
@@ -277,7 +284,7 @@ export class Window implements RedomComponent, ViewComponent {
     resize(size: Size): void {
         console.log("resizing");
         let delta = Size.fromEl(this.el).diff(size)
-        size.modifyEl(this.el)
+        size.updateEl(this.el)
         this.centerPoint = size.center() // we should also account for the position
         let widthDelta = this.cardWidth
         this.calculateCardWidth()
@@ -285,7 +292,7 @@ export class Window implements RedomComponent, ViewComponent {
         console.log("new width " + this.cardWidth)
         // adjust the position and size of the focused pillar
         this.pillar.changeWidth(this.cardWidth)
-        this.pillar.move(new Vector((delta.width + widthDelta)/2, delta.height/2))
+        this.pillar.shift(new Vector((delta.width + widthDelta)/2, delta.height/2))
         
         // adjust the position and size of the pillars to the right
         for (let i = this.current.depth + 1; i < this.pillars.length; i++) {
@@ -293,14 +300,14 @@ export class Window implements RedomComponent, ViewComponent {
             console.log("width delta " + widthDelta)
             let margin = new Vector(delta.width/2 - widthDelta/2 - ((i - this.current.depth - 1) * widthDelta), delta.height/2)
             console.log("margin: " + margin.string())
-            this.pillars[i].move(margin)
+            this.pillars[i].shift(margin)
         }
 
         // adjust the position and size of the pillars to the left
         for (let i = this.current.depth - 1; i >= 0; i--) {
             this.pillars[i].changeWidth(this.cardWidth)
             let margin = new Vector(delta.width/2 + 1.5 * widthDelta, delta.height/2)
-            this.pillars[i].move(margin)
+            this.pillars[i].shift(margin)
         }
     }
 
@@ -400,4 +407,5 @@ export type WindowConfig = {
             max: number;
         };
     };
+    transition: number
 };

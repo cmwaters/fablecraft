@@ -79,6 +79,7 @@ export class View {
         return {
             margin: Config.margin,
             card: Config.card,
+            transition: Config.movement.defaultTransitionTime
         }
     }
 }

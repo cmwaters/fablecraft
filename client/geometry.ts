@@ -19,6 +19,10 @@ export class Vector {
     return new Vector(x)
   }
 
+  static fromEl(element: HTMLElement): Vector {
+    return new Vector(element.offsetLeft, element.offsetTop)
+  }
+
   add(v: Vector): Vector {
     return new Vector(this.x + v.x, this.y + v.y)
   }
@@ -60,9 +64,14 @@ export class Vector {
     return new Vector(this.x, this.y)
   }
 
-  static fromEl(element: HTMLElement): Vector {
-    return new Vector(element.offsetLeft, element.offsetTop)
+  isZero(): boolean {
+    return this.x === 0 && this.y === 0
   }
+
+  updateEl(element: HTMLElement): void {
+    element.style.left = this.x + "px"
+    element.style.top = this.y + "px"
+  }  
 }
 
 export class Size { 
@@ -82,7 +91,7 @@ export class Size {
     return new Size(size.width -this.width, size.height - this.height)
   }
 
-  modifyEl(element: HTMLElement) {
+  updateEl(element: HTMLElement) {
     element.style.width = this.width + "px"
     element.style.height = this.height + "px"
   }
