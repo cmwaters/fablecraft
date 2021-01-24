@@ -165,6 +165,8 @@ export class Window implements RedomComponent, ViewComponent {
             // expand the empty family to indicate that the card has no children
             this.pillars[depth+1].families[index].expand(this.pillars[depth].nodes[index].el.offsetHeight)
             this.expandedFamily = this.pillars[depth + 1].families[index]
+            console.log("expanded to " + this.pillars[depth].nodes[index].el.offsetHeight)
+            console.log("new height " + this.pillars[depth + 1].families[index].el.offsetHeight)
             depth++
             // Check where the empty family of the card resides
             if (this.pillars[depth].isEmpty(index)) {
@@ -176,7 +178,7 @@ export class Window implements RedomComponent, ViewComponent {
                 this.pillars[depth].centerBegin(this.pillars[depth - 1].nodes[index].el.offsetHeight)
             } else {
                 // if it is in between cards then center on the nearest card just above
-                this.pillars[depth].centerCard(0, index)
+                this.pillars[depth].centerFamily(index)
             }
         }
         for (let i = depth + 1; i < this.pillars.length - 1; i++) {

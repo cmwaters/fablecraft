@@ -58,6 +58,8 @@ export class View {
         this.notifier.info("Welcome to Fablecraft", "This is cool right", () => { alert("you clicked me") })
         this.cli = new CommandLine(this.screen)
         this.header = new Header(this.screen, user.username, story.title)
+        let horizontalLine = el("hr", { style: { position: "absolute", top: "50vh", border: "2px solid black" } })
+        mount(this.screen, horizontalLine)
     }
 
     splitWindowVertically() {

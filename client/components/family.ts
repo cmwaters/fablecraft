@@ -26,8 +26,10 @@ export class Family implements RedomComponent {
     // cardOffset returns the amount of pixels between the top of the family and the
     // center of the node.
     cardOffset(index: number): number {
+        console.log("cardOffset, nodes: " + this.nodes.length)
         // if it is an empty family then return half it's height
         if (this.nodes.length === 0) {
+            console.log("Here. " + this.el.offsetHeight)
             return this.el.offsetHeight / 2
         }
         if (index >= this.nodes.length) {

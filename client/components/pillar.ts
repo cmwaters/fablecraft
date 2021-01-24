@@ -27,15 +27,11 @@ export class Pillar implements RedomComponent {
 
     // centerCard, centers the pillar around this card. The position of the card can be identified as either
     // purely based on index or a combination of both the family index and the index
-    centerCard(index: number, familyIndex: number = 0) {
-        console.log("center card, index: " + index + " familyIndex: " + familyIndex)
+    centerCard(index: number) {
+        console.log("center card, index: " + index)
         let yOffset = this.el.offsetTop;
-        for (let i = 0; i < familyIndex; i++) {
-            if (this.families[i].nodes.length !== 0) {
-                yOffset += this.families[i].el.offsetHeight + this.familyConfig.margin
-            }
-        }
         let i = 0;
+        let familyIndex = 0;
         while (i <= index) {
             // check if family is empty in which case we skip
             if (this.families[familyIndex].nodes.length === 0) {
@@ -54,14 +50,29 @@ export class Pillar implements RedomComponent {
             familyIndex++
         }
         // calculate the offset of the card itself within the family
-        yOffset += this.families[familyIndex].cardOffset(index - i)
+        console.log(yOffset)
+        console.log(familyIndex)
+        yOffset += this.families[familyIndex].cardOffset(index - i) + this.familyConfig.margin
+        console.log(yOffset)
+        this.move(Vector.y(this.center - yOffset))
+    }
+
+    centerFamily(familyIndex: number) {
+        let yOffset = this.el.offsetTop + this.familyConfig.margin
+        for (let i = 0; i < familyIndex; i++) {
+            console.log("family height " + i + ": " + this.families[i].el.offsetHeight)
+            if (this.families[i].nodes.length !== 0) {
+                yOffset += this.families[i].el.offsetHeight + this.familyConfig.margin
+            }
+        }
+        yOffset += this.families[familyIndex].el.offsetHeight / 2
         this.move(Vector.y(this.center - yOffset))
     }
 
     // centers on the card that would 
     centerBegin(height: number) {
         console.log("center begin")
-        let yOffset = this.el.offsetTop + (height / 2)
+        let yOffset = this.el.offsetTop + (height / 2) + this.familyConfig.margin
         this.move(Vector.y(this.center - yOffset))
     }
 
@@ -75,7 +86,7 @@ export class Pillar implements RedomComponent {
                 yOffset += this.families[i].el.offsetHeight + this.familyConfig.margin
             }
         }
-        yOffset += height/2
+        yOffset += height/2 + this.familyConfig.margin
         this.move(Vector.y(this.center - yOffset))
     }
 
