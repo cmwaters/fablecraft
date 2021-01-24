@@ -5,7 +5,7 @@ export const Config = {
     name: "Fablecraft",
     card: {
       width: {
-          min: 400,
+          min: 300,
           max: 600
       },
       toolbarHeight: 42

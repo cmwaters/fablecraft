@@ -59,6 +59,10 @@ export class Vector {
   copy(): Vector {
     return new Vector(this.x, this.y)
   }
+
+  static fromEl(element: HTMLElement): Vector {
+    return new Vector(element.offsetLeft, element.offsetTop)
+  }
 }
 
 export class Size { 
@@ -72,6 +76,23 @@ export class Size {
 
   center(): Vector {
     return new Vector(this.width / 2, this.height /2)
+  }
+
+  diff(size: Size): Size {
+    return new Size(size.width -this.width, size.height - this.height)
+  }
+
+  modifyEl(element: HTMLElement) {
+    element.style.width = this.width + "px"
+    element.style.height = this.height + "px"
+  }
+
+  divide(denominator: number): Size {
+    return new Size(this.width/ denominator, this.height/denominator)
+  }
+
+  static fromEl(element: HTMLElement): Size {
+    return new Size(element.offsetWidth, element.offsetHeight)
   }
 
 }

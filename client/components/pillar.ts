@@ -4,6 +4,7 @@ import { RedomComponent, el, mount } from "redom";
 import { Family, FamilyConfig } from './family';
 import { Node } from './node';
 import { Config } from '../config';
+import e from 'express';
 
 export class Pillar implements RedomComponent {
     el: HTMLElement;
@@ -118,6 +119,11 @@ export class Pillar implements RedomComponent {
         this.families.push(family)
         this.nodes.push(...family.nodes)
         return family
+    }
+
+    // changes the width of the pillar and thus all the cards within
+    changeWidth(width: number) {
+        this.el.style.width = width + "px"
     }
 
     // use a polynomial spline between current and target positions to move the pillar in a smooth manner

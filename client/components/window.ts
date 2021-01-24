@@ -36,7 +36,7 @@ export class Window implements RedomComponent, ViewComponent {
         mount(parent, this.el);
         this.reference = el("div.reference");
         mount(this.el, this.reference);
-        this.cardWidth = this.calculateCardWidth();
+        this.calculateCardWidth();
         this.centerPoint = pos.add(size.center());
 
         let pillarConfig = {
@@ -152,50 +152,13 @@ export class Window implements RedomComponent, ViewComponent {
         this.adjustOffspringPillars(depth, index);
     }
 
-    private adjustAncestorPillars(depth: number, index: number) {
-        for (let i = depth - 1; i >= 0; i--) {
-            index = this.cardIndexer[this.pillars[i + 1].nodes[index].parent!].index;
-            this.pillars[i].centerCard(index);
-        }
-    }
-
-    private adjustOffspringPillars(depth: number, index: number) {
-        if (this.pillars[depth].nodes[index].children.length === 0) {
-            console.log("no children at depth " + depth)
-            // expand the empty family to indicate that the card has no children
-            this.pillars[depth+1].families[index].expand(this.pillars[depth].nodes[index].el.offsetHeight)
-            this.expandedFamily = this.pillars[depth + 1].families[index]
-            console.log("expanded to " + this.pillars[depth].nodes[index].el.offsetHeight)
-            console.log("new height " + this.pillars[depth + 1].families[index].el.offsetHeight)
-            depth++
-            // Check where the empty family of the card resides
-            if (this.pillars[depth].isEmpty(index)) {
-                // if it is below the last card in the pillar then center on the space below the
-                // last card
-                this.pillars[depth].centerEnd(this.pillars[depth - 1].nodes[index].el.offsetHeight)
-            } else if (this.pillars[depth].isEmpty(0, index + 1)) {
-                // if it is above the first card then center on the space above the first card
-                this.pillars[depth].centerBegin(this.pillars[depth - 1].nodes[index].el.offsetHeight)
-            } else {
-                // if it is in between cards then center on the nearest card just above
-                this.pillars[depth].centerFamily(index)
-            }
-        }
-        for (let i = depth + 1; i < this.pillars.length - 1; i++) {
-            // center on the first child then iterate through the pillars.
-            // NOTE: that we only iterate to the penultimate pillar because the last one is always empty
-            index = this.findNearestChild(index, i - 1)
-            this.pillars[i].centerCard(index)
-        }
-    }
-
     resetReference() {
         this.reference.style.left = "0px";
         this.reference.style.top = "0px";
     }
 
-    calculateCardWidth(): number {
-        return Math.min(Math.max(0.5 * this.el.clientWidth, this.config.card.width.min), this.config.card.width.max);
+    calculateCardWidth() {
+        this.cardWidth = Math.min(Math.max(0.5 * this.el.clientWidth, this.config.card.width.min), this.config.card.width.max);
     }
 
     // pan moves the view of the window. It does not displace any of the cards individually rather
@@ -207,6 +170,48 @@ export class Window implements RedomComponent, ViewComponent {
 
     edit(): void {
         this.node.editor.focus();
+    }
+
+    // key takes the current key pressed and executes the appropriate function
+    // on the window. In the future, key bindings could be made more dynamic
+    key(key: string, ctrlMode: boolean, altMode: boolean, shiftMode: boolean): void {
+        console.log(key)
+        switch (key) {
+            case "ArrowUp":
+                if (shiftMode) {
+                    this.createAbove()
+                } else if (altMode) {
+                    this.shiftUpwards()
+                } else {
+                    this.up();
+                }
+                break;
+            case "ArrowDown":
+                if (shiftMode) {
+                    this.createBelow()
+                } else if (altMode) {
+                    this.shiftDownwards()
+                } else {
+                    this.down();
+                }
+                break;
+            case "ArrowLeft":
+                if (shiftMode) {
+                    this.createParent()
+                } else {
+                    this.left();
+                }
+                break;
+            case "ArrowRight":
+                if (shiftMode) {
+                    this.createChild()
+                } else {
+                    this.right();
+                }
+                break;
+            case "Enter":
+                this.node.focus();
+        }
     }
 
     down() {
@@ -240,6 +245,123 @@ export class Window implements RedomComponent, ViewComponent {
         }
     }
 
+    createAbove() {
+        console.log("create above")
+    }
+
+    createBelow() {
+        console.log("create below")
+    }
+
+    createChild() {
+        console.log("create child")
+    }
+
+    createParent() {
+        console.log("create parent")
+    }
+
+    shiftUpwards() {
+        console.log("shiftUpwards")
+    }
+
+    shiftDownwards() {
+        console.log("shiftDownwards")
+    }
+
+    // resize centers the object again (we may want to change the card width in the future)
+    resize(size: Size): void {
+        console.log("resizing");
+        let delta = Size.fromEl(this.el).diff(size)
+        size.modifyEl(this.el)
+        this.centerPoint = size.center() // we should also account for the position
+        let widthDelta = this.cardWidth
+        this.calculateCardWidth()
+        widthDelta -= this.cardWidth
+        console.log("new width " + this.cardWidth)
+        // adjust the position and size of the focused pillar
+        this.pillar.changeWidth(this.cardWidth)
+        this.pillar.move(new Vector((delta.width + widthDelta)/2, delta.height/2))
+        
+        // adjust the position and size of the pillars to the right
+        for (let i = this.current.depth + 1; i < this.pillars.length; i++) {
+            this.pillars[i].changeWidth(this.cardWidth)
+            console.log("width delta " + widthDelta)
+            let margin = new Vector((delta.width - (((i * 2) - this.current.depth - 1) * widthDelta))/2, delta.height/2)
+            console.log("margin: " + margin.string())
+            this.pillars[i].move(margin)
+        }
+
+        // adjust the position and size of the pillars to the left
+        for (let i = this.current.depth - 1; i > 0; i--) {
+            this.pillars[i].changeWidth(this.cardWidth)
+        }
+
+        // for (let i = this.current.depth; i < this.pillars.length; i++) {
+        //     this.pillars[i].changeWidth(this.cardWidth)
+        //     if (i < this.pillars.length - 1) {
+        //         let delta = (this.pillars[i].pos.x + this.cardWidth + this.config.margin.pillar) - this.pillars[i + 1].pos.x
+        //         console.log(delta)
+        //         this.pillars[i + 1].move(Vector.x(delta))
+        //     }
+        // }
+        // this.focusOnCard(this.current.depth, this.current.index)
+    }
+
+    changeLayout(layout: string) {
+
+    }
+
+    hasFocus(): boolean {
+        return true;
+    }
+
+    // focus on this particular window. It is relevant when we use split view
+    focus(): void {
+        // this.node.spotlight();
+    }
+
+    blur(): void {
+        // this.node.dull();
+    }
+
+    private adjustAncestorPillars(depth: number, index: number) {
+        for (let i = depth - 1; i >= 0; i--) {
+            index = this.cardIndexer[this.pillars[i + 1].nodes[index].parent!].index;
+            this.pillars[i].centerCard(index);
+        }
+    }
+
+    private adjustOffspringPillars(depth: number, index: number) {
+        if (this.pillars[depth].nodes[index].children.length === 0) {
+            console.log("no children at depth " + depth)
+            // expand the empty family to indicate that the card has no children
+            this.pillars[depth + 1].families[index].expand(this.pillars[depth].nodes[index].el.offsetHeight)
+            this.expandedFamily = this.pillars[depth + 1].families[index]
+            console.log("expanded to " + this.pillars[depth].nodes[index].el.offsetHeight)
+            console.log("new height " + this.pillars[depth + 1].families[index].el.offsetHeight)
+            depth++
+            // Check where the empty family of the card resides
+            if (this.pillars[depth].isEmpty(index)) {
+                // if it is below the last card in the pillar then center on the space below the
+                // last card
+                this.pillars[depth].centerEnd(this.pillars[depth - 1].nodes[index].el.offsetHeight)
+            } else if (this.pillars[depth].isEmpty(0, index + 1)) {
+                // if it is above the first card then center on the space above the first card
+                this.pillars[depth].centerBegin(this.pillars[depth - 1].nodes[index].el.offsetHeight)
+            } else {
+                // if it is in between cards then center on the nearest card just above
+                this.pillars[depth].centerFamily(index)
+            }
+        }
+        for (let i = depth + 1; i < this.pillars.length - 1; i++) {
+            // center on the first child then iterate through the pillars.
+            // NOTE: that we only iterate to the penultimate pillar because the last one is always empty
+            index = this.findNearestChild(index, i - 1)
+            this.pillars[i].centerCard(index)
+        }
+    }
+
     private findNearestChild(index: number, depth?: number): number {
         if (!depth) depth = this.current.depth
         if (index >= this.pillars[depth].nodes.length) {
@@ -267,44 +389,6 @@ export class Window implements RedomComponent, ViewComponent {
             }
         }
         return resp
-    }
-
-    // resize centers the object again (we may want to change the card width in the future)
-    resize(): void {
-        console.log("resizing");
-    }
-
-    hasFocus(): boolean {
-        return true;
-    }
-
-    // focus on this particular window. It is relevant when we use split view
-    focus(): void {
-        // this.node.spotlight();
-    }
-
-    blur(): void {
-        // this.node.dull();
-    }
-
-    key(key: string, shiftMode: boolean, ctrlMode: boolean): void {
-        console.log(key)
-        switch (key) {
-            case "ArrowUp":
-                this.up();
-                break;
-            case "ArrowDown":
-                this.down();
-                break;
-            case "ArrowLeft":
-                this.left();
-                break;
-            case "ArrowRight":
-                this.right();
-                break;
-            case "Enter":
-                this.node.focus();
-        }
     }
 }
 

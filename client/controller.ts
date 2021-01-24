@@ -5,7 +5,7 @@ import { View } from './view'
 import { Model } from './model/model'
 import { Client } from './client'
 import { ViewComponent } from "./components/view_component"
-import { Vector } from './geometry'
+import { Vector, Size } from './geometry'
 
 const inverseScrollSpeed = 2;
 
@@ -18,6 +18,7 @@ export class Controller {
     context: ViewComponent = null
     shiftMode: boolean = false;
     ctrlMode: boolean = false;
+    altMode: boolean = false;
     doubleCtrl: boolean = false;
     // nothing is saved
     incognito: boolean = false;
@@ -32,6 +33,11 @@ export class Controller {
 
         document.onkeyup = (e: KeyboardEvent) => {
             this.handleKeyUp(e)
+        }
+
+        window.onresize = () => {
+            let newSize = new Size(window.innerWidth, window.innerHeight)
+            this.view.window.resize(newSize)
         }
 
         window.onmousewheel = (e: WheelEvent) => {
@@ -203,6 +209,9 @@ export class Controller {
                     this.doubleCtrl = false
                 }, 500)
                 break;
+            case "Alt":
+                this.altMode = true;
+                break;
             case "Shift":
                 this.shiftMode = true;
                 break;
@@ -213,7 +222,7 @@ export class Controller {
                 break;
             default:
                 if (this.context) {
-                    this.context.key(e.key, this.shiftMode, this.ctrlMode)
+                    this.context.key(e.key, this.ctrlMode, this.altMode, this.shiftMode)
                 }
         }
     }
@@ -225,6 +234,9 @@ export class Controller {
             case "Meta":
             case "Control":
                 this.ctrlMode = false;
+                break;
+            case "Alt":
+                this.altMode = false;
                 break;
             case "Shift":
                 this.shiftMode = false;

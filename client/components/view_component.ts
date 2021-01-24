@@ -5,6 +5,6 @@ export interface ViewComponent {
     blur(): void;
 
     //keys
-    key(key: string, shiftMode: boolean, ctrlMode: boolean): void;
+    key(key: string, ctrlMode: boolean, altMode: boolean, shiftMode: boolean): void;
 
 }
