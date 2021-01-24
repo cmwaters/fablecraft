@@ -1,6 +1,6 @@
 import { Card } from '../model/card'
 import { Vector, Size } from '../geometry'
-import { RedomComponent, el, mount } from "redom";
+import { RedomComponent, el, mount, unmount } from "redom";
 import { Family, FamilyConfig } from './family';
 import { Node } from './node';
 import { Config } from '../config';
@@ -41,6 +41,9 @@ export class Pillar implements RedomComponent {
         let i = 0;
         let familyIndex = 0;
         while (i <= index) {
+            if (familyIndex === this.families.length) [
+                console.error("center card: family index exceeds length. Index: " + familyIndex)
+            ]
             // check if family is empty in which case we skip
             if (this.families[familyIndex].nodes.length === 0) {
                 familyIndex++
@@ -95,20 +98,37 @@ export class Pillar implements RedomComponent {
         this.shift(Vector.y(this.center - yOffset), this.transitionTime)
     }
 
-    getFamilyIndex(cardIndex: number) {
+    getFamilyIndex(cardIndex: number): {familyIndex: number, cardIndex: number} {
         let idx = 0;
         for (let i = 0; i < this.families.length; i++) {
             let length = this.families[i].nodes.length
             idx += length
             if (idx > cardIndex) {
-                return i
+                return {
+                    familyIndex: i,
+                    cardIndex: cardIndex - (idx - length),
+                }
             }
         }
-        return -1
+        return {
+            familyIndex: this.families.length,
+            cardIndex: 0
+        }
+    }
+
+    getCardIndex(familyIndex: number): number {
+        let index = 0
+        if (familyIndex >= this.families.length) {
+            familyIndex = this.families.length - 1
+        }
+        for (let i = 0; i < familyIndex; i++) {
+            index += this.families[i].nodes.length
+        }
+        return index
     }
 
     insertFamily(index: number, cards: Card[] = []): Family {
-        let family = new Family(this.el, cards, this.familyConfig)
+        let family = new Family(this.el, cards, this.familyConfig, this.families[index])
         this.families.splice(index, 0, family)
         let cardIndex = 0;
         for (let i = 0; i < index; i++) {
@@ -125,6 +145,17 @@ export class Pillar implements RedomComponent {
         return family
     }
 
+    insertCardAbove(index: number): void {
+        let { familyIndex, cardIndex } = this.getFamilyIndex(index)
+        let node = this.families[familyIndex].insertCardAbove(cardIndex)
+        this.nodes.splice(index, 0, node)
+
+    }
+
+    insertCardBelow(index: number): void {
+
+    }
+
     // changes the width of the pillar and thus all the cards within
     changeWidth(width: number) {
         this.el.style.width = width + "px"
@@ -132,12 +163,17 @@ export class Pillar implements RedomComponent {
 
     // deletes the card at the respective index
     deleteCard(index: number) {
-
+        let { familyIndex, cardIndex } = this.getFamilyIndex(index)
+        this.families[familyIndex].deleteCard(cardIndex)
+        this.nodes.splice(index, 1)
     }
 
     // deletes the entire family at the respective index
     deleteFamily(familyIndex: number) {
-
+        unmount(this.el, this.families[familyIndex])
+        let cardIndex = this.getCardIndex(familyIndex)
+        this.nodes.splice(cardIndex, this.families[familyIndex].nodes.length)
+        this.families.splice(familyIndex, 1)
     }
 
     // use a polynomial spline between current and target positions to move the pillar in a smooth manner
@@ -203,6 +239,10 @@ export class Pillar implements RedomComponent {
         return true
     }
 
+    resize(width: number) {
+        this.el.style.width = width + "px"
+    }
+
     private moveBy(delta: Vector): void {
         this.pos.shift(delta)
         this.pos.updateEl(this.el)
@@ -212,10 +252,7 @@ export class Pillar implements RedomComponent {
         this.pos = target.copy()
         this.pos.updateEl(this.el)
     }
-
-    resize(width: number) {
-        this.el.style.width = width + "px"
-    }
+    
 }
 
 export type PillarConfig = {

@@ -11,14 +11,20 @@ export class Node implements RedomComponent {
     parent?: string
     editor: Quill;
 
-    constructor(parent: HTMLElement, card: Card, config: NodeConfig) {
+    constructor(parent: HTMLElement, card: Card | null, config: NodeConfig, insertBefore?: Node) {
         this.el = el("div.card", { style: { marginBottom: config.margin, marginTop: config.margin}})
-        mount(parent, this.el)
+        if (insertBefore) {
+            mount(parent, this.el, insertBefore)
+        } else {
+            mount(parent, this.el)
+        }
         this.editor = new Quill(this.el as Element)
-        this.editor.setText(card.text)
-        this.id = card._id
-        if (card.children) this.children = card.children
-        this.parent = card.parent
+        if (card) {
+            this.editor.setText(card.text)
+            this.id = card._id
+            if (card.children) this.children = card.children
+            this.parent = card.parent
+        }
     }
 
     center(): Vector {

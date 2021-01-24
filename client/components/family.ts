@@ -1,4 +1,4 @@
-import { RedomComponent, el, mount } from "redom";
+import { RedomComponent, el, mount, unmount } from "redom";
 import { ViewComponent } from "./view_component";
 import { Node, NodeConfig } from "./node";
 import { Card } from "../model/card";
@@ -8,18 +8,21 @@ import { Config } from "../config"
 export class Family implements RedomComponent {
     el: HTMLElement;
     margin: number;
-    node: NodeConfig
+    nodeConfig: NodeConfig
     nodes: Node[] = [];
 
-    constructor(parent: HTMLElement, cards: Card[], config: FamilyConfig) {
+    constructor(parent: HTMLElement, cards: Card[], config: FamilyConfig, insertBefore?: Family) {
         this.el = el("div.family", { style: { marginBottom: config.margin, marginTop: config.margin}})
-        mount(parent, this.el)
+        if (insertBefore) {
+            mount(parent, this.el, insertBefore)
+        } else {
+            mount(parent, this.el)
+        }
         cards.forEach((card) => {
             let node = new Node(this.el, card, config.card)
             this.nodes.push(node)
-            mount(this.el, node.el)
         })
-        this.node = config.card
+        this.nodeConfig = config.card
         this.margin = config.margin
     }
 
@@ -37,9 +40,35 @@ export class Family implements RedomComponent {
         }
         let offset = 0;
         for (let i = 0; i < index; i++) {
-            offset += this.nodes[i].el.offsetHeight + (1 * this.node.margin)
+            offset += this.nodes[i].el.offsetHeight + (1 * this.nodeConfig.margin)
         }
         return offset + (this.nodes[index].el.offsetHeight / 2)
+    }
+
+    insertCardAbove(index: number): Node {
+        // create node
+        let node = new Node(this.el, null, this.nodeConfig, this.nodes[index])
+        // set parent
+        node.parent = this.nodes[0].parent
+        this.nodes.splice(index, 0, node)
+        return node
+    }
+
+    insertCardBelow(index: number): Node {
+        let node: Node;
+        if (index < this.nodes.length - 1) {
+            node = new Node(this.el, null, this.nodeConfig, this.nodes[index + 1])
+            this.nodes.splice(index, 0, node)
+        } else {
+            node = new Node(this.el, null, this.nodeConfig)
+            this.nodes.push(node)
+        }
+        return node
+    }
+
+    deleteCard(index: number): void {
+        unmount(this.el, this.nodes[index].el)
+        this.nodes.splice(index, 1)
     }
 
     expand(height: number): void {

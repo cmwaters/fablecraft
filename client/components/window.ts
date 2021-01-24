@@ -156,7 +156,65 @@ export class Window implements RedomComponent, ViewComponent {
     // deletes the card and recursively deletes all the offspring of that card
     // also removes the card from the indexer
     deleteCard(depth: number, index: number): void {
-        this.pillars[depth].deleteCard(index)
+        // we need to make sure that we always have at least one card remaining
+        if (depth !== 0 || this.pillars[0].nodes.length !== 1 || this.pillars[1].nodes.length !== 0) {
+            // update card indexer
+            let nodeID = this.pillars[depth].nodes[index].id
+            delete(this.cardIndexer[nodeID])
+            for (let i = index + 1; i < this.pillars[depth].nodes.length; i++) {
+                this.cardIndexer[this.pillars[depth].nodes[i].id].index--
+            }
+            // delete card
+            this.pillars[depth].deleteCard(index)
+            // delete families of the card recursively
+            this.deleteFamily(depth + 1, index)
+
+
+            // focus on the next card
+            if (index === this.pillars[depth].nodes.length) {
+                // if we deleted the last card of the pillar
+                if (index === 0) {
+                    // we go to the first card of the previor row
+                    // TODO: focus on the parent of the card that just got deleted
+                    this.focusOnCard(this.current.depth - 1, 0)
+                } else {
+                    // we deleted the card at the bottom of the pillar
+                    this.focusOnCard(this.current.depth, this.current.index - 1)
+                }
+            } else {
+                this.focusOnCard(this.current.depth, this.current.index)
+            }
+        } else {
+            this.pillars[0].nodes[0].editor.setText(" ")
+        }
+    }
+
+    // recurses through pillars, deleting all families originating from the same family
+    deleteFamily(depth: number, index: number) {
+        // if this is an empty family then delete it and do not proceed any further
+        if (this.pillars[depth].families[index].nodes.length === 0) {
+            this.pillars[depth].deleteFamily(index)
+            return 
+        }
+        // find the index of the first and last node of the family
+        let start = this.pillars[depth].getCardIndex(index)
+        let end = start + this.pillars[depth].families[index].nodes.length
+        // update the card indexer
+        console.log("updating card indexer from " + start + " to " + end)
+        for (let i = start; i < end; i++) {
+            delete(this.cardIndexer[this.pillars[depth].nodes[i].id])
+        }
+        for (let i = end; i < this.pillars[depth].nodes.length; i++) {
+            this.cardIndexer[this.pillars[depth].nodes[i].id].index -= (end - start)
+        }
+        // delete family
+        this.pillars[depth].deleteFamily(index)
+        // if this is not the last pillar, then delete the families in the next pillar
+        if (depth < this.pillars.length - 1) {
+            for (let i = end - 1; i >= start; i--) {
+                this.deleteFamily(depth + 1, i)
+            }
+        }
     }
 
     resetReference() {
@@ -218,6 +276,10 @@ export class Window implements RedomComponent, ViewComponent {
                 break;
             case "Enter":
                 this.node.focus();
+                break;
+            case "Backspace":
+                this.deleteCard(this.current.depth, this.current.index)
+                break;
         }
     }
 
@@ -253,11 +315,17 @@ export class Window implements RedomComponent, ViewComponent {
     }
 
     createAbove() {
-        console.log("create above")
+        console.log("create above " + this.current.index)
+        this.pillar.insertCardAbove(this.current.index)
+        this.pillars[this.current.depth + 1].insertFamily(this.current.index)
+        this.focusOnCard(this.current.depth, this.current.index)
+        this.node.focus()
     }
 
     createBelow() {
         console.log("create below")
+        this.pillar.insertCardBelow(this.current.index)
+        this.down()
     }
 
     createChild() {
