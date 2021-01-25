@@ -209,6 +209,17 @@ export class Window implements RedomComponent, ViewComponent {
         }
         // delete family
         this.pillars[depth].deleteFamily(index)
+
+        // check if this was the last family. If so we can delete the pillar. 
+        // Note that given the nature of the assertion we can assume that this is
+        // always the last pillar in the list
+        if (this.pillars[depth].families.length === 0) {
+            if (depth !== this.pillars.length - 1) {
+                console.error("deletion error: expected pillar to be last")
+            }
+            this.pillars.pop()
+        }
+
         // if this is not the last pillar, then delete the families in the next pillar
         if (depth < this.pillars.length - 1) {
             for (let i = end - 1; i >= start; i--) {
@@ -325,7 +336,10 @@ export class Window implements RedomComponent, ViewComponent {
     createBelow() {
         console.log("create below")
         this.pillar.insertCardBelow(this.current.index)
+        if (this.current.index < this.pillars[this.current.depth].nodes.length - 1)
+        this.pillars[this.current.depth + 1].insertFamily(this.current.index + 1) 
         this.down()
+        this.node.focus()
     }
 
     createChild() {

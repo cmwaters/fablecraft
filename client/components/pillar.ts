@@ -153,7 +153,14 @@ export class Pillar implements RedomComponent {
     }
 
     insertCardBelow(index: number): void {
-
+        let { familyIndex, cardIndex } = this.getFamilyIndex(index)
+        let node = this.families[familyIndex].insertCardBelow(cardIndex)
+        // check if we are appending to the bottom of the pillar
+        if (index >= this.nodes.length - 1) {
+            this.nodes.push(node)
+        } else {
+            this.nodes.splice(index, 0, node)
+        }
     }
 
     // changes the width of the pillar and thus all the cards within
