@@ -45,6 +45,18 @@ export class Family implements RedomComponent {
         return offset + (this.nodes[index].el.offsetHeight / 2)
     }
 
+    insert(): { node: Node, index: number } {
+        if (this.nodes.length === 0) {
+            let node = new Node(this.el, null, this.nodeConfig)
+            this.nodes = [node]
+            let index = 0
+            return { node, index }
+        }
+        let node = this.insertCardBelow(this.nodes.length - 1)
+        let index = this.nodes.length - 1
+        return { node, index }
+    }
+
     insertCardAbove(index: number): Node {
         // create node
         let node = new Node(this.el, null, this.nodeConfig, this.nodes[index])

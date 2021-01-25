@@ -53,6 +53,9 @@ export class View {
         this.clear()
         let size = new Size(document.body.clientWidth, document.body.clientHeight)
         this.window = new Window(this.screen, cards, new Vector(), size, this.defaultWindowConfig())
+        if (cards.length === 1 && cards[0].length === 1 && cards[0][0].text === " ") {
+            this.window.node.focusStart()
+        }
         this.windows.push(this.window)
         this.notifier = new Notifications(this.screen)
         this.notifier.info("Welcome to Fablecraft", "This is cool right", () => { alert("you clicked me") })

@@ -163,7 +163,7 @@ export class Controller {
             // by checking _id, the client will know if the user is in incognito mode
             // and wants to make requests to the server.
             _id: undefined,
-            username: "anonymous",
+            username: "Incognito Mode",
             lastStory: undefined,
             stories: []
         })
@@ -185,10 +185,10 @@ export class Controller {
     }
 
     escape(): void {
-        this.context.blur()
         if (this.defaultContext) {
-            this.focus(this.defaultContext)
+            this.focus()
         } else {
+            this.context.blur()
             this.context = null
         }
     }

@@ -30,6 +30,14 @@ export class Node implements RedomComponent {
     center(): Vector {
         return new Size(this.el.clientWidth, this.el.clientHeight).center()
     }
+
+    focusStart(): void {
+        setTimeout(() => {
+            this.editor.focus()
+        }, 100)
+        
+        this.el.style.backgroundColor = "lightcoral";
+    }
     
     focus(): void {
         setTimeout(() => {
@@ -38,6 +46,18 @@ export class Node implements RedomComponent {
         }, 100)
         
         this.el.style.backgroundColor = "lightcoral";
+    }
+
+    atStart(): boolean {
+        return this.editor.getSelection().index === 0
+    }
+
+    atEnd(): boolean {
+        return this.editor.getSelection().index === this.editor.getLength() - 1
+    }
+
+    hasFocus(): boolean {
+        return this.editor.hasFocus()
     }
 
     highlight(): void {

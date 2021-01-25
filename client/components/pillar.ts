@@ -1,5 +1,6 @@
 import { Card } from '../model/card'
 import { Vector, Size } from '../geometry'
+import { v4 as uuidv4 } from 'uuid';
 import { RedomComponent, el, mount, unmount } from "redom";
 import { Family, FamilyConfig } from './family';
 import { Node } from './node';
@@ -145,14 +146,29 @@ export class Pillar implements RedomComponent {
         return family
     }
 
-    insertCardAbove(index: number): void {
+    insertCard(familyIndex: number, parent: string): string {
+        let { node, index } = this.families[familyIndex].insert()
+        let cardIndex = this.getCardIndex(familyIndex) + index
+        this.nodes.splice(cardIndex, 0, node)
+        node.parent = parent
+        // use uuid to generate a random id as a proxy for the card
+        // TODO use an incrementing numerated index instead of a string
+        // one with which to index the cards
+        return uuidv4()
+    }
+
+    insertCardAbove(index: number): string {
         let { familyIndex, cardIndex } = this.getFamilyIndex(index)
         let node = this.families[familyIndex].insertCardAbove(cardIndex)
         this.nodes.splice(index, 0, node)
-
+        // use uuid to generate a random id as a proxy for the card
+        // TODO use an incrementing numerated index instead of a string
+        // one with which to index the cards
+        node.id = uuidv4()
+        return node.id 
     }
 
-    insertCardBelow(index: number): void {
+    insertCardBelow(index: number): string {
         let { familyIndex, cardIndex } = this.getFamilyIndex(index)
         let node = this.families[familyIndex].insertCardBelow(cardIndex)
         // check if we are appending to the bottom of the pillar
@@ -161,6 +177,10 @@ export class Pillar implements RedomComponent {
         } else {
             this.nodes.splice(index, 0, node)
         }
+        // use uuid to generate a random id as a proxy for the card
+        // TODO use an incrementing numerated index instead of a string
+        // one with which to index the cards
+        return uuidv4()
     }
 
     // changes the width of the pillar and thus all the cards within

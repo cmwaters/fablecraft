@@ -1,7 +1,7 @@
 import { Card } from "../model/card";
 import { CardPos } from "../model/model";
 import { Size, Vector } from "../geometry";
-import { Pillar } from "./pillar";
+import { Pillar, PillarConfig } from "./pillar";
 import { Family } from "./family";
 import { RedomComponent, el, mount } from "redom";
 import { ViewComponent } from "./view_component";
@@ -14,6 +14,9 @@ export class Window implements RedomComponent, ViewComponent {
     reference: HTMLElement;
     centerPoint: Vector;
     config: WindowConfig;
+
+    // we use an indexer to track the position of cards based on their id
+    // TODO use a numerated index instead of the database's id
     cardIndexer: {
         [index: string]: {
             depth: number;
@@ -39,19 +42,10 @@ export class Window implements RedomComponent, ViewComponent {
         this.calculateCardWidth();
         this.centerPoint = pos.add(size.center());
 
-        let pillarConfig = {
-            family: {
-                margin: config.margin.family,
-                card: {
-                    margin: config.margin.card,
-                },
-            },
-            width: this.cardWidth,
-            center: this.centerPoint.y,
-            transition: config.transition,
-        };
+        
 
         // add all the pillars
+        let pillarConfig = this.pillarConfig()
         for (let i = 0; i <= cards.length; i++) {
             let left = this.centerPoint.x - this.cardWidth / 2 + i * (this.cardWidth + this.config.margin.pillar);
             this.pillars.push(new Pillar(this.reference, left, pillarConfig));
@@ -161,9 +155,7 @@ export class Window implements RedomComponent, ViewComponent {
             // update card indexer
             let nodeID = this.pillars[depth].nodes[index].id
             delete(this.cardIndexer[nodeID])
-            for (let i = index + 1; i < this.pillars[depth].nodes.length; i++) {
-                this.cardIndexer[this.pillars[depth].nodes[i].id].index--
-            }
+            this.decrementIndexesBelow(depth, index)
             // delete card
             this.pillars[depth].deleteCard(index)
             // delete families of the card recursively
@@ -252,6 +244,39 @@ export class Window implements RedomComponent, ViewComponent {
     // on the window. In the future, key bindings could be made more dynamic
     key(key: string, ctrlMode: boolean, altMode: boolean, shiftMode: boolean): void {
         console.log(key)
+        if (this.node.hasFocus()) {
+            switch (key) {
+                case "ArrowUp":
+                    if (this.node.atStart()) {
+                        if (shiftMode) {
+                            this.createAbove()
+                        } else {
+                            this.up()
+                            this.node.focus()
+                        }
+                    }
+                    break;
+                case "ArrowDown":
+                    if (this.node.atEnd()) {
+                        if (shiftMode) {
+                            this.createBelow()
+                        } else {
+                            this.down()
+                            this.node.focusStart()
+                        }
+                    }
+                case "ArrowRight":
+                    if (this.node.atEnd()) {
+                        if (shiftMode) {
+                            this.createChild()
+                        } else {
+                            this.down()
+                            this.node.focusStart()
+                        }
+                    }
+            }
+            return
+        }
         switch (key) {
             case "ArrowUp":
                 if (shiftMode) {
@@ -325,25 +350,93 @@ export class Window implements RedomComponent, ViewComponent {
         }
     }
 
-    createAbove() {
-        console.log("create above " + this.current.index)
-        this.pillar.insertCardAbove(this.current.index)
-        this.pillars[this.current.depth + 1].insertFamily(this.current.index)
-        this.focusOnCard(this.current.depth, this.current.index)
+    createAbove(index: number = this.current.index, depth: number = this.current.depth ) {
+        console.log("create above " + index)
+        // insert card
+        let nodeId = this.pillar.insertCardAbove(index)
+        let { familyIndex, cardIndex } = this.pillar.getFamilyIndex(index)
+
+        // add reference to card to parent
+        if (this.node.parent && depth > 0) {
+            let parentIndex = this.cardIndexer[this.node.parent!].index
+            this.pillars[depth - 1].nodes[parentIndex].children.splice(cardIndex, 0, nodeId)
+        }
+
+        // create empty family
+        this.pillars[depth + 1].insertFamily(index)
+
+        // add card to indexer and update index on cards below
+        this.cardIndexer[nodeId] = {
+            depth: depth,
+            index: index,
+            family: familyIndex,
+        }
+        this.incrementIndexesBelow(depth, index)
+
+        // focus on newly created card
+        this.focusOnCard(depth, index)
         this.node.focus()
     }
 
-    createBelow() {
+    createBelow(index: number = this.current.index, depth: number = this.current.depth) {
         console.log("create below")
-        this.pillar.insertCardBelow(this.current.index)
-        if (this.current.index < this.pillars[this.current.depth].nodes.length - 1)
-        this.pillars[this.current.depth + 1].insertFamily(this.current.index + 1) 
+        // insert card
+        let nodeId = this.pillar.insertCardBelow(index)
+        let { familyIndex, cardIndex } = this.pillar.getFamilyIndex(index + 1)
+
+        // add reference of the card to the parent
+        if (this.node.parent && depth > 0) {
+            let parentIndex = this.cardIndexer[this.node.parent!].index
+            this.pillars[depth - 1].nodes[parentIndex].children.splice(cardIndex, 0, nodeId)
+        }
+
+        // create empty family
+        if (index < this.pillars[depth].nodes.length - 1) {
+            this.pillars[depth + 1].insertFamily(index + 1) 
+        } else {
+            this.pillars[depth + 1].appendFamily()
+        }
+
+        // add card to indexer and update index on cards below
+        this.cardIndexer[nodeId] = {
+            depth,
+            index: index + 1,
+            family: familyIndex
+        }
+        this.incrementIndexesBelow(depth, index + 1)
+
+        // focus on newly created card
         this.down()
         this.node.focus()
     }
 
-    createChild() {
+    createChild(index: number = this.current.index, depth: number = this.current.depth) {
         console.log("create child")
+        // create child card
+        let childId = this.pillars[depth + 1].insertCard(index, this.node.id)
+        let cardIndex = this.pillars[depth + 1].getCardIndex(index) + this.node.children.length
+
+        // add reference of card to parent
+        this.node.children.push(childId)
+
+        // add card to indexer 
+        this.cardIndexer[childId] = {
+            depth: depth + 1,
+            index: cardIndex,
+            family: index
+        }
+        this.incrementIndexesBelow(depth + 1, cardIndex)
+
+        // add a new empty family and potentially a new pillar
+        if (depth === this.pillars.length - 2) {
+            let xOffset = this.pillars[this.pillars.length - 1].el.offsetLeft + this.cardWidth + this.config.margin.pillar
+            this.pillars.push(new Pillar(this.el, xOffset, this.pillarConfig()))
+        }
+        this.pillars[depth + 2].appendFamily()
+
+        // focus on newly create card
+        this.right()
+        this.node.focus()
     }
 
     createParent() {
@@ -407,7 +500,36 @@ export class Window implements RedomComponent, ViewComponent {
     }
 
     blur(): void {
+        if (this.node.hasFocus()) {
+            this.node.blur()
+        }
         // this.node.dull();
+    }
+
+    private pillarConfig(): PillarConfig {
+        return {
+            family: {
+                margin: this.config.margin.family,
+                card: {
+                    margin: this.config.margin.card,
+                },
+            },
+            width: this.cardWidth,
+            center: this.centerPoint.y,
+            transition: this.config.transition,
+        };
+    }
+    
+    private incrementIndexesBelow(depth: number, index: number): void {
+        for (let i = index + 1; i < this.pillars[depth].nodes.length; i++) {
+            this.cardIndexer[this.pillars[depth].nodes[i].id].index++
+        }
+    }
+
+    private decrementIndexesBelow(depth: number, index: number): void {
+        for (let i = index + 1; i < this.pillars[depth].nodes.length; i++) {
+            this.cardIndexer[this.pillars[depth].nodes[i].id].index--
+        }
     }
 
     private adjustAncestorPillars(depth: number, index: number) {
