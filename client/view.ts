@@ -8,9 +8,9 @@ import { CommandLine } from "./components/command";
 import { Login, Signup, Navbar } from "./components/authentication"
 import { User } from "./model/user";
 import { Client } from "./client";
-import { Config } from "./config"
 import { Header } from "./components/header";
 import { Vector, Size } from './geometry'
+import * as config from "./config.json"
 
 export class View {
     screen: HTMLElement
@@ -80,9 +80,9 @@ export class View {
 
     defaultWindowConfig(): WindowConfig {
         return {
-            margin: Config.margin,
-            card: Config.card,
-            transition: Config.movement.defaultTransitionTime
+            margin: config.margin,
+            card: config.card,
+            transition: config.movement.defaultTransitionTime
         }
     }
 }

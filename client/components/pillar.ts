@@ -4,8 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { RedomComponent, el, mount, unmount } from "redom";
 import { Family, FamilyConfig } from './family';
 import { Node } from './node';
-import { Config } from '../config';
-import e from 'express';
+import * as gConfig from '../config.json';
 
 export class Pillar implements RedomComponent {
     el: HTMLElement;
@@ -18,7 +17,7 @@ export class Pillar implements RedomComponent {
     // used for moving the pillar
     private movement: NodeJS.Timeout | null = null;
     private tick: number = 0;
-    private frameRate: number = Config.window.refreshRate
+    private frameRate: number = gConfig.window.refreshRate
     private pos: Vector
     private alpha: Vector
     private transitionTime: number
@@ -146,17 +145,6 @@ export class Pillar implements RedomComponent {
         return family
     }
 
-    insertCard(familyIndex: number, parent: string): string {
-        let { node, index } = this.families[familyIndex].insert()
-        let cardIndex = this.getCardIndex(familyIndex) + index
-        this.nodes.splice(cardIndex, 0, node)
-        node.parent = parent
-        // use uuid to generate a random id as a proxy for the card
-        // TODO use an incrementing numerated index instead of a string
-        // one with which to index the cards
-        return uuidv4()
-    }
-
     insertCardAbove(index: number): string {
         let { familyIndex, cardIndex } = this.getFamilyIndex(index)
         let node = this.families[familyIndex].insertCardAbove(cardIndex)
@@ -168,19 +156,20 @@ export class Pillar implements RedomComponent {
         return node.id 
     }
 
-    insertCardBelow(index: number): string {
-        let { familyIndex, cardIndex } = this.getFamilyIndex(index)
-        let node = this.families[familyIndex].insertCardBelow(cardIndex)
-        // check if we are appending to the bottom of the pillar
-        if (index >= this.nodes.length - 1) {
-            this.nodes.push(node)
-        } else {
+    appendCard(familyIndex: number = this.families.length - 1, parent?: string): { id: string, index: number } {
+        let { node, index } = this.families[familyIndex].appendCard(parent)
+        // append to the nodes array
+        if (familyIndex < this.families.length - 1) {
+            index += this.getCardIndex(familyIndex)
             this.nodes.splice(index, 0, node)
+        } else {
+            this.nodes.push(node)
         }
         // use uuid to generate a random id as a proxy for the card
         // TODO use an incrementing numerated index instead of a string
         // one with which to index the cards
-        return uuidv4()
+        node.id = uuidv4()
+        return { id: node.id, index: index }
     }
 
     // changes the width of the pillar and thus all the cards within

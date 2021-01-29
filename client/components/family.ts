@@ -3,7 +3,6 @@ import { ViewComponent } from "./view_component";
 import { Node, NodeConfig } from "./node";
 import { Card } from "../model/card";
 import { Vector } from '../geometry'
-import { Config } from "../config"
 
 export class Family implements RedomComponent {
     el: HTMLElement;
@@ -45,19 +44,13 @@ export class Family implements RedomComponent {
         return offset + (this.nodes[index].el.offsetHeight / 2)
     }
 
-    insert(): { node: Node, index: number } {
+    insertCardAbove(index: number): Node {
         if (this.nodes.length === 0) {
             let node = new Node(this.el, null, this.nodeConfig)
             this.nodes = [node]
             let index = 0
-            return { node, index }
+            return node
         }
-        let node = this.insertCardBelow(this.nodes.length - 1)
-        let index = this.nodes.length - 1
-        return { node, index }
-    }
-
-    insertCardAbove(index: number): Node {
         // create node
         let node = new Node(this.el, null, this.nodeConfig, this.nodes[index])
         // set parent
@@ -66,16 +59,11 @@ export class Family implements RedomComponent {
         return node
     }
 
-    insertCardBelow(index: number): Node {
-        let node: Node;
-        if (index < this.nodes.length - 1) {
-            node = new Node(this.el, null, this.nodeConfig, this.nodes[index + 1])
-            this.nodes.splice(index, 0, node)
-        } else {
-            node = new Node(this.el, null, this.nodeConfig)
-            this.nodes.push(node)
-        }
-        return node
+    appendCard(parent?: string): { node: Node, index: number } {
+        let node = new Node(this.el, null, this.nodeConfig)
+        if (parent) node.parent = parent
+        this.nodes.push(node)
+        return { node, index: this.nodes.length - 1}
     }
 
     deleteCard(index: number): void {
@@ -87,9 +75,17 @@ export class Family implements RedomComponent {
         this.el.style.height = height + "px"
     }
 
+    highlight(): void {
+        this.nodes.forEach(node => node.highlight())
+    }
+
+    dull(): void {
+        this.nodes.forEach(node => node.dull())
+    }
+
     collapse(): void {
         if (this.nodes.length === 0) {
-            this.el.style.height = "0px"
+            this.el.style.height = "auto"
         }
     }
 

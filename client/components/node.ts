@@ -12,7 +12,7 @@ export class Node implements RedomComponent {
     editor: Quill;
 
     constructor(parent: HTMLElement, card: Card | null, config: NodeConfig, insertBefore?: Node) {
-        this.el = el("div.card", { style: { marginBottom: config.margin, marginTop: config.margin}})
+        this.el = el("div.card", { style: { marginBottom: config.margin, marginTop: config.margin } })
         if (insertBefore) {
             mount(parent, this.el, insertBefore)
         } else {
@@ -35,25 +35,27 @@ export class Node implements RedomComponent {
         setTimeout(() => {
             this.editor.focus()
         }, 100)
-        
-        this.el.style.backgroundColor = "lightcoral";
+
+        this.spotlight()
     }
-    
+
     focus(): void {
         setTimeout(() => {
             this.editor.focus()
             this.editor.setSelection(this.editor.getLength(), 0, "user")
         }, 100)
-        
-        this.el.style.backgroundColor = "lightcoral";
+
+        this.spotlight()
     }
 
     atStart(): boolean {
-        return this.editor.getSelection().index === 0
+        let range = this.editor.getSelection()
+        return range === null || range.index === 0
     }
 
     atEnd(): boolean {
-        return this.editor.getSelection().index === this.editor.getLength() - 1
+        let range = this.editor.getSelection()
+        return range === null || range.index === this.editor.getLength() - 1
     }
 
     hasFocus(): boolean {
@@ -61,15 +63,19 @@ export class Node implements RedomComponent {
     }
 
     highlight(): void {
-
+        this.el.style.color = "blue";
+        this.el.style.backgroundColor = "#fff";
     }
 
     spotlight(): void {
-        this.el.style.backgroundColor = "lightcoral";
+        this.el.style.color = "red";
+        this.el.style.backgroundColor = "#eee";
     }
 
     dull(): void {
-        this.el.style.backgroundColor = "lightblue";
+        console.log("making node dull")
+        this.el.style.color = "#777";
+        this.el.style.backgroundColor = "#fff";
     }
 
     blur(): void {

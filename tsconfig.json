@@ -8,7 +8,8 @@
     "jsx": "react",
     "allowJs": true,
     "moduleResolution": "node",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "resolveJsonModule": true
   },
   "include": ["models", "routes", "services", "index.ts"]
 }

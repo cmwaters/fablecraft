@@ -1,6 +1,6 @@
 import { RedomComponent, el, mount, unmount, s } from "redom";
 import { ViewComponent } from "./view_component";
-import { Config } from "../config"
+import * as config from "../config.json"
 
 const INFO_COLOR = "white"
 const WARNING_COLOR = "#ffbc49"
@@ -37,7 +37,7 @@ export class Notifications implements RedomComponent {
         }
         setTimeout(() => {
             unmount(this.el, notification.el)
-        }, Config.notifier.displayTimeMS)
+        }, config.notifier.displayTimeMS)
         mount(this.el, notification.el)
     }
 

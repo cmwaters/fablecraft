@@ -1,6 +1,6 @@
 import { el, svg, RedomComponent, mount } from 'redom'
 import { ViewComponent } from './view_component'
-import { Config } from "../config"
+import * as config from "../config.json"
 
 export class Login implements RedomComponent, ViewComponent {
     el: RedomComponent | HTMLElement | SVGElement
@@ -15,7 +15,7 @@ export class Login implements RedomComponent, ViewComponent {
         this.callback = callback;
         this.errorBar = el("div.error")
         this.el = el("div.authentication", [
-            el("h1", Config.name),
+            el("h1", config.name),
             usernameField,
             passwordField,
             this.errorBar,
@@ -74,7 +74,7 @@ export class Signup implements RedomComponent, ViewComponent {
         this.callback = callback;
         this.errorBar = el("div.error")
         this.el = el("div.authentication", { style: { height: "400px" }}, [
-            el("h1", Config.name),
+            el("h1", config.name),
             usernameField,
             emailField,
             passwordField,

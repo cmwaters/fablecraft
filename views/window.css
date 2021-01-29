@@ -12,18 +12,18 @@
 .pillar{
     position: absolute;
     top: 0px;
-    background-color: beige;
 }
 
 .family {
     position: relative;
     width: 100%;
-    background-color: lightgreen;
 }
 
 .card {
     position: relative;
     width: 100%; 
-    background-color: lightblue;
+    background-color: white;
     border-radius: 3px;
+    min-height: 40px;
+    color: #777;
 }

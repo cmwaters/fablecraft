@@ -8,6 +8,7 @@ import authRouter from './routes/auth';
 import apiRouter from './routes/api';
 import passport from 'passport';
 import path from 'path'
+import * as config from './client/config.json'
 
 dotenv.config({ path: `config/.env.${process.env.NODE_ENV}` })
 
@@ -51,7 +52,7 @@ let authenticated = (req: any, res: any, next: any) => {
 
 clientRouter.get('/', (req, res, next) => {
   console.log("Starting client")
-  res.render('index', { title: process.env.FABLECRAFT_TITLE})
+  res.render('index', { title: config.name})
 })
 
 clientRouter.get('/test', (req, res, next) => {
