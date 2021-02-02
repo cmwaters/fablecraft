@@ -1,5 +1,5 @@
 import { Controller } from "./controller";
-import { Model } from "./model/model"
+import { Model } from "./model"
 import { View } from "./view"
 import { Client } from './client'
 

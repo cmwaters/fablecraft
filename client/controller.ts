@@ -2,7 +2,7 @@ import { User } from './model/user';
 import { Story } from './model/story'
 import { Card } from './model/card'
 import { View } from './view'
-import { Model } from './model/model'
+import { Model } from './model'
 import { Client } from './client'
 import { ViewComponent } from "./components/view_component"
 import { Vector, Size } from './geometry'

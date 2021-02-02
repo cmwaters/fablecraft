@@ -1,36 +1,59 @@
-import { Card } from '../model/card'
-import { Story } from './story'
-import { User } from './user'
-import { View } from '../view'
+import { View } from './view'
+
+export type Card = {
+    id: string
+    identifier: number;
+    text: string;
+    story: string;
+    depth: number;
+    height: number;
+    parent?: number;
+    children?: number[]; // unordered list of children
+    above?: string;
+    below?: string;
+}
+
+export type Document = {
+    id: string,
+    title: string,
+    owner: string
+    indexCounter: number,
+    description?: string,
+    authors?: string[]
+    editors?: string[]
+    viewers?: string[]
+}
+
+export type User = {
+    id: string,
+    username: string,
+    email?: string,
+    lastStory?: any,
+    stories: string[]
+}
 
 export class Model {
     user?: User
-    story?: Story
+    document?: Document
     // cards ordered by horizontal (depth) and then vertical position into a 2D array
     cards: Card[][] = []  
-    cardIdToPosMap: { [id: string]: CardPos } = {};
     view: View
 
-    constructor(view: View, user?: User, story?: Story) {
+    constructor(view: View, user?: User, document?: Document) {
         this.view = view
         if (user) this.user = user
-        if (story) this.story = story
+        if (document) this.document = document
     }
 
-    async init(user: User, story: Story, cards: Card[]) {
+    async init(user: User, document: Document, cards: Card[]) {
         this.user = user
         this.cards = order(cards)
-        this.story = story
-        this.view.load(this.story, this.cards, this.user)
+        this.document = document
+        this.view.load(this.document, this.cards, this.user)
     }
 
     
 
-}
-
-export type CardPos = {
-    depth: number,
-    index: number
 }
 
 // Order takes a list of cards ordered by depth first and index second and splits them
@@ -78,7 +101,7 @@ function insertSort(cards: Card[]): Card[] {
                 break;
             }
             let last = buckets[bucketIdx].length - 1
-            if (buckets[bucketIdx][last]._id === cards[index].above) {
+            if (buckets[bucketIdx][last].id === cards[index].above) {
                 // if this connects with the last card of the bucket then add it to that bucket
                 buckets[bucketIdx].push(cards[index])
                 break;
@@ -103,3 +126,4 @@ function merge(buckets: Card[][]): Card[] {
     }
     return buckets[0]
 }
+

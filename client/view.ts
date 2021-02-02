@@ -1,12 +1,9 @@
-import { Card } from "./model/card";
 import { Window, WindowConfig } from "./components/window";
-import { Story } from "./model/story";
 import { el, mount, RedomComponent, unmount } from "redom";
 import { Notifications } from "./components/notifier";
 import { Panel } from "./components/panel";
 import { CommandLine } from "./components/command";
 import { Login, Signup, Navbar } from "./components/authentication"
-import { User } from "./model/user";
 import { Client } from "./client";
 import { Header } from "./components/header";
 import { Vector, Size } from './geometry'
@@ -52,7 +49,7 @@ export class View {
     load(story: Story, cards: Card[][], user: User) {
         this.clear()
         let size = new Size(document.body.clientWidth, document.body.clientHeight)
-        this.window = new Window(this.screen, cards, new Vector(), size, this.defaultWindowConfig())
+        this.window = new Window(this.screen, story.indexCounter, cards, new Vector(), size, this.defaultWindowConfig())
         if (cards.length === 1 && cards[0].length === 1 && cards[0][0].text === " ") {
             this.window.node.focusStart()
         }
@@ -80,9 +77,19 @@ export class View {
 
     defaultWindowConfig(): WindowConfig {
         return {
-            margin: config.margin,
+            margin: config.margin.pillar,
+            pillar: {
+                transition: config.movement.defaultTransitionTime,
+                family: {
+                    margin: config.margin.family,
+                    card: {
+                        margin: config.margin.card
+                    }
+                },
+                width: 0,
+                center: 0
+            },
             card: config.card,
-            transition: config.movement.defaultTransitionTime
         }
     }
 }
