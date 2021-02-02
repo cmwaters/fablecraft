@@ -15,10 +15,10 @@ let should = chai.should();
 dotenv.config({ path: `config/.env.${process.env.NODE_ENV}` });
 import { app } from "../index";
 import { expect } from "chai";
-import { Story } from '../models/story'
+import { Story } from '../models/header'
 import { Card, CardModel } from "../models/card";
 import { permissionString } from "../services/permissions";
-import { errors } from "../routes/errors";
+import { errors } from "../services/errors";
 
 const defaultCardText = "default test card text";
 
@@ -122,9 +122,9 @@ describe("Card", () => {
                             CardModel.find({ story: test_env.story }, (err, cards) => {
                                 if (success) {
                                     expect(cards).to.have.length(3);
-                                    cards[0].index.should.equal(0);
-                                    cards[1].index.should.equal(1);
-                                    cards[2].index.should.equal(2);
+                                    cards[0].identifier.should.equal(0);
+                                    cards[1].identifier.should.equal(1);
+                                    cards[2].identifier.should.equal(2);
                                     cards[0].below!._id.toString().should.equal(cards[1].id);
                                     cards[1].above!._id.toString().should.equal(cards[0].id);
                                     cards[1].below!._id.toString().should.equal(cards[2].id);
@@ -170,9 +170,9 @@ describe("Card", () => {
                             CardModel.find({ story: test_env.story }, (err, cards) => {
                                 if (success) {
                                     expect(cards).to.have.length(3);
-                                    cards[0].index.should.equal(0);
-                                    cards[1].index.should.equal(1);
-                                    cards[2].index.should.equal(2);
+                                    cards[0].identifier.should.equal(0);
+                                    cards[1].identifier.should.equal(1);
+                                    cards[2].identifier.should.equal(2);
                                     cards[0].below!._id.toString().should.equal(cards[1].id);
                                     cards[1].above!._id.toString().should.equal(cards[0].id);
                                     cards[1].below!._id.toString().should.equal(cards[2].id);
@@ -218,11 +218,11 @@ describe("Card", () => {
                             CardModel.find({ story: test_env.story }, (err, cards) => {
                                 if (success) {
                                     expect(cards).to.have.length(3);
-                                    cards[0].index.should.equal(0);
+                                    cards[0].identifier.should.equal(0);
                                     cards[0].depth.should.equal(0);
-                                    cards[1].index.should.equal(1);
+                                    cards[1].identifier.should.equal(1);
                                     cards[1].depth.should.equal(0);
-                                    cards[2].index.should.equal(0);
+                                    cards[2].identifier.should.equal(0);
                                     cards[2].depth.should.equal(1);
                                     cards[0].children![0]._id.toString().should.equal(cards[2].id);
                                     cards[2].parent!._id.toString().should.equal(cards[0].id);
@@ -251,13 +251,13 @@ describe("Card", () => {
                                             if (success) {
                                                 expect(cards).to.have.length(4);
                                                 // check that the index and depths are correct
-                                                cards[0].index.should.equal(0);
+                                                cards[0].identifier.should.equal(0);
                                                 cards[0].depth.should.equal(0);
-                                                cards[1].index.should.equal(1);
+                                                cards[1].identifier.should.equal(1);
                                                 cards[1].depth.should.equal(0);
-                                                cards[2].index.should.equal(0);
+                                                cards[2].identifier.should.equal(0);
                                                 cards[2].depth.should.equal(1);
-                                                cards[3].index.should.equal(1);
+                                                cards[3].identifier.should.equal(1);
                                                 cards[3].depth.should.equal(1);
                                                 // check that the ancestry is correct
                                                 cards[0].children![0]._id.toString().should.equal(cards[2].id);

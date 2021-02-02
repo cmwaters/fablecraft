@@ -1,6 +1,6 @@
 import { User, UserModel } from '../models/user'
 import { Card, CardModel } from '../models/card'
-import { Story, StoryModel } from '../models/story'
+import { Story, StoryModel } from '../models/header'
 import { LoremIpsum } from "lorem-ipsum";
 import * as argon2 from "argon2";
 import { randomBytes } from "crypto";
@@ -60,11 +60,12 @@ export class Generator {
                 story: await StoryModel.create({
                     owner: u,
                     title: title,
+                    cardCounter: 0,
                     description: lorem.generateParagraphs(1)
                 }),
                 cards: [],
             }
-            this.documents[title].cards.push(await generateCards(this.documents[title].story._id, 0, cards))
+            this.documents[title].cards.push(await generateCards(this.documents[title].story, 0, cards))
         } catch (error) { throw error }
         this.currentStory = title
         if (!u.stories) {
@@ -87,7 +88,7 @@ export class Generator {
     // CONTRACT: the parent card should always be below any other parents that have children
     async addCardFamily(parent: Card, cards: number, story?: string): Promise<Generator> {
         if (!story) story = this.currentStory
-        let newCards: Card[] = await generateCards(this.documents[story].story._id, parent.depth + 1, cards, parent)
+        let newCards: Card[] = await generateCards(this.documents[story].story, parent.depth + 1, cards, parent)
         if (this.documents[story].cards.length === parent.depth + 1) {
             this.documents[story].cards.push(newCards)
         } else {
@@ -119,18 +120,19 @@ export class Generator {
     }
 }
 
-async function generateCards(storyId: any, depth: number, range: number, parent?: Card, startingIndex?: number, above?: Card, below?: Card): Promise<Card[]> {
-    let column = []
-    if (!startingIndex) startingIndex = 0
-
+async function generateCards(story: Story, depth: number, range: number, parent?: Card, above?: Card, below?: Card): Promise<Card[]> {
+    let column = [];
     for (let index = 0; index < range; index++) {
         column.push(await CardModel.create({
-            story: storyId,
+            story: story._id,
             text: lorem.generateParagraphs(1),
             depth: depth,
-            index: index + startingIndex,
+            identifier: story.cardCounter + index + 1,
         }))
     }
+
+    story.cardCounter += range
+    story.save()
 
     for (let index = 0; index < range; index++) {
         if (parent !== undefined) {

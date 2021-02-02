@@ -1,8 +1,8 @@
-import { Story, StoryModel } from "./../models/story";
+import { Story, StoryModel } from "../models/header";
 import { Card, CardModel } from "./../models/card";
 import { User, UserModel } from "./../models/user";
 import { PermissionGroup } from "../services/permissions";
-import { errors } from "../routes/errors";
+import { errors } from "./errors";
 import { HTTP, status } from "../routes/status";
 
 export class Graph {
@@ -14,7 +14,7 @@ export class Graph {
     permission?: PermissionGroup;
 
     static async loadFromStory(user: User, storyID: string): Promise<Graph> {
-        let story = await StoryModel.findById(storyID, (err) => {
+        let story = await StoryModel.findById(storyID, null, null, (err) => {
             if (err) {
                 return new Graph(status.INTERNAL, err);
             }
@@ -42,7 +42,7 @@ export class Graph {
     // This is wraps around the loadFromStory process but is specific to operations
     // surrounding a single card. 
     static async loadFromCard(user: User, cardID: string): Promise<Graph> {
-        let card = await CardModel.findById(cardID, (err) => {
+        let card = await CardModel.findById(cardID, null, null, (err) => {
             if (err) {
                 return new Graph(status.INTERNAL, err);
             }
@@ -82,6 +82,7 @@ export class Graph {
             let story = new StoryModel({
                 title: title,
                 owner: user._id,
+                indexCounter: 1,
             });
 
             if (description !== undefined || description !== "") {
@@ -95,7 +96,7 @@ export class Graph {
             let rootCard = new CardModel({
                 story: story.id,
                 depth: 0,
-                index: 0,
+                index: 1,
                 text: " ", // needs to be something
             });
             await rootCard.save();
@@ -378,7 +379,7 @@ export class Graph {
                 story: this.story!.id,
                 depth: sibling.depth,
                 // this field is eventually consistent
-                index: sibling.index,
+                identifier: this.story!.cardIdentifier(),
                 below: sibling.id,
                 text: text,
             });
@@ -397,7 +398,6 @@ export class Graph {
 
             // // update the sibling
             sibling.above = card.id;
-            sibling.index = card.index + 1;
             await sibling.save();
 
             // finally save the new card
@@ -432,7 +432,7 @@ export class Graph {
                 story: this.story!.id,
                 depth: sibling.depth,
                 // this field is eventually consistent
-                index: sibling.index + 1,
+                identifier: this.story!.cardIdentifier(),
                 above: sibling.id,
                 text: text,
             });
@@ -446,7 +446,7 @@ export class Graph {
             // update the sibling below the new one
             if (sibling.below) {
                 card.below = sibling.below;
-                await CardModel.findByIdAndUpdate(card.below, { index: card.index + 1, above: card.id });
+                await CardModel.findByIdAndUpdate(card.below, { above: card.id });
             }
 
             // // update the sibling
@@ -498,7 +498,7 @@ export class Graph {
                     story: this.story!.id,
                     depth: lastChild.depth,
                     // this field is eventually consistent
-                    index: lastChild.index + 1,
+                    identifier: this.story!.cardIdentifier(),
                     parent: parent.id,
                     above: lastChild.id,
                     text: text,
@@ -512,7 +512,7 @@ export class Graph {
                     story: this.story!.id,
                     depth: parent.depth + 1,
                     // this field is eventually consistent
-                    index: 0,
+                    identifier: this.story!.cardIdentifier(),
                     parent: parent.id,
                     text: text,
                 });
@@ -682,7 +682,7 @@ export class Graph {
                 this.deleteCard(child);
             }
         }
-        await CardModel.findByIdAndDelete(card.id, (err) => {
+        await CardModel.findByIdAndDelete(card.id, null, (err) => {
             return this.internal(err);
         });
         return;

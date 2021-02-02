@@ -4,7 +4,7 @@ import passport from "passport";
 const router = express.Router();
 // import jwt from 'jsonwebtoken'
 import { signUp } from "../services/auth"
-import { errors } from "./errors"
+import { errors } from "../services/errors"
 
 dotenv.config({ path: `.env.${process.env.NODE_ENV}` })
 

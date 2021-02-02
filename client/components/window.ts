@@ -1,11 +1,10 @@
-import { Card } from "../model/card";
-import { CardPos } from "../model/model";
+import { CardMeta } from "../model/card";
 import { Size, Vector } from "../geometry";
 import { Pillar, PillarConfig } from "./pillar";
 import { Family } from "./family";
 import { RedomComponent, el, mount } from "redom";
 import { ViewComponent } from "./view_component";
-import { Node } from "./node";
+import { Card } from "./card";
 
 export class Window implements RedomComponent, ViewComponent {
     pillars: Pillar[] = [];
@@ -14,26 +13,22 @@ export class Window implements RedomComponent, ViewComponent {
     reference: HTMLElement;
     centerPoint: Vector;
     config: WindowConfig;
+    // this is used to set the index of new cards
+    counter: number
 
     // we use an indexer to track the position of cards based on their id
-    // TODO use a numerated index instead of the database's id
-    cardIndexer: {
-        [index: string]: {
-            depth: number;
-            index: number;
-            family: number;
-        };
-    } = {};
+    // TODO: We should consider moving this to the model
+    cardIndexer: CardPos[] = [];
 
     cardWidth: number = 0;
-    current: CardPos = { depth: 0, index: 0 };
-    node: Node;
+    current: CardPos = { depth: 0, height: 0, family: 0 };
+    card: Card;
     
     private expandedFamily: Family | null = null;
     private active: boolean = false;
 
     // note that the view struct itself doesn't store the node data but passes them on to the respective cards to handle
-    constructor(parent: HTMLElement, cards: Card[][], pos: Vector, size: Size, config: WindowConfig) {
+    constructor(parent: HTMLElement, counter: number, cards: CardMeta[][], pos: Vector, size: Size, config: WindowConfig) {
         this.config = config;
         this.el = el("div.window", { style: { width: size.width, height: size.height, left: pos.x, top: pos.y } });
         mount(parent, this.el);
@@ -41,27 +36,26 @@ export class Window implements RedomComponent, ViewComponent {
         mount(this.el, this.reference);
         this.calculateCardWidth();
         this.centerPoint = pos.add(size.center());
-
+        this.counter = counter
         
 
         // add all the pillars
-        let pillarConfig = this.pillarConfig()
         for (let i = 0; i <= cards.length; i++) {
-            let left = this.centerPoint.x - this.cardWidth / 2 + i * (this.cardWidth + this.config.margin.pillar);
-            this.pillars.push(new Pillar(this.reference, left, pillarConfig));
+            let left = this.centerPoint.x - this.cardWidth / 2 + i * (this.cardWidth + this.config.margin);
+            this.pillars.push(new Pillar(this.reference, left, this.config.pillar));
         }
 
         // set up the root pillar
         this.pillars[0].appendFamily(cards[0]);
-        this.pillars[0].nodes.forEach((node, index) => {
-            node.el.onclick = () => {
-                this.focusOnCardById(node.id)
+        this.pillars[0].nodes.forEach((card, height) => {
+            card.el.onclick = () => {
+                this.focusOnCardByIndex(card.index)
             }
-            this.cardIndexer[node.id] = {
+            this.cardIndexer.push({
                 depth: 0,
-                index: index,
+                height: height,
                 family: 0,
-            }
+            })
         })
 
         // for the rest of the pillars, separate the cards into families
@@ -74,15 +68,16 @@ export class Window implements RedomComponent, ViewComponent {
                 if (cards[depth][index].children.length > 0) {
                     // add a family of cards
                     let family = this.pillars[depth + 1].appendFamily(families[familyIdx])
-                    family.nodes.forEach(node => {
-                        node.el.onclick = () => {
-                            this.focusOnCardById(node.id)
+                    family.nodes.forEach(card => {
+                        card.el.onclick = () => {
+                            this.focusOnCardByIndex(card.index)
                         }
-                        this.cardIndexer[node.id] = {
+                        if (card.index)
+                        this.cardIndexer.push({
                             depth: depth + 1, 
-                            index: cardIdx,
-                            family: familyIdx
-                        }
+                            height: cardIdx,
+                            family: index
+                        })
                         cardIdx++;
                     })
                     familyIdx++;
@@ -103,37 +98,40 @@ export class Window implements RedomComponent, ViewComponent {
         this.focusOnCard(this.current.depth, this.current.index);
     }
 
-    focusOnCardById(id: string) {
-        let pos = this.cardIndexer[id];
-        this.focusOnCard(pos.depth, pos.index);
+    focusOnCardByIndex(index: number) {
+        if (index >= this.counter || index < 0) {
+            console.error("focus on invalid index. Expected non negative number less than " + this.counter + " but got " + index)
+        }
+        let pos = this.cardIndexer[index]
+        this.focusOnCard(pos.depth, pos.height);
     }
 
-    focusOnCard(depth: number, index: number): void {
-        console.log("focus on card, depth: " + depth + ", index: " + index)
+    focusOnCard(depth: number, height: number): void {
+        console.log("focus on card, depth: " + depth + ", height: " + height)
         if (depth > this.pillars.length - 1) {
             console.error("depth " + depth + " exceeds amount of pillars")
         }
 
-        if (index > this.pillars[depth].nodes.length - 1) {
-            console.error("index " + index + " exceeds the amount of cards in the pillar")
+        if (height > this.pillars[depth].nodes.length - 1) {
+            console.error("height " + height + " exceeds the amount of cards in the pillar")
         }
 
-        if (index < 0 || depth < 0) { 
-            console.error("non negative depth or index")
+        if (height < 0 || depth < 0) { 
+            console.error("non negative depth or height")
         }
 
         // unlock on the previous card
-        if (this.node.parent) {
-            let prevParent = this.cardIndexer[this.node.parent]
-            this.pillars[prevParent.depth].nodes[prevParent.index].dull()
+        if (this.card.parent) {
+            let prevParent = this.cardIndexer[this.card.parent]
+            this.pillars[prevParent.depth].nodes[prevParent.height].dull()
         }
-        let nodePos = this.cardIndexer[this.node.id]
-        this.node.blur();
-        this.node.dull();
-        let lastPos = this.pillar.getFamilyIndex(nodePos.index)
+        let nodePos = this.cardIndexer[this.card.index]
+        this.card.blur();
+        this.card.dull();
+        let lastPos = this.pillar.getFamilyIndex(nodePos.height)
         this.pillar.families[lastPos.familyIndex].dull()
-        if (this.node.children.length > 0) {
-            this.pillars[nodePos.depth + 1].families[nodePos.index].dull()
+        if (this.card.children.length > 0) {
+            this.pillars[nodePos.depth + 1].families[nodePos.height].dull()
         }
 
         if (this.expandedFamily !== null) {
@@ -152,16 +150,16 @@ export class Window implements RedomComponent, ViewComponent {
 
         // update and focus on the new card
         this.current.depth = depth;
-        this.current.index = index;
+        this.current.height = height;
         this.pillar = this.pillars[depth];
-        this.node = this.pillar.nodes[index];
-        let { familyIndex } = this.pillar.getFamilyIndex(index)
+        this.card = this.pillar.nodes[height];
+        let { familyPos } = this.pillar.getFamilyIndex(height)
         this.pillar.families[familyIndex].highlight()
-        this.node.spotlight();
-        if (depth > 0 && this.node.parent) {
+        this.card.spotlight();
+        if (depth > 0 && this.card.parent) {
             this.pillars[depth - 1].nodes[familyIndex].highlight()
         }
-        if (this.node.children.length !== 0) {
+        if (this.card.children.length !== 0) {
             this.pillars[depth + 1].families[index].highlight()
         }
 
@@ -179,7 +177,7 @@ export class Window implements RedomComponent, ViewComponent {
 
     // deletes the card and recursively deletes all the offspring of that card
     // also removes the card from the indexer
-    deleteCard(depth: number, index: number): void {
+    deleteCard(depth: number, height: number): void {
         // we need to make sure that we always have at least one card remaining
         if (depth !== 0 || this.pillars[0].nodes.length !== 1 || this.pillars[1].nodes.length !== 0) {
             // update card indexer
@@ -212,7 +210,7 @@ export class Window implements RedomComponent, ViewComponent {
     }
 
     // recurses through pillars, deleting all families originating from the same family
-    deleteFamily(depth: number, index: number) {
+    deleteFamily(depth: number, height: number) {
         // if this is an empty family then delete it and do not proceed any further
         if (this.pillars[depth].families[index].nodes.length === 0) {
             this.pillars[depth].deleteFamily(index)
@@ -450,7 +448,7 @@ export class Window implements RedomComponent, ViewComponent {
         // add a new empty family and potentially a new pillar
         if (depth === this.pillars.length - 2) {
             let xOffset = this.pillars[this.pillars.length - 1].el.offsetLeft + this.cardWidth + this.config.margin.pillar
-            this.pillars.push(new Pillar(this.el, xOffset, this.pillarConfig()))
+            this.pillars.push(new Pillar(this.el, xOffset, this.config.pillar))
         }
         this.pillars[depth + 2].appendFamily()
 
@@ -554,41 +552,27 @@ export class Window implements RedomComponent, ViewComponent {
         }
         // this.node.dull();
     }
-
-    private pillarConfig(): PillarConfig {
-        return {
-            family: {
-                margin: this.config.margin.family,
-                card: {
-                    margin: this.config.margin.card,
-                },
-            },
-            width: this.cardWidth,
-            center: this.centerPoint.y,
-            transition: this.config.transition,
-        };
-    }
     
-    private incrementIndexesBelow(depth: number, index: number): void {
+    private incrementIndexesBelow(depth: number, height: number): void {
         for (let i = index + 1; i < this.pillars[depth].nodes.length; i++) {
             this.cardIndexer[this.pillars[depth].nodes[i].id].index++
         }
     }
 
-    private decrementIndexesBelow(depth: number, index: number): void {
+    private decrementIndexesBelow(depth: number, height: number): void {
         for (let i = index + 1; i < this.pillars[depth].nodes.length; i++) {
             this.cardIndexer[this.pillars[depth].nodes[i].id].index--
         }
     }
 
-    private adjustAncestorPillars(depth: number, index: number) {
+    private adjustAncestorPillars(depth: number, height: number) {
         for (let i = depth - 1; i >= 0; i--) {
             index = this.cardIndexer[this.pillars[i + 1].nodes[index].parent!].index;
             this.pillars[i].centerCard(index);
         }
     }
 
-    private adjustOffspringPillars(depth: number, index: number) {
+    private adjustOffspringPillars(depth: number, height: number) {
         if (this.pillars[depth].nodes[index].children.length === 0) {
             console.log("no children at depth " + depth)
             // expand the empty family to indicate that the card has no children
@@ -649,16 +633,22 @@ export class Window implements RedomComponent, ViewComponent {
 }
 
 export type WindowConfig = {
-    margin: {
-        pillar: number;
-        family: number;
-        card: number;
-    };
     card: {
         width: {
             min: number;
             max: number;
         };
     };
-    transition: number
+    pillar: PillarConfig
+    margin: number
 };
+
+export type CardPos = { 
+    depth: number, 
+    height: number,
+    family: number
+}
+
+function emptyCardPos(): CardPos { 
+    return { depth: -1, height: -1, family: -1}
+}

@@ -14,8 +14,8 @@ import { setupUsersAndSession,
     assertLastStory,
     assertNoLastStory,
 } from "./test_utils"
-import { errors } from "../routes/errors";
-import { Story, StoryModel } from "../models/story";
+import { errors } from "../services/errors";
+import { DocumentHeader, DocumentModel } from "../models/header";
 import { PermissionGroup, permissionString } from "../services/permissions";
 
 let should = chai.should();
@@ -73,7 +73,7 @@ describe("Story", () => {
                     res.body.story.owner.should.equals(test_env.users[0].id)
                     let storyId = res.body.story._id
                     res.body.rootCard.story.should.equals(storyId)
-                    StoryModel.findById(storyId, (err, newStory) => {
+                    DocumentModel.findById(storyId, (err, newStory) => {
                         if (err) { console.error(err); }
                         expect(newStory).to.not.be.null
                         newStory!.title.should.equals(story.title)
@@ -95,7 +95,7 @@ describe("Story", () => {
                     res.body.should.have.property("error")
                     res.body.error.should.equals(errors.MissingTitle);
                     // when we request all stories we should just have the original one
-                    StoryModel.find({ owner: test_env.users[0].id }, (err, result) => {
+                    DocumentModel.find({ owner: test_env.users[0].id }, (err, result) => {
                         expect(result).to.have.length(0)
                         assertNoLastStory(test_env.cookie, done)
                     })
@@ -191,7 +191,7 @@ describe("Story", () => {
                         res.should.have.status(401)
                         res.body.should.be.empty
                         // authorized user should still have access to the story
-                        StoryModel.find(story._id, (err, story) => {
+                        DocumentModel.find(story._id, (err, story) => {
                             expect(err).to.be.null
                             expect(story).to.not.be.null
                             done()
@@ -208,7 +208,7 @@ describe("Story", () => {
                 .end((err, res) => {
                     res.should.have.status(401)
                     // authorized user should still have access to the 
-                    StoryModel.find(test_env.story._id, (err, story) => {
+                    DocumentModel.find(test_env.story._id, (err, story) => {
                         expect(err).to.be.null
                         expect(story).to.not.be.null
                         done()
@@ -267,14 +267,14 @@ describe("Story", () => {
                 name: "owner can give all permissions to users",
                 prep: async (test_env: TestEnv): Promise<void> => {
                     // make user 1 the owner
-                    await StoryModel.findByIdAndUpdate(test_env.story._id, { owner: test_env.users[0]._id }, (err, result) => {
+                    await DocumentModel.findByIdAndUpdate(test_env.story._id, { owner: test_env.users[0]._id }, null, (err, result) => {
                         if (err) { console.error(err); }
                     });
                     return
                 },
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(201)
-                    await StoryModel.findById(test_env.story.id, (err, story) => {
+                    await DocumentModel.findById(test_env.story.id, (err, story) => {
                         if (err) {
                             console.error(err)
                         }
@@ -302,13 +302,13 @@ describe("Story", () => {
                 name: "author can give viewer and editor permissions to users",
                 prep: async (test_env: TestEnv): Promise<void> => {
                     // make user 1 an author
-                    await StoryModel.findByIdAndUpdate(test_env.story._id, { authors: [test_env.users[0]._id] }, (err, result) => {
+                    await DocumentModel.findByIdAndUpdate(test_env.story._id, { authors: [test_env.users[0]._id] }, null, (err, result) => {
                         if (err) { console.error(err); }
                     });
                     return
                 },
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
-                    await StoryModel.findById(test_env.story.id, (err, story) => {
+                    await DocumentModel.findById(test_env.story.id, (err, story) => {
                         if (err) {
                             console.error(err)
                         }
@@ -341,7 +341,7 @@ describe("Story", () => {
                 name: "editor can not give any permissions to users",
                 prep: async (test_env: TestEnv): Promise<void> => {
                     // make user 1 an editor
-                    await StoryModel.findByIdAndUpdate(test_env.story._id, { editors: [test_env.users[0].id] }, (err, result) => {
+                    await DocumentModel.findByIdAndUpdate(test_env.story._id, { editors: [test_env.users[0].id] }, null, (err, result) => {
                         if (err) { console.error(err); }
                     });
                     return
@@ -349,7 +349,7 @@ describe("Story", () => {
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(401)
                     res.body.should.be.empty
-                    await StoryModel.findById(test_env.story.id, (err, story) => {
+                    await DocumentModel.findById(test_env.story.id, (err, story) => {
                         if (err) {
                             console.error(err)
                         }
@@ -376,7 +376,7 @@ describe("Story", () => {
                 name: "viewer can not give any permissions to users",
                 prep: async (test_env: TestEnv): Promise<void> => {
                     // make user 1 a viewer
-                    await StoryModel.findByIdAndUpdate(test_env.story._id, { viewers: [test_env.users[0].id] }, (err, result) => {
+                    await DocumentModel.findByIdAndUpdate(test_env.story._id, { viewers: [test_env.users[0].id] }, null, (err, result) => {
                         if (err) { console.error(err); }
                     });
                     return
@@ -384,7 +384,7 @@ describe("Story", () => {
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(401)
                     res.body.should.be.empty
-                    await StoryModel.findById(test_env.story.id, (err, story) => {
+                    await DocumentModel.findById(test_env.story.id, (err, story) => {
                         if (err) {
                             console.error(err)
                         }
@@ -411,14 +411,14 @@ describe("Story", () => {
                 name: "owner should be able to change all existing permissions",
                 prep: async (test_env: TestEnv): Promise<void> => {
                     // make user 1 the owner and user 3 an author
-                    await StoryModel.findByIdAndUpdate(test_env.story._id, { owner: test_env.users[0].id, authors: [test_env.users[2].id] }, (err, result) => {
+                    await DocumentModel.findByIdAndUpdate(test_env.story._id, { owner: test_env.users[0].id, authors: [test_env.users[2].id] }, null, (err, result) => {
                         if (err) { console.error(err); }
                     });
                     return
                 },
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(204)
-                    await StoryModel.findById(test_env.story.id, (err, story) => {
+                    await DocumentModel.findById(test_env.story.id, (err, story) => {
                         if (err) {
                             console.error(err)
                         }
@@ -448,7 +448,7 @@ describe("Story", () => {
                 name: "author should not be able to change the permissions of another author",
                 prep: async (test_env: TestEnv): Promise<void> => {
                     // make both user 1 and 3 an author 
-                    await StoryModel.findByIdAndUpdate(test_env.story._id, { authors: [test_env.users[0].id, test_env.users[2].id] }, (err, result) => {
+                    await DocumentModel.findByIdAndUpdate(test_env.story._id, { authors: [test_env.users[0].id, test_env.users[2].id] }, null, (err, result) => {
                         if (err) { console.error(err); }
                     });
                     return
@@ -456,7 +456,7 @@ describe("Story", () => {
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(401)
                     res.body.should.be.empty
-                    await StoryModel.findById(test_env.story.id, (err, story) => {
+                    await DocumentModel.findById(test_env.story.id, (err, story) => {
                         if (err) {
                             console.error(err)
                         }
@@ -471,7 +471,7 @@ describe("Story", () => {
                 name: "author should not be able to change the permissions of an owner",
                 prep: async (test_env: TestEnv): Promise<void> => {
                     // make user 1 an author and 3 an owner
-                    await StoryModel.findByIdAndUpdate(test_env.story._id, { owner: test_env.users[2].id, authors: [test_env.users[0].id] }, (err, result) => {
+                    await DocumentModel.findByIdAndUpdate(test_env.story._id, { owner: test_env.users[2].id, authors: [test_env.users[0].id] }, null, (err, result) => {
                         if (err) { console.error(err); }
                     });
                     return
@@ -479,7 +479,7 @@ describe("Story", () => {
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(401)
                     res.body.should.be.empty
-                    await StoryModel.findById(test_env.story.id, (err, story) => {
+                    await DocumentModel.findById(test_env.story.id, (err, story) => {
                         if (err) {
                             console.error(err)
                         }
@@ -494,13 +494,13 @@ describe("Story", () => {
                 name: "author should be able to change the permissions of an editor", // we assume also a viewer
                 prep: async (test_env: TestEnv): Promise<void> => {
                     // make user 1 an author and 3 an editor
-                    await StoryModel.findByIdAndUpdate(test_env.story._id, { authors: [test_env.users[0].id], editors: [test_env.users[2].id] }, (err, result) => {
+                    await DocumentModel.findByIdAndUpdate(test_env.story._id, { authors: [test_env.users[0].id], editors: [test_env.users[2].id] }, null, (err, result) => {
                         if (err) { console.error(err); }
                     });
                     return
                 },
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
-                    await StoryModel.findById(test_env.story.id, (err, story) => {
+                    await DocumentModel.findById(test_env.story.id, (err, story) => {
                         if (err) {
                             console.error(err)
                         }
@@ -532,7 +532,7 @@ describe("Story", () => {
                 name: "editor should not be able to change any permissions",
                 prep: async (test_env: TestEnv): Promise<void> => {
                     // make both user 1 and 3 editors
-                    await StoryModel.findByIdAndUpdate(test_env.story._id, { editors: [test_env.users[0].id, test_env.users[2].id] }, (err, result) => {
+                    await DocumentModel.findByIdAndUpdate(test_env.story._id, { editors: [test_env.users[0].id, test_env.users[2].id] }, null, (err, result) => {
                         if (err) { console.error(err); }
                     });
                     return
@@ -540,7 +540,7 @@ describe("Story", () => {
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(401)
                     res.body.should.be.empty
-                    await StoryModel.findById(test_env.story.id, (err, story) => {
+                    await DocumentModel.findById(test_env.story.id, (err, story) => {
                         if (err) {
                             console.error(err)
                         }
@@ -565,7 +565,7 @@ describe("Story", () => {
                 name: "viewer should not be able to change any permissions",
                 prep: async (test_env: TestEnv): Promise<void> => {
                     // make both user 1 and 2 viewers
-                    await StoryModel.findByIdAndUpdate(test_env.story._id, { viewers: [test_env.users[0].id, test_env.users[2].id] }, (err, result) => {
+                    await DocumentModel.findByIdAndUpdate(test_env.story._id, { viewers: [test_env.users[0].id, test_env.users[2].id] }, null, (err, result) => {
                         if (err) { console.error(err); }
                     });
                     return
@@ -573,7 +573,7 @@ describe("Story", () => {
                 assertions: async (res: any, permissionLevel: number, test_env: any) => {
                     res.should.have.status(401)
                     res.body.should.be.empty
-                    await StoryModel.findById(test_env.story.id, (err, story) => {
+                    await DocumentModel.findById(test_env.story.id, (err, story) => {
                         if (err) {
                             console.error(err)
                         }
@@ -807,7 +807,7 @@ describe("Story", () => {
                                 } else {
                                     res.should.have.status(204)
                                 }
-                                StoryModel.findById(test_env.storyId, (err, story) => {
+                                DocumentModel.findById(test_env.storyId, (err, story) => {
                                     if (err) { console.error(err); }
                                     if (expError) {
                                         story!.title.should.equals(test_env.originalTitle)
@@ -844,7 +844,7 @@ describe("Story", () => {
                                 } else {
                                     res.should.have.status(204)
                                 }
-                                StoryModel.findById(test_env.storyId, (err, story) => {
+                                DocumentModel.findById(test_env.storyId, (err, story) => {
                                     if (err) { console.error(err); }
                                     if (expError) {
                                         expect(story!.description).to.be.undefined

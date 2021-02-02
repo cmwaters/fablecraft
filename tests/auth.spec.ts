@@ -7,23 +7,23 @@ import { setupUsersAndSession, SessionEnv, TEST_PASSWORD } from "./test_utils";
 let should = chai.should();
 dotenv.config({ path: `config/.env.${process.env.NODE_ENV}` })
 import { app } from "../index";
-import { errors } from "../routes/errors"
+import { errors } from "../services/errors"
 
 chai.use(chaiHttp);
 describe("Authentication", () => {
 
   before((done) => {
-    UserModel.deleteMany({}, (err) => {
+    UserModel.deleteMany({}, null, (err) => {
       if (err) {
-        console.log(err)
+        console.error(err)
       }
       done();
     })
   })
   after((done) => {
-    UserModel.deleteMany({}, (err) => {
+    UserModel.deleteMany({}, null, (err) => {
       if (err) {
-        console.log(err)
+        console.error(err)
       }
       done();
     })

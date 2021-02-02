@@ -1,5 +1,5 @@
 import { UserModel, User } from "../models/user";
-import { Story, StoryModel } from "../models/story";
+import { Story, StoryModel } from "../models/header";
 import { Card, CardModel } from "../models/card";
 import { app } from "../index";
 import { randomBytes } from "crypto";
@@ -8,7 +8,7 @@ import * as argon2 from "argon2";
 import chai from "chai";
 import chaiHttp from "chai-http";
 import { PermissionGroup } from "../services/permissions";
-import { errors } from "../routes/errors"
+import { errors } from "../services/errors"
 
 export const DEFAULT_CARD_TEXT = "default test card text";
 export const TEST_PASSWORD = "TrustN01"
@@ -97,7 +97,8 @@ export function createStory(user: User, title?: string): Promise<Story> {
         }
         resolve(StoryModel.create({
             title: storyTitle,
-            owner: user._id
+            owner: user._id,
+            cardCounter: 0,
         }))
     });
 }
@@ -138,7 +139,7 @@ export async function createCardColumn(storyID: any, length: number, depth: numb
                 story: storyID,
                 text: DEFAULT_CARD_TEXT,
                 depth: depth,
-                index: i
+                identifier: i
             }))
         }
 
@@ -166,7 +167,7 @@ export async function createCardColumn(storyID: any, length: number, depth: numb
 }
 
 export async function clearUsers() {
-    await UserModel.deleteMany({}, (err) => {
+    await UserModel.deleteMany({}, null, (err) => {
         if (err) {
             console.log(err);
         }
@@ -174,12 +175,12 @@ export async function clearUsers() {
 }
 
 export async function clearStoriesAndCards() {
-    await CardModel.deleteMany({}, (err) => {
+    await CardModel.deleteMany({}, null, (err) => {
         if (err) {
             console.log(err);
         }
     });
-    await StoryModel.deleteMany({}, (err) => {
+    await StoryModel.deleteMany({}, null, (err) => {
         if (err) {
             console.log(err);
         }

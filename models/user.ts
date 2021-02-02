@@ -1,15 +1,13 @@
 import mongoose from "mongoose";
-import { Story } from "./story";
+import { DocumentHeader } from "./header";
 
-export interface User extends mongoose.Document {
+export interface User extends mongoose.Document, Express.User {
     username: string;
     password: string;
     email: string;
     name: string;
-    stories: Story[];
-    lastStory: any;
-
-    withoutPassword(): any;
+    documents: DocumentHeader[];
+    lastDocument: any;
 }
 
 export const UserSchema = new mongoose.Schema({
@@ -31,29 +29,18 @@ export const UserSchema = new mongoose.Schema({
         required: true,
     },
     name: String,
-    stories: [
+    documents: [
         {
             type: mongoose.SchemaTypes.ObjectId,
-            ref: "Story",
+            ref: "DocumentHeader",
         },
     ],
     // this is the last story that the user interacted with. It is
     // used when the user starts a new session.
-    lastStory: {
+    lastDocument: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Story",
+        ref: "DocumentHeader",
     },
 });
-
-UserSchema.methods.withoutPassword = function(): any {
-    return {
-        id: this.id,
-        username: this.username,
-        email: this.email,
-        name: this.name, 
-        stories: this.stories,
-        lastStory: this.lastStory,
-    }
-}
 
 export const UserModel = mongoose.model<User>("User", UserSchema);

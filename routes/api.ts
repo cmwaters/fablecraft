@@ -21,6 +21,7 @@ router.put("/user", async (req: any, res) => {
                 password: passwordHashed,
                 name: name,
             },
+            null,
             (err) => {
                 if (err) {
                     console.log(err);
@@ -36,7 +37,7 @@ router.put("/user", async (req: any, res) => {
 });
 
 router.delete("/user", async (req: any, res) => {
-    await UserModel.findByIdAndDelete(req.user._id, (err) => {
+    await UserModel.findByIdAndDelete(req.user._id, null, (err) => {
         if (err) console.log(err);
         res.status(500).send();
     });

@@ -1,9 +1,10 @@
 import mongoose from "mongoose";
-import { Story } from './story'
+import { Document } from './header'
 
 export interface Card extends mongoose.Document {
+	_id: number
 	text: string;
-	story: Story;
+	document: Document;
 	depth: number;
 	index: number;
 	parent?: Card;
@@ -17,16 +18,18 @@ export const CardSchema = new mongoose.Schema({
 		type: String,
 		required: true,
 	},
-	story: {
+	document: {
 		type: mongoose.Schema.Types.ObjectId,
-		ref: "Story",
+		ref: "Document",
 		required: true,
 	},
-	depth: {
+	// each card in a story has a unique monotonically increasing index
+	identifier: {
 		type: Number,
 		required: true,
 	},
-	index: {
+	// the pillar that the card resides in
+	depth: {
 		type: Number,
 		required: true,
 	},
@@ -52,7 +55,11 @@ export const CardSchema = new mongoose.Schema({
 		type: mongoose.Schema.Types.ObjectId,
 		ref: "Card",
 	},
+	remoed: {
+		type: Boolean,
+	}
 });
 
-CardSchema.index({ story: 1, depth: 1, index: 1 });
+CardSchema.index({ document: 1, index: 1 });
+
 export const CardModel = mongoose.model<Card>("Card", CardSchema);

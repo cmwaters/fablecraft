@@ -5,7 +5,7 @@ import * as argon2 from "argon2";
 // import { Strategy, ExtractJwt } from 'passport-jwt'
 import { randomBytes } from "crypto";
 import { User, UserModel} from '../models/user'
-import { errors } from "../routes/errors"
+import { errors } from "./errors"
 import * as EmailValidator from 'email-validator';
 import PasswordValidator from 'password-validator'
 
@@ -119,13 +119,13 @@ passport.use('login', new LocalStrategy.Strategy({
   });
 }));
 
-passport.serializeUser((user:User, done) => {
+passport.serializeUser((user: User, done) => {
   done(null, user._id)
 })
 
 passport.deserializeUser((id, done) => {
-  UserModel.findById(id, (err, user) => {
-    done(err, user)
+  UserModel.findById(id, null, null, (err, user) => {
+    done(err, user as User)
   })
 })
 

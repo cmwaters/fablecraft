@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import * as argon2 from "argon2";
 import { randomBytes } from "crypto";
 import { Card, CardModel } from '../models/card'
-import { StoryModel } from '../models/story'
+import { StoryModel } from '../models/header'
 import { UserModel } from '../models/user'
 import { LoremIpsum } from "lorem-ipsum";
 import { Generator } from '../tests/generator'
@@ -21,17 +21,6 @@ const lorem = new LoremIpsum({
 });
 
 dotenv.config({ path: `config/.env.development` })
-
-const devUser = {
-    username: "test",
-    email: "test@example.com",
-    password: "test"
-}
-
-const devStory = { 
-    title: "Test Story",
-    description: "this is a test story"
-}
 
 mongoose.connect(process.env.DATABASE_URL!, { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true, useFindAndModify: false });
 const db = mongoose.connection;
