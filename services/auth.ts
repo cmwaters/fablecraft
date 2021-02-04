@@ -67,7 +67,7 @@ export async function signUp(username: string, password: string, email: string):
   })
 }
 
-function validateUsername(username: string): string | undefined {
+export function validateUsername(username: string): string | undefined {
   if (!username) {
     return errors.MissingCredentials
   }
@@ -77,7 +77,7 @@ function validateUsername(username: string): string | undefined {
   return undefined
 }
 
-function validateEmail(email: string): string | undefined {
+export function validateEmail(email: string): string | undefined {
   if (!email) {
     return errors.MissingCredentials
   }
@@ -87,7 +87,7 @@ function validateEmail(email: string): string | undefined {
   return undefined
 }
 
-function validatePassword(password: string): string | undefined {
+export function validatePassword(password: string): string | undefined {
   if (!password) {
     return errors.MissingCredentials
   }
@@ -119,8 +119,9 @@ passport.use('login', new LocalStrategy.Strategy({
   });
 }));
 
-passport.serializeUser((user: User, done) => {
-  done(null, user._id)
+passport.serializeUser((user: Express.User, done) => {
+  let u = user as User
+  done(null, u._id)
 })
 
 passport.deserializeUser((id, done) => {

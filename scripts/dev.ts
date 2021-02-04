@@ -1,10 +1,5 @@
 import * as dotenv from 'dotenv'
 import mongoose from 'mongoose';
-import * as argon2 from "argon2";
-import { randomBytes } from "crypto";
-import { Card, CardModel } from '../models/card'
-import { StoryModel } from '../models/header'
-import { UserModel } from '../models/user'
 import { LoremIpsum } from "lorem-ipsum";
 import { Generator } from '../tests/generator'
 
@@ -39,7 +34,7 @@ db.once('open', async () => {
             .then(gen => gen.addCardFamily(gen.card(1, 2), 3))
             .then(gen => gen.addCardFamily(gen.card(1, 4), 7))
             .then(gen => gen.addCardFamily(gen.card(1, 6), 4))
-            .then(gen => gen.addEditor("amanda", "Test Story"))
+            .then(gen => gen.addPermission("amanda", "Test Story", 2)) // add as editor
             .catch(err => console.error(err))
 
         console.log("Closing connection")

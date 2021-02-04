@@ -71,15 +71,15 @@ describe("Story", () => {
                     res.body.story.title.should.equals(story.title)
                     res.body.story.description.should.equals(story.description)
                     res.body.story.owner.should.equals(test_env.users[0].id)
-                    let storyId = res.body.story._id
-                    res.body.rootCard.story.should.equals(storyId)
-                    DocumentModel.findById(storyId, (err, newStory) => {
+                    let documetId = res.body.story._id
+                    res.body.rootCard.story.should.equals(documetId)
+                    DocumentModel.findById(documetId, (err, newDocument ) => {
                         if (err) { console.error(err); }
-                        expect(newStory).to.not.be.null
-                        newStory!.title.should.equals(story.title)
-                        newStory!.description!.should.equals(story.description)
-                        expect(newStory!.owner.toString()).to.equals(test_env.users[0].id)
-                        assertLastStory(storyId, test_env.cookie, done)
+                        expect(newDocument).to.not.be.null
+                        newDocument!.title.should.equals(story.title)
+                        newDocument!.description!.should.equals(story.description)
+                        expect(newDocument!.owner.toString()).to.equals(test_env.users[0].id)
+                        assertLastStory(documetId, test_env.cookie, done)
                     })
                 });
         });
@@ -109,7 +109,7 @@ describe("Story", () => {
         beforeEach((done) => {
             setupUsersAndSession(2)
                 .then((resp: SessionEnv) => {
-                    createStory(resp.users[0]).then((story: Story) => {
+                    createStory(resp.users[0]).then((story: DocumentHeader) => {
                         test_env = {
                             users: resp.users,
                             cookie: resp.cookie,

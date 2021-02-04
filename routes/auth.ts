@@ -12,7 +12,13 @@ dotenv.config({ path: `.env.${process.env.NODE_ENV}` })
 router.post("/signup", async (req, res, next) => {
   let { username, password, email } = req.body;
   signUp(username, password, email).then(user => {
-    return res.status(201).send(user.withoutPassword())
+    return res.status(201).send({ 
+      username: user.username, 
+      email: user.email, 
+      name: user.name,
+      lastDocument: user.lastDocument,
+      documents: user.documents
+    })
   }).catch(err => {
     switch (err) { 
       case errors.UserAlreadyExists:

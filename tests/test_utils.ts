@@ -1,5 +1,6 @@
 import { UserModel, User } from "../models/user";
-import { Story, StoryModel } from "../models/header";
+import { DocumentHeader, DocumentModel } from "../models/header";
+import { Document } from '../services/document'
 import { Card, CardModel } from "../models/card";
 import { app } from "../index";
 import { randomBytes } from "crypto";
@@ -60,13 +61,6 @@ export type SessionEnv = {
     cookie: string
 }
 
-export type TestEnv = {
-    users: User[],
-    cookie: string,
-    story: Story,
-    cards: Card[]
-}
-
 export async function createSession(id: number): Promise<string> {
     return new Promise<string>((resolve, reject) => {
         chai.request(app)
@@ -89,54 +83,26 @@ export async function createSession(id: number): Promise<string> {
 }
 
 // NOTE: create story doesn't automatically create a root card
-export function createStory(user: User, title?: string): Promise<Story> {
+export function createStory(user: User, title?: string): Promise<DocumentHeader> {
     return new Promise((resolve, reject) => {
-        let storyTitle = "Test Story"
+        let documentTitle = "Test Document"
         if (title) {
-            storyTitle = title
+            documentTitle = title
         }
-        resolve(StoryModel.create({
-            title: storyTitle,
+        resolve(DocumentModel.create({
+            title: documentTitle,
             owner: user._id,
             cardCounter: 0,
         }))
     });
 }
 
-export function assertLastStory(storyID: string, cookie: string, done: () => void): void { 
-    chai
-        .request(app)
-        .get("/api/story/last")
-        .set("cookie", cookie)
-        .end((err, res) => {
-            if (err) { console.error(err)}
-            res.should.have.status(200)
-            res.body.should.have.property("_id")
-            res.body._id.should.equal(storyID)
-            done()
-        });
-}
-
-export function assertNoLastStory(cookie: string, done: () => void): void {
-    chai
-        .request(app)
-        .get("/api/story/last")
-        .set("cookie", cookie)
-        .end((err, res) => {
-            if (err) { console.error(err)}
-            res.should.have.status(200)
-            res.body.should.have.property("error")
-            res.body.error.should.equals(errors.StoryNotFound)
-            done()
-        });
-}
-
-export async function createCardColumn(storyID: any, length: number, depth: number = 0, parent?: Card): Promise<Card[]> {
+export async function createCardColumn(documentId: any, length: number, depth: number = 0, parent?: Card): Promise<Card[]> {
     return new Promise<Card[]>(async (resolve, reject) => {
         let cards: Card[] = []
         for (let i = 0; i < length; i++) {
             cards.push(await CardModel.create({
-                story: storyID,
+                document: documentId,
                 text: DEFAULT_CARD_TEXT,
                 depth: depth,
                 identifier: i
@@ -174,13 +140,13 @@ export async function clearUsers() {
     });
 }
 
-export async function clearStoriesAndCards() {
+export async function clearDocuments() {
     await CardModel.deleteMany({}, null, (err) => {
         if (err) {
             console.log(err);
         }
     });
-    await StoryModel.deleteMany({}, null, (err) => {
+    await DocumentModel.deleteMany({}, null, (err) => {
         if (err) {
             console.log(err);
         }
@@ -189,7 +155,7 @@ export async function clearStoriesAndCards() {
 
 export async function checkUserIsNotPartOfStory(userID: string, storyID: string): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
-        StoryModel.findById(storyID, (err: any, story: Story) => {
+        DocumentModel.findById(storyID, (err: any, story: Story) => {
             if (err) {
                 console.error(err);
             }

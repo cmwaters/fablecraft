@@ -1,10 +1,10 @@
 import mongoose from "mongoose";
-import { Document } from './header'
+import { DocumentHeader } from './header'
 
 export interface Card extends mongoose.Document {
-	_id: number
+	_id: any
 	text: string;
-	document: Document;
+	document: DocumentHeader;
 	depth: number;
 	index: number;
 	parent?: Card;
@@ -20,11 +20,11 @@ export const CardSchema = new mongoose.Schema({
 	},
 	document: {
 		type: mongoose.Schema.Types.ObjectId,
-		ref: "Document",
+		ref: "DocumentHeader",
 		required: true,
 	},
-	// each card in a story has a unique monotonically increasing index
-	identifier: {
+	// each card in a document has a unique monotonically increasing index
+	index: {
 		type: Number,
 		required: true,
 	},

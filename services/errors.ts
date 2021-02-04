@@ -4,12 +4,13 @@ export const errors = {
     NoStoryID: "no story id provided",
     InvalidArguments: "request has invalid arguments",
     MissingCredentials: "missing credentials",
-    StoryNotFound: "story not found",
+    DocumentNotFound: "document not found",
     UserPermissionDenied: "user does not have permission", 
     UserNotFound: "user could not be found",
     UserAlreadyExists: "user already exists",
     // the client should be able to catch what exactly is invalid, so
     // for these errors we return generic messages
+    EmailExists: "a user with that email exists",
     InvalidEmail: "email address is invalid",
     InvalidPassword: "password is invalid",
     InvalidUsername: "username is invalid",

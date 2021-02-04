@@ -1,6 +1,8 @@
 import { User, UserModel } from '../models/user'
 import { Card, CardModel } from '../models/card'
-import { Story, StoryModel } from '../models/header'
+import { DocumentHeader } from '../models/header'
+import { PermissionGroup } from '../services/permissions'
+import { Document } from '../services/document'
 import { LoremIpsum } from "lorem-ipsum";
 import * as argon2 from "argon2";
 import { randomBytes } from "crypto";
@@ -16,18 +18,12 @@ const lorem = new LoremIpsum({
     }
 });
 
-type Document = {
-    cards: Card[][],
-    story: Story
-}
-
 export class Generator {
     documents: { [title: string]: Document } = {};
     users: { [name: string]: User } = {};
+    sessions: { [name: string]: string } = {};
 
-    currentStory: string = "";
-    pillarRatio: number[] = [0.4, 0.2, 0.4];
-    cardsPerParent: number = 3;
+    currentDocument: string = "";
 
     constructor(users?: { [name: string]: User }, documents?: { [title: string]: Document}) {
         if (users) this.users = users
@@ -53,86 +49,78 @@ export class Generator {
         return new Generator(newUsers)
     }
 
-    async createStory(user: string, title: string, cards: number): Promise<Generator> {
+    async createStory(user: string, title: string, cards: number = 1): Promise<Generator> {
         let u = this.users[user]
         try {
-            this.documents[title] = {
-                story: await StoryModel.create({
-                    owner: u,
-                    title: title,
-                    cardCounter: 0,
-                    description: lorem.generateParagraphs(1)
-                }),
-                cards: [],
-            }
-            this.documents[title].cards.push(await generateCards(this.documents[title].story, 0, cards))
+            this.documents[title] = await Document.create(u, title)
         } catch (error) { throw error }
-        this.currentStory = title
-        if (!u.stories) {
-            u.stories = [this.documents[title].story._id]
-        } else {
-            u.stories.push(this.documents[title].story._id)
+        this.currentDocument = title
+        if (cards > 1) {
+            return this.addRootCards(cards - 1)
         }
-        u.lastStory = this.documents[title].story._id
-        await u.save()
         return this
     }
 
-    card(depth: number, index: number, story?: string) {
-        if (story) {
-            return this.documents[story].cards[depth][index]
+    card(depth: number, row: number, document: string = this.currentDocument): Card {
+        for (let card of this.documents[document].cards) {
+            if (card.depth == depth) {
+                if (row === 0) {
+                    return card
+                }
+                row--
+            }  
         }
-        return this.documents[this.currentStory].cards[depth][index]
+        throw new Error("No card at depth: " + depth + " and row " + row)
     }
 
-    // CONTRACT: the parent card should always be below any other parents that have children
-    async addCardFamily(parent: Card, cards: number, story?: string): Promise<Generator> {
-        if (!story) story = this.currentStory
-        let newCards: Card[] = await generateCards(this.documents[story].story, parent.depth + 1, cards, parent)
-        if (this.documents[story].cards.length === parent.depth + 1) {
-            this.documents[story].cards.push(newCards)
-        } else {
-            let pillarLength = this.documents[story].cards[parent.depth + 1].length
-            this.documents[story].cards[parent.depth + 1][pillarLength - 1].below = newCards[0]._id
-            await this.documents[story].cards[parent.depth + 1][pillarLength - 1].save()
-            newCards[0].above = this.documents[story].cards[parent.depth + 1][pillarLength - 1]._id
-            await newCards[0].save()
-            this.documents[story].cards[parent.depth + 1].push(...newCards)
+    async addCardFamily(parent: Card, cards: number, document: string = this.currentDocument): Promise<Generator> {
+        let doc = this.documents[document]
+        let u = doc.header.owner
+        for (let i = 0; i < cards; i++) {
+            doc.cards.push(await doc.addChildCard(u, parent._id, lorem.generateParagraphs(randInt(3, 1))))
         }
-        // update parent
-        parent.children = newCards
-        await parent.save()
         return this
     }
 
-    async addEditor(user: string, story: string): Promise<Generator> {
-        let u = this.users[user]
-        let s = this.documents[story].story
-        if (s.editors) {
-            s.editors.push(u)
-        } else {
-            s.editors = [u]
+    // CONTRACT: should be called before adding any families
+    async addRootCards(cards: number, document: string = this.currentDocument): Promise<Generator> {
+        let doc = this.documents[document]
+        let u = doc.header.owner
+
+        let lastCard = doc.cards[doc.cards.length - 1]
+        if (lastCard.depth != 0) {
+            throw new Error("addRootCards should be called first. Last card does not have a depth of 0")
         }
-        await this.documents[story].story.save()
-        u.stories.push(this.documents[story].story._id)
-        await u.save()
+        for (let i = 0; i < cards; i++) {
+            let card = await doc.addCardBelow(u, lastCard._id, lorem.generateParagraphs(randInt(1, 3)))
+            doc.cards.push(card)
+            lastCard = card
+        }
+        return this
+    }
+
+    // permission is enacted as if it were by the owner
+    async addPermission(user: string, document: string, permission: PermissionGroup): Promise<Generator> {
+        let doc = this.documents[document]
+        let owner = this.users[doc.header.owner._id]
+        await doc.addPermission(owner, user, permission)
         return this
     }
 }
 
-async function generateCards(story: Story, depth: number, range: number, parent?: Card, above?: Card, below?: Card): Promise<Card[]> {
+async function generateCards(document: DocumentHeader, depth: number, range: number, parent?: Card, above?: Card, below?: Card): Promise<Card[]> {
     let column = [];
     for (let index = 0; index < range; index++) {
         column.push(await CardModel.create({
-            story: story._id,
+            document: document._id,
             text: lorem.generateParagraphs(1),
             depth: depth,
-            identifier: story.cardCounter + index + 1,
+            index: document.cards + index + 1,
         }))
     }
 
-    story.cardCounter += range
-    story.save()
+    document.cards += range
+    await document.save()
 
     for (let index = 0; index < range; index++) {
         if (parent !== undefined) {
@@ -162,3 +150,7 @@ async function generateCards(story: Story, depth: number, range: number, parent?
 
     return column
 } 
+
+function randInt(upper: number, lower: number = 0): number {
+    return Math.floor(Math.random() * upper) - lower
+}
