@@ -27,7 +27,7 @@ export class Document {
             let documents = await DocumentModel.create([{
                 title: title,
                 owner: owner._id,
-                indexCounter: 0,
+                cards: 1,
             }], { session: session });
             let document = documents[0]
 
@@ -356,7 +356,7 @@ export class Document {
     // them before recursing on their children. 
     private async deleteChildren(parent: Card, session: mongoose.ClientSession) {
         let children = await CardModel.find({parent: parent}, { session: session})
-        children.forEach(child => {
+        children.forEach((child: Card) => {
             child.remove()
             this.deleteChildren(child, session)
         })

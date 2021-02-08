@@ -1,22 +1,18 @@
-import { Window, WindowConfig } from "./components/window";
+import { Window, WindowConfig } from "../ilb/tree";
 import { el, mount, RedomComponent, unmount } from "redom";
 import { Notifications } from "./components/notifier";
 import { Panel } from "./components/panel";
 import { CommandLine } from "./components/command";
 import { Login, Signup, Navbar } from "./components/authentication"
 import { Client } from "./client";
+import { Page } from "./components/page"
 import { Header } from "./components/header";
-import { Vector, Size } from './geometry'
+import { Vector, Size } from '../ilb/geometry'
 import * as config from "./config.json"
 
 export class View {
-    screen: HTMLElement
-    window: Window
-    windows: Window[] = [];
-    notifier: Notifications
-    panel: Panel
-    cli: CommandLine
-    header: Header
+    screen: HTMLBodyElement
+    page: Page
 
     constructor() {
         this.screen = document.createElement("body")

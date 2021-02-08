@@ -21,8 +21,6 @@ const lorem = new LoremIpsum({
 export class Generator {
     documents: { [title: string]: Document } = {};
     users: { [name: string]: User } = {};
-    sessions: { [name: string]: string } = {};
-
     currentDocument: string = "";
 
     constructor(users?: { [name: string]: User }, documents?: { [title: string]: Document}) {
@@ -40,8 +38,8 @@ export class Generator {
                     username: user,
                     email: user + "@example.com",
                     password: passwordHashed,
-                    stories: [],
-                    lastStory: undefined,
+                    documents: [],
+                    lastDocument: undefined,
                     name: user,
                 })
             }

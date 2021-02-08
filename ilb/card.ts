@@ -1,30 +1,24 @@
 import { RedomComponent, el, mount } from "redom";
 import Quill from "quill"
-import { CardMeta } from "../model/card";
-import { Size, Vector } from '../geometry'
+import { Node } from "./node";
+import { Size, Vector } from './geometry'
+import { CardConfig } from './config'
 
 // we call this node instead of card to distinguish from the model and the view
-export class CardElement implements RedomComponent {
+export class Card implements RedomComponent {
     el: HTMLElement;
-    index: number
-    children: number[] = []
-    parent?: number
+    node: Node
     editor: Quill;
 
-    constructor(parent: HTMLElement, card: CardMeta | null, config: CardConfig, insertBefore?: CardElement) {
+    constructor(parent: HTMLElement, node: Node | null, config: CardConfig, insertBefore?: Card) {
         this.el = el("div.card", { style: { marginBottom: config.margin, marginTop: config.margin } })
         if (insertBefore) {
             mount(parent, this.el, insertBefore.el)
         } else {
             mount(parent, this.el)
         }
+        this.node = node
         this.editor = new Quill(this.el as Element)
-        if (card) {
-            this.editor.setText(card.text)
-            this.index = card.index
-            if (card.children) this.children = card.children
-            this.parent = card.parent
-        }
     }
 
     center(): Vector {
@@ -82,8 +76,4 @@ export class CardElement implements RedomComponent {
         this.editor.blur()
     }
 
-}
-
-export type CardConfig = {
-    margin: number
 }

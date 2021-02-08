@@ -1,48 +1,66 @@
-import { CardMeta } from "../model/card";
-import { Size, Vector } from "../geometry";
-import { Pillar, PillarConfig } from "./pillar";
+import { Node, Pos } from './node'
+import { Size, Vector } from "./geometry";
+import { Pillar } from "./pillar";
 import { Family } from "./family";
 import { RedomComponent, el, mount } from "redom";
-import { ViewComponent } from "./view_component";
 import { Card } from "./card";
+import { Config, PillarConfig, Options } from './config';
+import { Events } from './events';
 
-export class Window implements RedomComponent, ViewComponent {
-    pillars: Pillar[] = [];
-    pillar: Pillar;
+export class Tree implements RedomComponent {
     el: HTMLElement;
-    reference: HTMLElement;
-    centerPoint: Vector;
-    config: WindowConfig;
-    // this is used to set the index of new cards
-    counter: number
+    event: Events;
+    
+    
+    private pillars: Pillar[] = [];
+    private pillar: Pillar; // the current pillar
+    private pillarConfig: PillarConfig
+    private reference: HTMLElement;
+    private centerPoint: Vector;
+    private config: Config;
 
     // we use an indexer to track the position of cards based on their id
-    // TODO: We should consider moving this to the model
-    cardIndexer: CardPos[] = [];
+    private cardIndexer: Pos[] = [];
 
-    cardWidth: number = 0;
-    current: CardPos = { depth: 0, height: 0, family: 0 };
-    card: Card;
+    private cardWidth: number = 0;
+    private current: Pos = { depth: 0, family: 0, index: 0, };
+    private card: Card;
     
     private expandedFamily: Family | null = null;
     private active: boolean = false;
 
     // note that the view struct itself doesn't store the node data but passes them on to the respective cards to handle
-    constructor(parent: HTMLElement, counter: number, cards: CardMeta[][], pos: Vector, size: Size, config: WindowConfig) {
+    constructor(element: HTMLElement, config: Config, nodes?: Node[], options?: Options) {
         this.config = config;
-        this.el = el("div.window", { style: { width: size.width, height: size.height, left: pos.x, top: pos.y } });
-        mount(parent, this.el);
+        this.el = element
+
+        // we add a reference element inside the given element. This allow for easier navigation
+        // as the user movements move the entire reference frame as opposed to all the individual
+        // elements inside
         this.reference = el("div.reference");
         mount(this.el, this.reference);
+
+        // calculate what the optimal width for each card should be
         this.calculateCardWidth();
-        this.centerPoint = pos.add(size.center());
-        this.counter = counter
-        
+
+        // calculate the center point of the element
+        this.calculateCenterPoint()
+
+        // now we can form the configuration of the pillar
+        this.setPillarConfig()
+
+        let origin = this.centerPoint.x - this.cardWidth / 2
+        this.pillars.push(new Pillar(this.reference, origin, this.pillarConfig))
 
         // add all the pillars
-        for (let i = 0; i <= cards.length; i++) {
-            let left = this.centerPoint.x - this.cardWidth / 2 + i * (this.cardWidth + this.config.margin);
-            this.pillars.push(new Pillar(this.reference, left, this.config.pillar));
+        if (nodes) {
+            for (let node of nodes) {
+                if 
+                this.cardIndexer.push(node.pos)
+
+                let left =  + i * (this.cardWidth + this.config.margin.pillar);
+                this.pillars.push(new Pillar(this.reference, left, this.pillarConfig));
+            }
         }
 
         // set up the root pillar
@@ -253,8 +271,12 @@ export class Window implements RedomComponent, ViewComponent {
         this.reference.style.top = "0px";
     }
 
-    calculateCardWidth() {
+    private calculateCardWidth() {
         this.cardWidth = Math.min(Math.max(0.5 * this.el.clientWidth, this.config.card.width.min), this.config.card.width.max);
+    }
+
+    private calculateCenterPoint() {
+        this.centerPoint = Vector.centerOfElement(this.el)
     }
 
     // pan moves the view of the window. It does not displace any of the cards individually rather
@@ -552,6 +574,30 @@ export class Window implements RedomComponent, ViewComponent {
         }
         // this.node.dull();
     }
+
+    private checkOrder(nodes: Node[]): boolean {
+        for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i].id !== i) {
+                return false
+            }
+        }
+        return true
+    }
+
+    private setPillarConfig(): void {
+        this.pillarConfig = { 
+            family: {
+                margin: this.config.margin.family,
+                card: {
+                    margin: this.config.margin.card
+                }
+            },
+            width: this.cardWidth,
+            center: this.centerPoint.x,
+            transitionTime: this.config.transitionTime,
+            frameRate: this.config.frameRate
+        }
+    }
     
     private incrementIndexesBelow(depth: number, height: number): void {
         for (let i = index + 1; i < this.pillars[depth].nodes.length; i++) {
@@ -630,25 +676,4 @@ export class Window implements RedomComponent, ViewComponent {
         }
         return resp
     }
-}
-
-export type WindowConfig = {
-    card: {
-        width: {
-            min: number;
-            max: number;
-        };
-    };
-    pillar: PillarConfig
-    margin: number
-};
-
-export type CardPos = { 
-    depth: number, 
-    height: number,
-    family: number
-}
-
-function emptyCardPos(): CardPos { 
-    return { depth: -1, height: -1, family: -1}
 }

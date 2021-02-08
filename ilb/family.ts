@@ -1,28 +1,27 @@
 import { RedomComponent, el, mount, unmount } from "redom";
-import { ViewComponent } from "./view_component";
-import { Card, CardConfig } from "./card";
-import { CardMeta } from "../model/card";
-import { Vector } from '../geometry'
+import { Card } from "./card";
+import { Node  } from "./node";
+import { Vector } from './geometry'
+import { FamilyConfig } from './config'
 
 export class Family implements RedomComponent {
     el: HTMLElement;
     margin: number;
-    cardConfig: CardConfig;
+    config: FamilyConfig;
     cards: Card[] = [];
 
-    constructor(parent: HTMLElement, cards: CardMeta[], config: FamilyConfig, insertBefore?: Family) {
+    constructor(parent: HTMLElement, nodes: Node[], config: FamilyConfig, insertBefore?: Family) {
         this.el = el("div.family", { style: { marginBottom: config.margin, marginTop: config.margin}})
         if (insertBefore) {
             mount(parent, this.el, insertBefore)
         } else {
             mount(parent, this.el)
         }
-        cards.forEach((cardMeta) => {
-            let card = new Card(this.el, cardMeta, config.card)
+        nodes.forEach((node) => {
+            let card  = new Card(this.el, node, config.card)
             this.cards.push(card)
         })
-        this.cardConfig = config.card
-        this.margin = config.margin
+        this.config = config
     }
 
     // cardOffset returns the amount of pixels between the top of the family and the
@@ -39,28 +38,27 @@ export class Family implements RedomComponent {
         }
         let offset = 0;
         for (let i = 0; i < index; i++) {
-            offset += this.cards[i].el.offsetHeight + (1 * this.cardConfig.margin)
+            offset += this.cards[i].el.offsetHeight + (1 * this.config.card.margin)
         }
         return offset + (this.cards[index].el.offsetHeight / 2)
     }
 
-    insertCardAbove(index: number): Card {
+    insertCard(node: Node) {
         if (this.cards.length === 0) {
-            let card = new Card(this.el, null, this.cardConfig)
+            let card = new Card(this.el, node, this.config.card)
             this.cards = [card]
-            let index = 0
             return card
         }
         // create card
-        let card = new Card(this.el, null, this.cardConfig, this.cards[index])
+        let card = new Card(this.el, null, this.config.card, this.cards[index])
         // set parent
         card.parent = this.cards[0].parent
         this.cards.splice(index, 0, card)
         return card
     }
 
-    appendCard(parent?: number): { card: Card, index: number } {
-        let card = new Card(this.el, null, this.cardConfig)
+    appendCard(node: Node): { card: Card, index: number } {
+        let card = new Card(this.el, null, this.config.card)
         if (parent) card.parent = parent
         this.cards.push(card)
         return { card, index: this.cards.length - 1}
@@ -97,8 +95,8 @@ export class Family implements RedomComponent {
 
     // separateCardsIntoFamilies takes an array of cards (usually meant as part of a pillar)
     // and groups the cards by family whilst still retaining order
-    static separateCardsIntoFamilies(cards: Card[]): Card[][] {
-        let output: Card[][] = []
+    static separateCardsIntoFamilies(cards: Node[]): Node[][] {
+        let output: Node[][] = []
         if (!cards[0].parent) {
             // it is the root. Hence there is only a single family
             output = [cards]
@@ -123,7 +121,3 @@ export class Family implements RedomComponent {
 
 }
 
-export type FamilyConfig = {
-    card: CardConfig
-    margin: number
-}

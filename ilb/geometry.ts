@@ -19,8 +19,12 @@ export class Vector {
     return new Vector(x)
   }
 
-  static fromEl(element: HTMLElement): Vector {
+  static fromElement(element: HTMLElement): Vector {
     return new Vector(element.offsetLeft, element.offsetTop)
+  }
+
+  static centerOfElement(element: HTMLElement): Vector {
+    return new Vector(element.offsetLeft + element.offsetWidth/2, element.offsetTop + element.offsetHeight/2)
   }
 
   add(v: Vector): Vector {
@@ -68,7 +72,7 @@ export class Vector {
     return this.x === 0 && this.y === 0
   }
 
-  updateEl(element: HTMLElement): void {
+  setElement(element: HTMLElement): void {
     element.style.left = this.x + "px"
     element.style.top = this.y + "px"
   }  
@@ -100,7 +104,7 @@ export class Size {
     return new Size(this.width/ denominator, this.height/denominator)
   }
 
-  static fromEl(element: HTMLElement): Size {
+  static fromElement(element: HTMLElement): Size {
     return new Size(element.offsetWidth, element.offsetHeight)
   }
 

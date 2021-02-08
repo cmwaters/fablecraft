@@ -1,15 +1,14 @@
-import { CardMeta } from '../model/card'
-import { Vector, Size } from '../geometry'
+import { Node } from './node'
+import { Vector, Size } from './geometry'
 import { v4 as uuidv4 } from 'uuid';
 import { RedomComponent, el, mount, unmount } from "redom";
-import { Family, FamilyConfig } from './family';
+import { Family } from './family';
 import { Card } from './card';
-import * as gConfig from '../config.json';
+import { PillarConfig, FamilyConfig } from './config'
 
 export class Pillar implements RedomComponent {
     el: HTMLElement;
-    families: Family[] = [];
-    cards: Card[] = [];
+    fams: Family[] = [];
 
     private center: number
     private familyConfig: FamilyConfig
@@ -41,39 +40,39 @@ export class Pillar implements RedomComponent {
         let i = 0;
         let familyIndex = 0;
         while (i <= index) {
-            if (familyIndex === this.families.length) [
+            if (familyIndex === this.fams.length) [
                 console.error("center card: family index exceeds length. Index: " + familyIndex)
             ]
             // check if family is empty in which case we skip
-            if (this.families[familyIndex].cards.length === 0) {
+            if (this.fams[familyIndex].cards.length === 0) {
                 familyIndex++
                 continue
             }
 
             // termination condition: is the card of the index within this family
-            if (index - i < this.families[familyIndex].cards.length) {
+            if (index - i < this.fams[familyIndex].cards.length) {
                 break
             }
 
             // increment the height of the family as well as the margin
-            yOffset += this.families[familyIndex].el.offsetHeight + this.familyConfig.margin
-            i += this.families[familyIndex].cards.length
+            yOffset += this.fams[familyIndex].el.offsetHeight + this.familyConfig.margin
+            i += this.fams[familyIndex].cards.length
             familyIndex++
         }
         // calculate the offset of the card itself within the family
-        yOffset += this.families[familyIndex].cardOffset(index - i) + this.familyConfig.margin
+        yOffset += this.fams[familyIndex].cardOffset(index - i) + this.familyConfig.margin
         this.shift(Vector.y(this.center - yOffset), this.transitionTime)
     }
 
     centerFamily(familyIndex: number) {
         let yOffset = this.target.y + this.familyConfig.margin
         for (let i = 0; i < familyIndex; i++) {
-            console.log("family height " + i + ": " + this.families[i].el.offsetHeight)
-            if (this.families[i].cards.length !== 0) {
-                yOffset += this.families[i].el.offsetHeight + this.familyConfig.margin
+            console.log("family height " + i + ": " + this.fams[i].el.offsetHeight)
+            if (this.fams[i].cards.length !== 0) {
+                yOffset += this.fams[i].el.offsetHeight + this.familyConfig.margin
             }
         }
-        yOffset += this.families[familyIndex].el.offsetHeight / 2
+        yOffset += this.fams[familyIndex].el.offsetHeight / 2
         this.shift(Vector.y(this.center - yOffset), this.transitionTime)
     }
 
@@ -89,9 +88,9 @@ export class Pillar implements RedomComponent {
     centerEnd(height: number) {
         console.log("center end: " + height)
         let yOffset = this.target.y
-        for (let i = 0; i < this.families.length; i++) {
-            if (this.families[i].cards.length > 0) {
-                yOffset += this.families[i].el.offsetHeight + this.familyConfig.margin
+        for (let i = 0; i < this.fams.length; i++) {
+            if (this.fams[i].cards.length > 0) {
+                yOffset += this.fams[i].el.offsetHeight + this.familyConfig.margin
             }
         }
         yOffset += height/2 + this.familyConfig.margin
@@ -100,8 +99,8 @@ export class Pillar implements RedomComponent {
 
     getFamilyIndex(cardIndex: number): {familyIndex: number, cardIndex: number} {
         let idx = 0;
-        for (let i = 0; i < this.families.length; i++) {
-            let length = this.families[i].cards.length
+        for (let i = 0; i < this.fams.length; i++) {
+            let length = this.fams[i].cards.length
             idx += length
             if (idx > cardIndex) {
                 return {
@@ -111,28 +110,28 @@ export class Pillar implements RedomComponent {
             }
         }
         return {
-            familyIndex: this.families.length,
+            familyIndex: this.fams.length,
             cardIndex: 0
         }
     }
 
     getCardIndex(familyIndex: number): number {
         let index = 0
-        if (familyIndex >= this.families.length) {
-            familyIndex = this.families.length - 1
+        if (familyIndex >= this.fams.length) {
+            familyIndex = this.fams.length - 1
         }
         for (let i = 0; i < familyIndex; i++) {
-            index += this.families[i].cards.length
+            index += this.fams[i].cards.length
         }
         return index
     }
 
     insertFamily(index: number, cards: CardMeta[] = []): Family {
-        let family = new Family(this.el, cards, this.familyConfig, this.families[index])
-        this.families.splice(index, 0, family)
+        let family = new Family(this.el, cards, this.familyConfig, this.fams[index])
+        this.fams.splice(index, 0, family)
         let cardIndex = 0;
         for (let i = 0; i < index; i++) {
-            cardIndex += this.families[i].cards.length
+            cardIndex += this.fams[i].cards.length
         }
         this.cards.splice(cardIndex, 0, ...family.cards)
         return family
@@ -140,14 +139,14 @@ export class Pillar implements RedomComponent {
 
     appendFamily(cards: CardMeta[] = []): Family {
         let family = new Family(this.el, cards, this.familyConfig)
-        this.families.push(family)
+        this.fams.push(family)
         this.cards.push(...family.cards)
         return family
     }
 
     insertCardAbove(index: number): string {
         let { familyIndex, cardIndex } = this.getFamilyIndex(index)
-        let node = this.families[familyIndex].insertCardAbove(cardIndex)
+        let node = this.fams[familyIndex].insertCardAbove(cardIndex)
         this.cards.splice(index, 0, node)
         // use uuid to generate a random id as a proxy for the card
         // TODO use an incrementing numerated index instead of a string
@@ -156,10 +155,10 @@ export class Pillar implements RedomComponent {
         return node.id 
     }
 
-    appendCard(familyIndex: number = this.families.length - 1, parent?: number): number } {
-        let { card, index } = this.families[familyIndex].appendCard(parent)
+    appendCard(familyIndex: number = this.fams.length - 1, parent?: number): number } {
+        let { card, index } = this.fams[familyIndex].appendCard(parent)
         // append to the cards array
-        if (familyIndex < this.families.length - 1) {
+        if (familyIndex < this.fams.length - 1) {
             index += this.getCardIndex(familyIndex)
             this.cards.splice(index, 0, card)
         } else {
@@ -180,16 +179,16 @@ export class Pillar implements RedomComponent {
     // deletes the card at the respective index
     deleteCard(index: number) {
         let { familyIndex, cardIndex } = this.getFamilyIndex(index)
-        this.families[familyIndex].deleteCard(cardIndex)
+        this.fams[familyIndex].deleteCard(cardIndex)
         this.cards.splice(index, 1)
     }
 
     // deletes the entire family at the respective index
     deleteFamily(familyIndex: number) {
-        unmount(this.el, this.families[familyIndex])
+        unmount(this.el, this.fams[familyIndex])
         let cardIndex = this.getCardIndex(familyIndex)
-        this.cards.splice(cardIndex, this.families[familyIndex].cards.length)
-        this.families.splice(familyIndex, 1)
+        this.cards.splice(cardIndex, this.fams[familyIndex].cards.length)
+        this.fams.splice(familyIndex, 1)
     }
 
     // use a polynomial spline between current and target positions to move the pillar in a smooth manner
@@ -246,9 +245,9 @@ export class Pillar implements RedomComponent {
     // if and end is not provided then isEmpty searches until the end.
     // toIdx is exclusive.
     isEmpty(fromIdx: number, toIdx?: number): boolean {
-        if (!toIdx) toIdx = this.families.length
+        if (!toIdx) toIdx = this.fams.length
         for (let i = fromIdx; i < toIdx; i++) {
-            if (this.families[i].cards.length > 0) {
+            if (this.fams[i].cards.length > 0) {
                 return false
             }
         }
@@ -269,11 +268,4 @@ export class Pillar implements RedomComponent {
         this.pos.updateEl(this.el)
     }
     
-}
-
-export type PillarConfig = {
-    family: FamilyConfig
-    width: number,
-    center: number
-    transition: number
 }

@@ -3,7 +3,7 @@ import chaiHttp from "chai-http";
 import * as dotenv from 'dotenv'
 import * as argon2 from "argon2";
 import { User, UserModel } from "../models/user"
-import { setupUsersAndSession, SessionEnv, TEST_PASSWORD } from "./test_utils";
+import { TestSuite, TEST_PASSWORD } from "./test_suite";
 let should = chai.should();
 dotenv.config({ path: `config/.env.${process.env.NODE_ENV}` })
 import { app } from "../index";
@@ -12,23 +12,17 @@ import { errors } from "../services/errors"
 chai.use(chaiHttp);
 describe("Authentication", () => {
 
-  before((done) => {
-    UserModel.deleteMany({}, null, (err) => {
-      if (err) {
-        console.error(err)
-      }
-      done();
-    })
+  before(async (done) => {
+    await TestSuite.clear()
+    done()
   })
-  after((done) => {
-    UserModel.deleteMany({}, null, (err) => {
-      if (err) {
-        console.error(err)
-      }
-      done();
-    })
+
+  afterEach(async (done) => {
+    await TestSuite.clear()
+    done()
   })
-  describe("/POST signup", () => {
+
+  describe.only("/POST signup", () => {
     it("creates a user account", done => {
       let user = {
         username: "test",
@@ -135,12 +129,10 @@ describe("Authentication", () => {
 
   describe("/POST login", () => {
     let user: User
-    beforeEach((done) => {
-      setupUsersAndSession(1).then((resp: SessionEnv) => {
-        user = resp.users[0]
-        done()
-      })
-        .catch((err) => { console.error(err) })
+    beforeEach(async (done) => {
+      let testSuite = await TestSuite.setup(1)
+      user = testSuite.users[0].user
+      done()
     })
 
     it("logs users in with correct cridentials", done => {
