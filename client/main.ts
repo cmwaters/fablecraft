@@ -235,18 +235,7 @@ export class Fablecraft {
     
 
     handleKeyUp(e: KeyboardEvent) {
-        switch (e.key) {
-            case "Meta":
-            case "Control":
-                this.ctrlMode = false;
-                break;
-            case "Alt":
-                this.altMode = false;
-                break;
-            case "Shift":
-                this.shiftMode = false;
-                break;
-        }
+        
     }
 
     wheelSlide(delta: Vector) {

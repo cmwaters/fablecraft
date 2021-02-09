@@ -12,9 +12,10 @@ export type Config = {
     }
     frameRate: number
     transitionTime: number
+    inverseScrollSpeed: number
 };
 
-function defaultConfig(): Config {
+export function defaultConfig(): Config {
     return { 
         card: {
             width: {
@@ -28,7 +29,8 @@ function defaultConfig(): Config {
             card: 10
         }, 
         frameRate: 30,
-        transitionTime: 300
+        transitionTime: 300,
+        inverseScrollSpeed: 2
     }
 }
 

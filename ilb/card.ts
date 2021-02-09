@@ -10,7 +10,7 @@ export class Card implements RedomComponent {
     node: Node
     editor: Quill;
 
-    constructor(parent: HTMLElement, node: Node | null, config: CardConfig, insertBefore?: Card) {
+    constructor(parent: HTMLElement, node: Node, config: CardConfig, insertBefore?: Card) {
         this.el = el("div.card", { style: { marginBottom: config.margin, marginTop: config.margin } })
         if (insertBefore) {
             mount(parent, this.el, insertBefore.el)
@@ -23,6 +23,10 @@ export class Card implements RedomComponent {
 
     center(): Vector {
         return new Size(this.el.clientWidth, this.el.clientHeight).center()
+    }
+
+    modify(text: string) {
+        this.editor.setText(text)
     }
 
     focusStart(): void {

@@ -1,7 +1,6 @@
 import { RedomComponent, el, mount, unmount } from "redom";
 import { Card } from "./card";
 import { Node  } from "./node";
-import { Vector } from './geometry'
 import { FamilyConfig } from './config'
 
 export class Family implements RedomComponent {
@@ -10,20 +9,15 @@ export class Family implements RedomComponent {
     config: FamilyConfig;
     cards: Card[] = [];
 
-    constructor(parent: HTMLElement, nodes: Node[], config: FamilyConfig, insertBefore?: Family) {
+    constructor(parent: HTMLElement, config: FamilyConfig, insertBefore?: Family) {
         this.el = el("div.family", { style: { marginBottom: config.margin, marginTop: config.margin}})
         if (insertBefore) {
             mount(parent, this.el, insertBefore)
         } else {
             mount(parent, this.el)
         }
-        nodes.forEach((node) => {
-            let card  = new Card(this.el, node, config.card)
-            this.cards.push(card)
-        })
         this.config = config
     }
-
     // cardOffset returns the amount of pixels between the top of the family and the
     // center of the card.
     cardOffset(index: number): number {
@@ -43,30 +37,51 @@ export class Family implements RedomComponent {
         return offset + (this.cards[index].el.offsetHeight / 2)
     }
 
-    insertCard(node: Node) {
-        if (this.cards.length === 0) {
-            let card = new Card(this.el, node, this.config.card)
-            this.cards = [card]
-            return card
+    insertCard(node: Node): void {
+        if (node.pos.index > this.cards.length) {
+            throw new Error("card index out of bounds")
         }
-        // create card
-        let card = new Card(this.el, null, this.config.card, this.cards[index])
-        // set parent
-        card.parent = this.cards[0].parent
-        this.cards.splice(index, 0, card)
-        return card
+
+        for (let i = node.pos.index; i < this.cards.length; i++) {
+            this.cards[i].node.pos.index++
+        } 
+
+        if (node.pos.index === this.cards.length) {
+            return this.appendCard(node)
+        }
+
+        let card = new Card(this.el, node, this.config.card, this.cards[node.pos.index])
+        this.cards.splice(node.pos.index, 0, card)
+
+        
     }
 
-    appendCard(node: Node): { card: Card, index: number } {
-        let card = new Card(this.el, null, this.config.card)
-        if (parent) card.parent = parent
-        this.cards.push(card)
-        return { card, index: this.cards.length - 1}
+    appendCard(node: Node): void {
+        this.cards.push(new Card(this.el, node, this.config.card))
     }
 
-    deleteCard(index: number): void {
+    isEmpty(): boolean {
+        return this.cards.length === 0
+    }
+
+    shiftFamilyIndex(delta: number): void {
+        this.cards.forEach(card => card.node.pos.family += delta)
+    }
+
+    // delete card removes the card from the family, shifts
+    // the index of the cards below down by one and returns the
+    // id of the deleted card (so as to update the card indexer)
+    deleteCard(index: number): number {
+        let id = this.cards[index].node.uid
+
         unmount(this.el, this.cards[index].el)
         this.cards.splice(index, 1)
+
+        for (let i = index; i < this.cards.length; i++) {
+            this.cards[i].node.pos.index--
+        } 
+
+        return id
     }
 
     expand(height: number): void {
@@ -91,32 +106,6 @@ export class Family implements RedomComponent {
         this.margin = margin
         this.el.style.marginTop = margin + "px"
         this.el.style.marginBottom = margin + "px"
-    }
-
-    // separateCardsIntoFamilies takes an array of cards (usually meant as part of a pillar)
-    // and groups the cards by family whilst still retaining order
-    static separateCardsIntoFamilies(cards: Node[]): Node[][] {
-        let output: Node[][] = []
-        if (!cards[0].parent) {
-            // it is the root. Hence there is only a single family
-            output = [cards]
-        } else {
-            // divide the cards based on slices of cards that share the same parent (i.e. a Family)
-            let parent = cards[0].parent
-            let priorIndex = 0;
-            for (let index = 0; index < cards.length; index++) {
-                if (cards[index].parent !== parent) {
-                    // add the family from the slice
-                    output.push(cards.slice(priorIndex, index))
-                    // reset the index and parent
-                    priorIndex = index
-                    parent = cards[index].parent!
-                }
-            }
-            // add the remaining cards together as a family
-            output.push(cards.slice(priorIndex, cards.length))
-        } 
-        return output
     }
 
 }
