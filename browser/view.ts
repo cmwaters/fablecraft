@@ -1,4 +1,4 @@
-import { Window, WindowConfig } from "../ilb/tree";
+import { Window, WindowConfig } from "../lib/tree";
 import { el, mount, RedomComponent, unmount } from "redom";
 import { Notifications } from "./components/notifier";
 import { Panel } from "./components/panel";
@@ -7,7 +7,7 @@ import { Login, Signup, Navbar } from "./components/authentication"
 import { Client } from "./client";
 import { Page } from "./components/page"
 import { Header } from "./components/header";
-import { Vector, Size } from '../ilb/geometry'
+import { Vector, Size } from '../lib/geometry'
 import * as config from "./config.json"
 
 export class View {

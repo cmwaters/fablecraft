@@ -1,8 +1,7 @@
 import { View } from './view'
 import { Model } from './model'
 import { Client } from './client'
-import { ViewComponent } from "./components/view_component"
-import { Vector, Size } from '../ilb/geometry'
+import { Vector, Size } from '../lib/geometry'
 
 const inverseScrollSpeed = 2;
 

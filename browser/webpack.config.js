@@ -5,11 +5,12 @@ module.exports = {
 	mode: process.env.NODE_ENV,
 	watch: false,
 	entry: {
-		main: "./client/main.ts"
+		main: "./main.ts",
+		index: "./index.ts"
 	},
 	output: {
 		filename: "[name].js",
-		path: __dirname + "/build/client",
+		path: __dirname + "/build",
 	},
 	resolve: {
 		extensions: [".tsx", ".ts", ".js", ".json"],

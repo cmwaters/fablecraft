@@ -1,4 +1,3 @@
-import { Header } from './components/header'
 import { View } from './view'
 
 export type Card = {
@@ -35,18 +34,14 @@ export type User = {
 
 export class Model {
     header: Header
+    user: User
     // cards ordered by horizontal (depth) and then vertical position into a 2D array
     cards: Card[][] = []  
 
-    constructor() {
-        this.header = 
-    }
-
-    async init(user: User, document: Document, cards: Card[]) {
+    constructor(user: User, header: Header, cards: Card[]) {
         this.user = user
         this.cards = order(cards)
-        this.document = document
-        this.view.load(this.document, this.cards, this.user)
+        this.header = header
     }
 
     

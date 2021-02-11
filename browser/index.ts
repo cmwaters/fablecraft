@@ -1,30 +1,17 @@
 import * as dotenv from 'dotenv'
 import express from 'express';
 import session from 'express-session';
-import mongoose from 'mongoose';
 import * as bodyParser from 'body-parser';
 import "./models/user"
-import authRouter from './routes/auth';
-import apiRouter from './routes/api';
 import passport from 'passport';
 import path from 'path'
-import * as config from './browser/config.json'
+import * as config from './config.json'
 
 dotenv.config({ path: `config/.env.${process.env.NODE_ENV}` })
 
-import './services/auth'
 let clientRouter = express.Router();
 
-
-
 export const app = express();
-
-mongoose.connect(process.env.DATABASE_URL! + "retryWrites=false", { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true, useFindAndModify:false});
-const db = mongoose.connection;
-db.on('error', (error) => console.error(error));
-db.once('open', () => {
-  console.log("Connected to database")
-});
 
 app.set('view engine', 'pug');
 
@@ -42,14 +29,6 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(passport.initialize())
 app.use(passport.session())
 
-let authenticated = (req: any, res: any, next: any) => {
-  if (req.isAuthenticated()) {
-    next()
-  } else {
-    return res.status(401).send()
-  }
-}
-
 clientRouter.get('/', (req, res, next) => {
   console.log("Starting client")
   res.render('index', { title: config.name})
@@ -61,10 +40,6 @@ clientRouter.get('/test', (req, res, next) => {
 
 //IMPORT ROUTES
 app.use('/', clientRouter)
-app.use('/auth', authRouter);
-app.use('/api', authenticated, apiRouter);
-
-
 
 const PORT = process.env.PORT || 8080;
 
