@@ -1,8 +1,7 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
-    "outDir": "build", 
-    "strict": true,
+    "outDir": "./dist/", 
     "module": "commonjs",
     "target": "es5",
     "jsx": "react",
@@ -11,5 +10,4 @@
     "esModuleInterop": true,
     "resolveJsonModule": true
   },
-  "include": ["models", "routes", "services", "index.ts"]
 }

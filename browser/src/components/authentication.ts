@@ -1,8 +1,7 @@
 import { el, svg, RedomComponent, mount } from 'redom'
-import { ViewComponent } from './view_component'
-import * as config from "../config.json"
+import * as config from "../../config.json"
 
-export class Login implements RedomComponent, ViewComponent {
+export class Login implements RedomComponent {
     el: RedomComponent | HTMLElement | SVGElement
     errorBar: HTMLElement
     callback: (username: string, password: string) => void
@@ -64,7 +63,7 @@ export class Login implements RedomComponent, ViewComponent {
     }
 }
 
-export class Signup implements RedomComponent, ViewComponent {
+export class Signup implements RedomComponent {
     el: RedomComponent | HTMLElement | SVGElement
     errorBar: HTMLElement
     active: boolean = false

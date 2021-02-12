@@ -5,7 +5,6 @@ import { FamilyConfig } from './config'
 
 export class Family implements RedomComponent {
     el: HTMLElement;
-    margin: number;
     config: FamilyConfig;
     cards: Card[] = [];
 
@@ -103,7 +102,7 @@ export class Family implements RedomComponent {
     }
 
     setMargin(margin: number): void {
-        this.margin = margin
+        this.config.margin = margin
         this.el.style.marginTop = margin + "px"
         this.el.style.marginBottom = margin + "px"
     }

@@ -10,6 +10,35 @@ import sort from 'fast-sort'
 
 export class Tree implements RedomComponent {
 
+    // ###################################### PUBLIC VARIABLES ###########################################
+
+    el: HTMLElement;
+    event: Events;
+
+    // ###################################### PRIVATE VARIABLES ###########################################
+
+    private pillars: Pillar[] = [];
+    private pillar: Pillar; // the current pillar
+    private pillarConfig: PillarConfig
+    private reference: HTMLElement;
+    private centerPoint: Vector = new Vector();
+    private config: Config;
+
+    // we use an indexer to track the position of cards based on their id
+    private cardIndexer: Pos[] = [];
+
+    private cardWidth: number = 0;
+    private current: Pos = { depth: 0, family: 0, index: 0 };
+    private card: Card;
+    private expandedFamily: Family | null = null;
+
+    private moveable: boolean = false;
+    private interactable: boolean = false;
+
+    // key modes
+    private shiftMode: boolean = false
+    private altMode: boolean = false
+
     // constructor for initiating the tree
     constructor(element: HTMLElement, config: Config, nodes?: Node[], options?: Options) {
         this.config = config;
@@ -28,7 +57,7 @@ export class Tree implements RedomComponent {
         this.calculateCenterPoint()
 
         // now we can form the configuration of the pillar
-        this.setPillarConfig()
+        this.pillarConfig = this.setPillarConfig()
 
         // create the first pillar
         this.appendPillar()
@@ -72,7 +101,8 @@ export class Tree implements RedomComponent {
 
         this.el.onresize = () => this.resize()
 
-        window.onmousewheel = (e: WheelEvent) => {
+        window.onmousewheel = (ev: Event) => {
+            let e = ev as WheelEvent
             if (this.moveable) {
                 if (this.shiftMode) {
                     this.pan(new Vector(-e.deltaY, -e.deltaX).divide(this.config.inverseScrollSpeed))
@@ -94,14 +124,16 @@ export class Tree implements RedomComponent {
             }
         }
 
+        // set event as a nop
+        this.event = nopEvents
+
         // begin by focusing on the first card
+        this.pillar = this.pillars[0]
+        this.card = this.pillars[0].families[0].cards[0]
         this.selectNode(this.current);
     }
 
     // ###################################### PUBLIC METHODS ###########################################
-
-    el: HTMLElement;
-    event: Events;
 
     // focus on this particular window, activating key and other input listeners
     focus(): void {
@@ -291,29 +323,6 @@ export class Tree implements RedomComponent {
 
     // ###################################### PRIVATE METHODS ###########################################
 
-    private pillars: Pillar[] = [];
-    private pillar: Pillar; // the current pillar
-    private pillarConfig: PillarConfig
-    private reference: HTMLElement;
-    private centerPoint: Vector;
-    private config: Config;
-
-    // we use an indexer to track the position of cards based on their id
-    private cardIndexer: Pos[] = [];
-
-    private cardWidth: number = 0;
-    private current: Pos = { depth: 0, family: 0, index: 0 };
-    private card: Card;
-    private expandedFamily: Family | null = null;
-
-    private moveable: boolean = false;
-    private interactable: boolean = false;
-
-    // key modes
-    private shiftMode: boolean = false
-    private altMode: boolean = false
-
-
     // appendNode appends a node to it's respective family. This only works when nodes are in order.
     // This is used at the start. NOTE: this does not update the card indexer.
     private appendNode(node: Node): void {
@@ -345,7 +354,7 @@ export class Tree implements RedomComponent {
         if (this.pillars[depth].families[family].cards.length === 0) {
             let deletedIds = this.pillars[depth].deleteFamily(family)
             for (let id of deletedIds) {
-                this.cardIndexer[id] = null
+                this.tombstoneNode(id)
             }
             return
         }
@@ -364,7 +373,7 @@ export class Tree implements RedomComponent {
         // delete family
         let deletedIds = this.pillars[depth].deleteFamily(index)
         for (let id of deletedIds) {
-            this.cardIndexer[id] = null
+            this.tombstoneNode(id)
         }
 
         // check if this was the last family. If so we can delete the pillar. 
@@ -580,7 +589,7 @@ export class Tree implements RedomComponent {
             }
         }
 
-        return null
+        return nullPos
     }
 
     private findNextCardBelow(pos: Pos): Pos {
@@ -600,7 +609,7 @@ export class Tree implements RedomComponent {
             return { depth: pos.depth, family: family, index: 0}
         }
 
-        return null
+        return nullPos
     }
 
     private createAbove(pos: Pos = this.current) {
@@ -695,7 +704,7 @@ export class Tree implements RedomComponent {
         }
     }
 
-    private validatePos(pos: Pos): Error {
+    private validatePos(pos: Pos): Error | null {
         if (!pos) {
             return new Error("pos is null")
         }
@@ -757,8 +766,8 @@ export class Tree implements RedomComponent {
         }
     }
 
-    private setPillarConfig(): void {
-        this.pillarConfig = { 
+    private setPillarConfig(): PillarConfig {
+        return { 
             family: {
                 margin: this.config.margin.family,
                 card: {
@@ -829,7 +838,7 @@ export class Tree implements RedomComponent {
         return this.pillars[pos.depth].families[pos.family].cards[pos.index]
     }
 
-    private expandFamily(depth: number, family: number, height): void {
+    private expandFamily(depth: number, family: number, height: number): void {
         this.pillars[depth].families[family].expand(height)
         this.expandedFamily = this.pillars[depth].families[family]
     }
@@ -858,6 +867,21 @@ export class Tree implements RedomComponent {
     }
 
     private tombstoneNode(id: number): void {
-        this.cardIndexer[id] = null
+        this.cardIndexer[id] = nullPos
     }
+}
+
+// ############################### HELPER FUNCTIONS ###############################
+
+let nullPos = { depth: -1, family: -1, index: -1 }
+
+let nopEvents: Events = { 
+    onNewCard: (pos: Pos) => {},
+    onMoveCard: (oldPos: Pos, newPos: Pos) => {},
+    onModifyCard: (node: Node) => {},
+    onDeleteCard: (node: Node) => {},
+}
+
+function isPosNull(pos: Pos): boolean {
+    return pos.index === -1 && pos.family === -1 && pos.index === -1
 }

@@ -1,7 +1,6 @@
 import { el, svg, RedomComponent, mount } from 'redom'
-import { ViewComponent } from './view_component'
 
-export class CommandLine implements RedomComponent, ViewComponent {
+export class CommandLine implements RedomComponent {
     el: HTMLElement;
     txt: HTMLInputElement;
     icon: SVGElement;

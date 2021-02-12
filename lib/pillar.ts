@@ -29,6 +29,7 @@ export class Pillar implements RedomComponent {
         this.familyConfig = config.family
         this.transitionTime = config.transitionTime
         this.frameRate = config.frameRate
+        this.alpha = new Vector()
     }
 
     // centerCard, centers the pillar around this card. The position of the card can be identified as either

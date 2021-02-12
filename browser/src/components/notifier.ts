@@ -1,6 +1,5 @@
-import { RedomComponent, el, mount, unmount, s } from "redom";
-import { ViewComponent } from "./view_component";
-import * as config from "../config.json"
+import { RedomComponent, el, mount, unmount } from "redom";
+import * as config from "../../config.json"
 
 const INFO_COLOR = "white"
 const WARNING_COLOR = "#ffbc49"

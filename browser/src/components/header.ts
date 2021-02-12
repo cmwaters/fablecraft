@@ -1,5 +1,4 @@
 import { RedomComponent, el, svg, mount } from "redom";
-import { ViewComponent } from "./view_component";
 
 export class Header implements RedomComponent {
     el: HTMLElement;

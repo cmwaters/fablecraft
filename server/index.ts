@@ -1,14 +1,14 @@
-import * as dotenv from 'dotenv'
+import * as dotenv from './server/services/node_modules/dotenv'
 import express from 'express';
 import session from 'express-session';
-import mongoose from 'mongoose';
+import mongoose from './server/models/node_modules/mongoose';
 import * as bodyParser from 'body-parser';
 import "./models/user"
 import authRouter from './routes/auth';
 import apiRouter from './routes/api';
-import passport from 'passport';
+import passport from './server/services/node_modules/passport';
 import path from 'path'
-import * as config from './browser/config.json'
+import * as config from '../browser/config.json'
 
 dotenv.config({ path: `config/.env.${process.env.NODE_ENV}` })
 
