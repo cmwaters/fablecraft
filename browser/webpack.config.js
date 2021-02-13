@@ -1,11 +1,11 @@
 module.exports = {
+	mode: process.env.NODE_ENV,
 	entry: {
 		main: "./src/main.ts",
-		index: "./index.ts"
 	},
 	output: {
 		filename: "[name].js",
-		path: __dirname + "dist",
+		path: __dirname + "/views",
 	},
 	resolve: {
 		extensions: [".tsx", ".ts", ".js"],

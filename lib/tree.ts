@@ -28,12 +28,12 @@ export class Tree implements RedomComponent {
     private cardIndexer: Pos[] = [];
 
     private cardWidth: number = 0;
-    private current: Pos = { depth: 0, family: 0, index: 0 };
+    private current: Pos = new Pos()
     private card: Card;
     private expandedFamily: Family | null = null;
 
-    private moveable: boolean = false;
-    private interactable: boolean = false;
+    private moveable: boolean = true;
+    private interactable: boolean = true;
 
     // key modes
     private shiftMode: boolean = false
@@ -59,8 +59,9 @@ export class Tree implements RedomComponent {
         // now we can form the configuration of the pillar
         this.pillarConfig = this.setPillarConfig()
 
-        // create the first pillar
+        // create the first pillar and family
         this.appendPillar()
+        this.pillars[0].appendFamily()
 
         if (nodes) {
             sort(nodes).asc("uid")
@@ -88,12 +89,8 @@ export class Tree implements RedomComponent {
         } else {
             let firstNode: Node = {
                 uid: 0,
-                pos: {
-                    depth: 0,
-                    family: 0,
-                    index: 0,
-                },
-                text: "Hello World"
+                pos: new Pos(),
+                text: "Hello World, Welcome to Fablecraft!"
             }
             this.appendNode(firstNode)
             this.cardIndexer.push(firstNode.pos)
@@ -125,12 +122,17 @@ export class Tree implements RedomComponent {
         }
 
         // set event as a nop
-        this.event = nopEvents
+        this.event = {
+            onNewCard: (pos: Pos) => { },
+            onMoveCard: (oldPos: Pos, newPos: Pos) => { },
+            onModifyCard: (node: Node) => { },
+            onDeleteCard: (node: Node) => { },
+        }
 
         // begin by focusing on the first card
         this.pillar = this.pillars[0]
         this.card = this.pillars[0].families[0].cards[0]
-        this.selectNode(this.current);
+        this.selectNode(this.current, true);
     }
 
     // ###################################### PUBLIC METHODS ###########################################
@@ -149,7 +151,7 @@ export class Tree implements RedomComponent {
         }
     }
 
-    selectNode(pos: Pos): void {
+    selectNode(pos: Pos, focus: boolean = false): void {
         console.log("focus on node, depth: " + pos.depth + ", family: " + pos.family + ", index: " + pos.index)
         let err = this.validatePos(pos)
         if (err) {
@@ -158,22 +160,24 @@ export class Tree implements RedomComponent {
 
         // unlock on the previous card
         let lastPos = this.card.node.pos
-        if (lastPos.depth !== 0) {
-            // if there is a parent, make it full
-            let prevParent = this.getParentPos(lastPos)
-            this.pillars[prevParent.depth].families[prevParent.family].cards[prevParent.index].dull()
-        }
-        // deactivate and dull the previously focused card
-        this.card.blur();
-        this.card.dull();
-        this.pillar.families[lastPos.family].dull()
-        if (lastPos.depth < this.pillars.length - 1) {
-            let childrenIndex = this.pillars[lastPos.depth].countCards(lastPos.family) + lastPos.index
-            this.pillars[lastPos.depth + 1].families[childrenIndex].dull()
-        }
+        if (lastPos.isNotNull()) {
+            if (lastPos.depth > 0) {
+                // if there is a parent, make it full
+                let prevParent = this.getParentPos(lastPos)
+                this.pillars[prevParent.depth].families[prevParent.family].cards[prevParent.index].dull()
+            }
+            // deactivate and dull the previously focused card
+            this.card.blur();
+            // dull out the previous family
+            this.pillar.families[lastPos.family].dull()
+            if (lastPos.depth < this.pillars.length - 1) {
+                let childrenIndex = this.pillars[lastPos.depth].countCards(lastPos.family) + lastPos.index
+                this.pillars[lastPos.depth + 1].families[childrenIndex].dull()
+            }
 
-        if (this.expandedFamily !== null) {
-            this.expandedFamily.collapse()
+            if (this.expandedFamily !== null) {
+                this.expandedFamily.collapse()
+            }
         }
 
         // if the user has moved off the origin then reset the screen
@@ -207,7 +211,11 @@ export class Tree implements RedomComponent {
         }
 
         // shift the current pillar to vertically center on the locked card
+        console.log("centering on card at " + pos.string())
         this.pillars[pos.depth].centerCard(pos.family, pos.index);
+        if (focus) {
+            this.card.focus()
+        }
 
         // shift the pillars to the left vertically so that the parent is
         // directly in line with the locked on card
@@ -222,7 +230,7 @@ export class Tree implements RedomComponent {
     // has an invalid position. Moves cards in the same family that are
     // below by one index down. Will not cause the matching insertNode
     // event to fire
-    insertNode(pos: Pos, text: string = ""): Node {
+    insertNode(pos: Pos, focus: boolean = false, text: string = ""): Node {
         let node = {
             uid: this.cardIndexer.length,
             pos: pos,
@@ -245,13 +253,19 @@ export class Tree implements RedomComponent {
         // finally we add the node to the cardIndexer
         this.cardIndexer.push(node.pos)
 
+        if (focus) {
+            this.selectNode(pos, true)
+        }
+
         return node
     }
 
     // moves a node from one position to another. Throws an error if any of the
     // positions are invalid. Updates the respective families. Does not trigger any events
-    moveNode(from: Pos, to: Pos): void {
-
+    moveNode(from: Pos, to: Pos, focus: boolean = false): void {
+        if (focus) {
+            this.selectNode(to, true)
+        }
     }
 
     // deletes the card and recursively deletes all the offspring of that card
@@ -270,7 +284,7 @@ export class Tree implements RedomComponent {
             let id = this.pillars[pos.depth].families[pos.family].deleteCard(pos.index)
 
             // update the card indexer
-            this.tombstoneNode(id)
+            this.cardIndexer[id] = Pos.null()
 
             // if it is the last card in the penultimate pillar then clear the card and remove
             // the last pillar. Remember that the last pillar is always a ghost pillar (only
@@ -278,11 +292,7 @@ export class Tree implements RedomComponent {
             if (pos.depth === this.pillars.length - 2 && this.pillars[pos.depth].countCards() === 0) {
                 this.pillars.pop()
                 let { family, index } = this.pillars[pos.depth - 1].getFamilyAndIndex(pos.family)
-                this.selectNode({ 
-                    depth: pos.depth - 1,
-                    family: family,
-                    index: index, 
-                })
+                this.selectNode(new Pos(pos.depth - 1, family, index))
                 return
             }
 
@@ -292,13 +302,17 @@ export class Tree implements RedomComponent {
 
             // focus on the next card first by looking for the next card above and failing that,
             // looking for the next card below
-            let nextPos = this.findNextCardAbove(pos)
-            if (nextPos) {
+            let nextPos = pos.above(this.pillars[pos.depth])
+            if (nextPos.isNotNull()) {
                 return this.selectNode(nextPos)
             }
 
-            nextPos = this.findNextCardBelow(pos)
-            return this.selectNode(nextPos)
+            nextPos = pos.below(this.pillars[pos.depth])
+            if (nextPos.isNotNull()) {
+                return this.selectNode(nextPos)
+            }
+
+            throw new Error("deleting node but there is no node above or below to select")
 
         } else {
             // we clear the text of the last remaining editor
@@ -328,15 +342,13 @@ export class Tree implements RedomComponent {
     private appendNode(node: Node): void {
         this.validateNewNode(node)
 
-        if (node.pos.family === this.pillars[node.pos.depth].families.length) {
-            this.pillars[node.pos.depth].appendFamily()
-        }
-
         this.pillars[node.pos.depth].families[node.pos.family].appendCard(node)
 
         if (node.pos.depth === this.pillars.length - 1) {
             this.appendPillar()
         }
+
+        this.pillars[node.pos.depth + 1].appendFamily()
     }
 
     // appendPillar adds a new empty pillar to the tree
@@ -354,14 +366,14 @@ export class Tree implements RedomComponent {
         if (this.pillars[depth].families[family].cards.length === 0) {
             let deletedIds = this.pillars[depth].deleteFamily(family)
             for (let id of deletedIds) {
-                this.tombstoneNode(id)
+                this.cardIndexer[id] = Pos.null()
             }
             return
         }
 
         // find the index of the first and last node of the family
         let index = 0;
-        let start = this.getChildrenIndex({depth, family, index})
+        let start = this.getChildrenIndex(new Pos(depth, family, index))
         let end = start + this.pillars[depth].families[family].cards.length
 
 
@@ -373,7 +385,7 @@ export class Tree implements RedomComponent {
         // delete family
         let deletedIds = this.pillars[depth].deleteFamily(index)
         for (let id of deletedIds) {
-            this.tombstoneNode(id)
+            this.cardIndexer[id] = Pos.null()
         }
 
         // check if this was the last family. If so we can delete the pillar. 
@@ -393,11 +405,7 @@ export class Tree implements RedomComponent {
         }
 
         let { family, index } = this.pillars[pos.depth - 1].getFamilyAndIndex(pos.family)
-        return { 
-            depth: pos.depth - 1, 
-            family: family,
-            index: index
-        }
+        return new Pos(pos.depth -1, family, index)
     }
 
     private resetReference() {
@@ -411,6 +419,7 @@ export class Tree implements RedomComponent {
 
     private calculateCenterPoint() {
         this.centerPoint = Vector.centerOfElement(this.el)
+        console.log(this.centerPoint.string())
     }
 
     // pan moves the view of the window. It does not displace any of the cards individually rather
@@ -473,6 +482,7 @@ export class Tree implements RedomComponent {
                             this.card.focusStart()
                         }
                     }
+                    break;
                 case "ArrowRight":
                     if (this.card.atEnd()) {
                         if (this.shiftMode) {
@@ -482,11 +492,20 @@ export class Tree implements RedomComponent {
                             this.card.focusStart()
                         }
                     }
+                    break;
                 case "ArrowLeft":
                     if (this.card.atStart()) {
                         this.left()
                         this.card.focusStart()
                     }
+                    break;
+                case "Backspace":
+                    if (this.card.editor.getLength() === 1) {
+                        this.deleteNode(this.current)
+                    }
+                    break;
+                case "Escape":
+                    this.card.blur()
             }
             return
         }
@@ -533,15 +552,15 @@ export class Tree implements RedomComponent {
     }
 
     private down() {
-        let pos = this.findNextCardBelow(this.current)
-        if (pos) {
+        let pos = this.current.below(this.pillar)
+        if (pos.isNotNull()) {
             this.selectNode(pos)
         }
     }
 
     private up() {
-        let pos = this.findNextCardAbove(this.current)
-        if (pos) {
+        let pos = this.current.above(this.pillar)
+        if (pos.isNotNull()) {
             this.selectNode(pos)
         }
     }
@@ -560,70 +579,24 @@ export class Tree implements RedomComponent {
         let family = this.getChildrenIndex(this.current)
         if (this.current.depth < this.pillars.length - 1) {
             if (!this.pillars[this.current.depth + 1].families[family].isEmpty()) {
-                this.selectNode({ depth: this.current.depth + 1, family: family, index: 0})
+                this.selectNode(new Pos(this.current.depth + 1, family, 0))
             }
         }
-    }
-
-    private findNextCardAbove(pos: Pos): Pos {
-        // if there is a card in the same family directly above then return that
-        if (pos.index > 0) {
-            return { depth: pos.depth, family: pos.family, index: pos.index - 1}
-        }
-
-        // start looping through the families above the pos
-        let family = pos.family
-        while (family > 0) {
-            if (this.pillars[pos.depth].families[family].isEmpty()) {
-                family--
-                continue
-            }
-
-            // if there is a family that is not empty then return the position
-            // of the last card in the family
-            let index = this.pillars[pos.depth].families[family].cards.length - 1
-            return { 
-                depth: pos.depth,
-                family: family,
-                index: index,
-            }
-        }
-
-        return nullPos
-    }
-
-    private findNextCardBelow(pos: Pos): Pos {
-        // if there is a card in the same family directly below then return that
-        if (pos.index < this.pillars[pos.depth].families[pos.family].cards.length - 1) {
-            return { depth: pos.depth, family: pos.family, index: pos.index + 1 }
-        }
-
-        // find the first family below that is not empty and return that
-        let family = pos.family
-        while (family < this.pillars[pos.depth].families.length) {
-            if (this.pillars[pos.depth].families[family].isEmpty()) {
-                family++
-                continue
-            }
-
-            return { depth: pos.depth, family: family, index: 0}
-        }
-
-        return nullPos
     }
 
     private createAbove(pos: Pos = this.current) {
-        this.insertNode(pos)
+        this.insertNode(pos.copy(), true)
     }
 
-    private createBelow(pos: Pos = this.current) {
-        this.insertNode({ depth: pos.depth, family: pos.family, index: pos.index + 1 })
+    private createBelow(pos: Pos = this.current) { 
+        this.insertNode(pos.copy().increment(), true)
     }
 
     private createChild(pos: Pos = this.current) {
         let family = this.getChildrenIndex(pos)
         let index = this.pillars[pos.depth + 1].families[family].cards.length 
-        this.insertNode({ depth: pos.depth + 1, family, index })
+        let newPos = new Pos(pos.depth + 1, family, index)
+        this.insertNode(newPos, true)
     }
 
     private createParent() {
@@ -633,18 +606,18 @@ export class Tree implements RedomComponent {
     private shiftUpwards(pos: Pos = this.current) {
         console.log("shiftUpwards")
 
-        let newPos = this.findNextCardAbove(pos)
-        if (newPos) {
-            this.moveNode(pos, newPos)
+        let newPos = pos.above(this.pillars[pos.depth])
+        if (newPos.isNotNull()) {
+            this.moveNode(pos, newPos, true)
         }
     }
 
     private shiftDownwards(pos: Pos = this.current) {
         console.log("shiftDownwards")
 
-        let newPos = this.findNextCardBelow(pos)
+        let newPos = pos.below(this.pillars[pos.depth])
         if (newPos) {
-            this.moveNode(pos, newPos)
+            this.moveNode(pos, newPos, true)
         }
     }
 
@@ -709,16 +682,8 @@ export class Tree implements RedomComponent {
             return new Error("pos is null")
         }
 
-        if (pos.depth < 0) {
-            return new Error("pos.depth can't ne negative")
-        }
-
-        if (pos.family < 0) {
-            return new Error("pos.family can't be negative ")
-        }
-
-        if (pos.index < 0) {
-            return new Error("pos.index can't be negative")
+        if (!pos.valid()) {
+            return new Error("pos is invalid")
         }
 
         if (pos.depth >= this.pillars.length - 1) {
@@ -739,16 +704,8 @@ export class Tree implements RedomComponent {
     }
 
     private validateNewNode(node: Node): void {
-        if (node.pos.depth < 0) {
-            throw new Error("node.pos.depth can't ne negative")
-        }
-
-        if (node.pos.family < 0) {
-            throw new Error("node.pos.family can't be negative ")
-        }
-
-        if (node.pos.index < 0) {
-            throw new Error("node.pos.index can't be negative")
+        if (!node.pos.valid()) {
+            throw new Error("node's pos is invalid")
         }
 
         if (node.pos.depth >= this.pillars.length) {
@@ -775,7 +732,7 @@ export class Tree implements RedomComponent {
                 }
             },
             width: this.cardWidth,
-            center: this.centerPoint.x,
+            centerY: this.centerPoint.y,
             transitionTime: this.config.transitionTime,
             frameRate: this.config.frameRate
         }
@@ -783,54 +740,51 @@ export class Tree implements RedomComponent {
 
     private adjustAncestorPillars(pos: Pos) {
         // make a copy of the pos so we can mutate it
-        let p = { depth: pos.depth - 1, family: pos.family, index: pos.index}
+        let p = pos.copy();
 
         // iterate through the trace of parents back to the root pillar
-        while (p.depth >= 0) {
-            let { family, index } = this.pillars[p.depth].getFamilyAndIndex(p.index)
-            this.pillars[p.depth].centerCard(family, index);
-            p = { depth: p.depth - 1, family: p.family, index: p.index}
+        while (p.depth > 0) {
+            p = this.getParentPos(p)
+            this.pillars[p.depth].centerCard(p.family, p.index);
         }
     }
 
     private nodeHasChildren(pos: Pos): boolean {
         let childrenIndex = this.getChildrenIndex(pos)
-        return !this.pillars[pos.depth].families[childrenIndex].isEmpty()
+        return !this.pillars[pos.depth + 1].families[childrenIndex].isEmpty()
     }
 
     private adjustOffspringPillars(pos: Pos) {
         // make a copy of the pos so we can mutate it
-        let p = { depth: pos.depth - 1, family: pos.family, index: pos.index }
+        let p = pos.copy()
 
         // check if the node has no children
-        if (!this.nodeHasChildren(p)) {
-            // expand the empty family to indicate that the card has no children
-            let family = this.getChildrenIndex(pos)
-            let parentHeight = this.nodeAt(pos).el.offsetHeight
+        while (p.depth < this.pillars.length - 2) {
+            if (p.depth < this.pillars.length - 1 && !this.nodeHasChildren(p)) {
+                // expand the empty family to indicate that the card has no children
+                let family = this.getChildrenIndex(p)
+                let parentHeight = this.nodeAt(p).el.offsetHeight
+                this.expandFamily(p.depth + 1, family, parentHeight)
+                p.depth++
 
-
-            this.expandFamily(pos.depth + 1, family, parentHeight)
-            
-            p.depth++
-            // Check where the empty family of the card resides
-            // if it is below the last card in the pillar then center on the space below the
-            // last card
-            if (this.pillars[p.depth].isEmpty(family)) {
-                this.pillars[p.depth].centerEnd(parentHeight)
-            } else if (this.pillars[p.depth].isEmpty(0, family + 1)) {
-                // if it is above the first card then center on the space above the first card
-                this.pillars[p.depth].centerBegin(parentHeight)
+                // Check where the empty family of the card resides
+                // if it is below the last card in the pillar then center on the space below the
+                // last card
+                if (this.pillars[p.depth].isEmpty(family)) {
+                    this.pillars[p.depth].centerEnd(parentHeight)
+                } else if (this.pillars[p.depth].isEmpty(0, family + 1)) {
+                    // if it is above the first card then center on the space above the first card
+                    this.pillars[p.depth].centerBegin(parentHeight)
+                } else {
+                    // if it is in between cards then center on the nearest card just above
+                    this.pillars[p.depth].centerFamily(family)
+                }
             } else {
-                // if it is in between cards then center on the nearest card just above
-                this.pillars[p.depth].centerFamily(family)
+                let childrenIndex = this.getChildrenIndex(pos)
+                console.log("centering card at depth " + (p.depth + 1) + ", family: " + childrenIndex + ", index: 0")
+                this.pillars[p.depth + 1].centerCard(childrenIndex, 0)
+                p = new Pos(p.depth + 1, childrenIndex, 0)
             }
-        }
-        while (p.depth < this.pillars.length - 1) {
-            // center on the first child then iterate through the pillars.
-            // NOTE: that we only iterate to the penultimate pillar because the last one is always empty
-            let { family, index } = this.findNearestChild(p)
-            this.pillars[p.depth].centerCard(family, index)
-            p = { depth: p.depth + 1, family, index}
         }
     }
 
@@ -843,45 +797,5 @@ export class Tree implements RedomComponent {
         this.expandedFamily = this.pillars[depth].families[family]
     }
 
-    private findNearestChild(pos: Pos): { family: number, index: number } {
-        // first check whether the node has children
-        let childrenIndex = this.getChildrenIndex(pos)
-        // if so then focus on the first child
-        if (!this.pillars[pos.depth].families[childrenIndex].isEmpty()) {
-            return { family: childrenIndex, index: 0 }
-        }
-
-        let p = { depth: pos.depth + 1, family: childrenIndex, index: 0 }
-
-        let nextPos = this.findNextCardAbove(p)
-        if (nextPos) {
-            return { family: nextPos.family, index: nextPos.index }
-        }
-
-        nextPos = this.findNextCardBelow(p)
-        if (p) {
-            return { family: nextPos.family, index: nextPos.index}
-        }
-
-        throw new Error("unable to find nearest child. No cards in pillar")
-    }
-
-    private tombstoneNode(id: number): void {
-        this.cardIndexer[id] = nullPos
-    }
 }
 
-// ############################### HELPER FUNCTIONS ###############################
-
-let nullPos = { depth: -1, family: -1, index: -1 }
-
-let nopEvents: Events = { 
-    onNewCard: (pos: Pos) => {},
-    onMoveCard: (oldPos: Pos, newPos: Pos) => {},
-    onModifyCard: (node: Node) => {},
-    onDeleteCard: (node: Node) => {},
-}
-
-function isPosNull(pos: Pos): boolean {
-    return pos.index === -1 && pos.family === -1 && pos.index === -1
-}

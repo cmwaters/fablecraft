@@ -1,6 +1,7 @@
 // import { View } from './view'
 // import { Model } from './model'
 
+import { el } from 'redom'
 import { Tree } from '../../lib/tree'
 import { defaultConfig } from '../../lib/config'
 
@@ -9,11 +10,13 @@ import { defaultConfig } from '../../lib/config'
 // const NEW_STORY_TITLE = "Untitled"
 
 window.onload = () => {
-    let div = document.createElement("div")
+    console.log("Hello World")
+    
+    let div = el("div.window")
+    document.body.appendChild(div)
 
     let tree = new Tree(div, defaultConfig())
 
-    document.appendChild(div)
 
     // Fablecraft.start()
 }

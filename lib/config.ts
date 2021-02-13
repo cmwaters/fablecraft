@@ -19,13 +19,13 @@ export function defaultConfig(): Config {
     return { 
         card: {
             width: {
-                min: 300,
-                max: 600
+                min: 250,
+                max: 400
             }
         },
         margin: {
-            pillar: 60,
-            family: 20,
+            pillar: 40,
+            family: 25,
             card: 10
         }, 
         frameRate: 30,
@@ -37,7 +37,7 @@ export function defaultConfig(): Config {
 export type PillarConfig = {
     family: FamilyConfig
     width: number,
-    center: number
+    centerY: number
     transitionTime: number
     frameRate: number
 }

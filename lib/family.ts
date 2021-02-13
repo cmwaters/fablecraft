@@ -1,6 +1,6 @@
 import { RedomComponent, el, mount, unmount } from "redom";
 import { Card } from "./card";
-import { Node  } from "./node";
+import { Node, Pos } from "./node";
 import { FamilyConfig } from './config'
 
 export class Family implements RedomComponent {
@@ -31,7 +31,7 @@ export class Family implements RedomComponent {
         }
         let offset = 0;
         for (let i = 0; i < index; i++) {
-            offset += this.cards[i].el.offsetHeight + (1 * this.config.card.margin)
+            offset += this.cards[i].el.offsetHeight + this.config.card.margin
         }
         return offset + (this.cards[index].el.offsetHeight / 2)
     }
@@ -56,6 +56,11 @@ export class Family implements RedomComponent {
     }
 
     appendCard(node: Node): void {
+        // if this is the first card we need to reset set it's height
+        // to auto so that is dynamically expands to the size of the cards
+        if (this.cards.length === 0) {
+            this.el.style.height = "auto"
+        }
         this.cards.push(new Card(this.el, node, this.config.card))
     }
 
@@ -72,6 +77,7 @@ export class Family implements RedomComponent {
     // id of the deleted card (so as to update the card indexer)
     deleteCard(index: number): number {
         let id = this.cards[index].node.uid
+        this.cards[index].node.pos = Pos.null()
 
         unmount(this.el, this.cards[index].el)
         this.cards.splice(index, 1)

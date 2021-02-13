@@ -19,6 +19,7 @@ export class Card implements RedomComponent {
         }
         this.node = node
         this.editor = new Quill(this.el as Element)
+        this.editor.setText(node.text)
     }
 
     center(): Vector {
@@ -61,19 +62,19 @@ export class Card implements RedomComponent {
     }
 
     highlight(): void {
-        this.el.style.color = "blue";
-        this.el.style.backgroundColor = "#fff";
+        this.el.style.color = "#666";
+        this.el.style.border = "1px solid #fff"
     }
 
     spotlight(): void {
-        this.el.style.color = "red";
-        this.el.style.backgroundColor = "#eee";
+        this.el.style.color = "#444";
+        this.el.style.border = "1px solid #ccc"
     }
 
     dull(): void {
         console.log("making node dull")
-        this.el.style.color = "#777";
-        this.el.style.backgroundColor = "#fff";
+        this.el.style.color = "#999";
+        this.el.style.border = "1px solid #fff"
     }
 
     blur(): void {

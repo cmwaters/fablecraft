@@ -1,10 +1,10 @@
-import { RedomComponent } from "redom";
+import { RedomComponent, el } from "redom";
 
 export class Panel implements RedomComponent {
     el: HTMLElement;
 
     constructor() {
-
+        this.el = el("Hello World")
     }
     
     hasFocus(): boolean {

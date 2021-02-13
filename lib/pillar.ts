@@ -8,7 +8,7 @@ export class Pillar implements RedomComponent {
     el: HTMLElement;
     families: Family[] = [];
 
-    private center: number
+    private centerY: number
     private familyConfig: FamilyConfig
 
     // used for moving the pillar
@@ -25,25 +25,32 @@ export class Pillar implements RedomComponent {
         mount(parent, this.el)
         this.pos = new Vector(xOffset, 0)
         this.target = this.pos.copy()
-        this.center = config.center
+        this.centerY = config.centerY
         this.familyConfig = config.family
         this.transitionTime = config.transitionTime
         this.frameRate = config.frameRate
         this.alpha = new Vector()
     }
 
+    // NOTE: Centering functions only move the pillar along the y axis
+
     // centerCard, centers the pillar around this card. The position of the card can be identified as either
     // purely based on index or a combination of both the family index and the index
     centerCard(family: number, index: number) {
-        console.log("center card, index: " + index)
         let yOffset = this.target.y;
+        console.log("y offset " + yOffset)
         for (let i = 0; i < family; i++) {
             // increment the height of the family as well as the margin
-            yOffset += this.families[i].el.offsetHeight + this.familyConfig.margin
+            if (!this.families[i].isEmpty()) {
+                yOffset += this.families[i].el.offsetHeight + this.familyConfig.margin
+                console.log("non empty family, yOffset: " + yOffset)
+            }
         }
+        console.log("y offset " + yOffset)
         // calculate the offset of the card itself within the family
         yOffset += this.families[family].cardOffset(index) + this.familyConfig.margin
-        this.shift(Vector.y(this.center - yOffset), this.transitionTime)
+        console.log("y offset " + yOffset)
+        this.shift(Vector.y(this.centerY - yOffset), this.transitionTime)
     }
 
     centerFamily(familyIndex: number) {
@@ -55,14 +62,14 @@ export class Pillar implements RedomComponent {
             }
         }
         yOffset += this.families[familyIndex].el.offsetHeight / 2
-        this.shift(Vector.y(this.center - yOffset), this.transitionTime)
+        this.shift(Vector.y(this.centerY - yOffset), this.transitionTime)
     }
 
     // centers on the card that would 
     centerBegin(height: number) {
         console.log("center begin")
         let yOffset = this.target.y + (height / 2) + this.familyConfig.margin
-        this.shift(Vector.y(this.center - yOffset), this.transitionTime)
+        this.shift(Vector.y(this.centerY - yOffset), this.transitionTime)
     }
 
     // centers on the card that would be appended to the end of the pillar.
@@ -76,7 +83,7 @@ export class Pillar implements RedomComponent {
             }
         }
         yOffset += height/2 + this.familyConfig.margin
-        this.shift(Vector.y(this.center - yOffset), this.transitionTime)
+        this.shift(Vector.y(this.centerY - yOffset), this.transitionTime)
     }
 
     countCards(familyIndex: number = this.families.length): number {
