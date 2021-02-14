@@ -36,6 +36,8 @@ export class Tree implements RedomComponent {
     private interactable: boolean = true;
 
     // key modes
+    private ctrlMode: boolean = false;
+    private commandReady: boolean = false;
     private shiftMode: boolean = false
     private altMode: boolean = false
 
@@ -168,6 +170,8 @@ export class Tree implements RedomComponent {
             }
             // deactivate and dull the previously focused card
             this.card.blur();
+            // this.card.editor.off("text-change", this.recenterCard)
+
             // dull out the previous family
             this.pillar.families[lastPos.family].dull()
             if (lastPos.depth < this.pillars.length - 1) {
@@ -216,6 +220,12 @@ export class Tree implements RedomComponent {
         if (focus) {
             this.card.focus()
         }
+        // adjust the position of the card so that it is always in the center even
+        // when the user is typing
+        // TODO: perhaps this is something we can optimize
+        this.card.editor.on("text-change", () => {
+            this.pillar.centerCard(this.current.family, this.current.index)
+        })
 
         // shift the pillars to the left vertically so that the parent is
         // directly in line with the locked on card
@@ -433,6 +443,14 @@ export class Tree implements RedomComponent {
 
     private handleKeyUp(e: KeyboardEvent): void {
         switch (e.key) {
+            case "Meta":
+            case "Control":
+                if (this.commandReady && this.card.hasFocus()) {
+                    this.card.showCommandLine()
+                } 
+                this.commandReady = false;
+                this.ctrlMode = false;
+                break
             case "Alt":
                 this.altMode = false;
                 break;
@@ -444,12 +462,21 @@ export class Tree implements RedomComponent {
 
     private handleKeyDown(e: KeyboardEvent): void {
         switch (e.key) {
+            case "Meta":
+            case "Control":
+                this.commandReady = true;
+                this.ctrlMode = true;
+                break;
             case "Alt":
                 this.altMode = true;
+                break;
             case "Shift":
                 this.shiftMode = true;
+                break;
             default:
                 this.key(e.key)
+                this.commandReady = false;
+                break;
         }
     }
 
@@ -500,12 +527,13 @@ export class Tree implements RedomComponent {
                     }
                     break;
                 case "Backspace":
-                    if (this.card.editor.getLength() === 1) {
+                    if (this.card.backspace()) {
                         this.deleteNode(this.current)
                     }
                     break;
                 case "Escape":
-                    this.card.blur()
+                    this.card.escape()
+                    break;
             }
             return
         }
@@ -549,6 +577,7 @@ export class Tree implements RedomComponent {
                 this.deleteNode(this.current)
                 break;
         }
+
     }
 
     private down() {
@@ -597,6 +626,11 @@ export class Tree implements RedomComponent {
         let index = this.pillars[pos.depth + 1].families[family].cards.length 
         let newPos = new Pos(pos.depth + 1, family, index)
         this.insertNode(newPos, true)
+    }
+
+    private recenterCard(): void {
+        console.log("recentering")
+        this.pillar.centerCard(this.current.family, this.current.index)
     }
 
     private createParent() {

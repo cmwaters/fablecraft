@@ -1,4 +1,5 @@
 import { RedomComponent, el, mount } from "redom";
+import { CommandLine } from './command'
 import Quill from "quill"
 import { Node } from "./node";
 import { Size, Vector } from './geometry'
@@ -9,6 +10,7 @@ export class Card implements RedomComponent {
     el: HTMLElement;
     node: Node
     editor: Quill;
+    command: CommandLine
 
     constructor(parent: HTMLElement, node: Node, config: CardConfig, insertBefore?: Card) {
         this.el = el("div.card", { style: { marginBottom: config.margin, marginTop: config.margin } })
@@ -18,8 +20,37 @@ export class Card implements RedomComponent {
             mount(parent, this.el)
         }
         this.node = node
-        this.editor = new Quill(this.el as Element)
+        this.editor = new Quill(this.el as Element, {
+            modules: {
+                toolbar: [
+                    [{ 'header': 1 }, { 'header': 2 }], 
+                    ['bold', 'italic', 'underline']
+                ]
+            },
+            theme: 'bubble'
+        })
         this.editor.setText(node.text)
+        this.command = new CommandLine(this.el, true)
+    }
+
+    showCommandLine(): void {
+        console.log("showing command line")
+        this.editor.blur()
+        this.command.show()
+        // let range = this.editor.getSelection()
+        // if (!range) { return }
+        // let text = this.editor.getText()
+        // console.log(text)
+        // console.log(text.indexOf("\n"))
+        // let subtext = text.substring(range.index)
+        // let newLineIndex = subtext.indexOf("\n")
+
+        // this.editor.insertText(newLineIndex + range.index + 1, "New Command\n", {
+        //     'color': '#777777',
+        //     'italic': true
+        // })
+        // this.editor.setSelection(newLineIndex + range.index + 1, 0, "silent")
+        // this.editor.setContents(text)
     }
 
     center(): Vector {
@@ -36,6 +67,26 @@ export class Card implements RedomComponent {
         }, 100)
 
         this.spotlight()
+    }
+
+    backspace(): boolean {
+        if (this.command.hasFocus()) {
+            if (this.command.txt.value.length === 0) {
+                this.command.hide()
+                this.editor.focus()
+            }
+            return false
+        }
+        return this.editor.getLength() === 1
+    }
+
+    escape(): void {
+        if (this.command.hasFocus()) {
+            this.command.hide()
+            this.editor.focus()
+        } else {
+            this.blur()
+        }
     }
 
     focus(): void {
@@ -58,7 +109,7 @@ export class Card implements RedomComponent {
     }
 
     hasFocus(): boolean {
-        return this.editor.hasFocus()
+        return this.editor.hasFocus() || this.command.hasFocus()
     }
 
     highlight(): void {
@@ -79,6 +130,7 @@ export class Card implements RedomComponent {
 
     blur(): void {
         this.editor.blur()
+        this.command.hide()
     }
 
 }

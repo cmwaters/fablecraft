@@ -38,25 +38,20 @@ export class Pillar implements RedomComponent {
     // purely based on index or a combination of both the family index and the index
     centerCard(family: number, index: number) {
         let yOffset = this.target.y;
-        console.log("y offset " + yOffset)
         for (let i = 0; i < family; i++) {
             // increment the height of the family as well as the margin
             if (!this.families[i].isEmpty()) {
                 yOffset += this.families[i].el.offsetHeight + this.familyConfig.margin
-                console.log("non empty family, yOffset: " + yOffset)
             }
         }
-        console.log("y offset " + yOffset)
         // calculate the offset of the card itself within the family
         yOffset += this.families[family].cardOffset(index) + this.familyConfig.margin
-        console.log("y offset " + yOffset)
         this.shift(Vector.y(this.centerY - yOffset), this.transitionTime)
     }
 
     centerFamily(familyIndex: number) {
         let yOffset = this.target.y + this.familyConfig.margin
         for (let i = 0; i < familyIndex; i++) {
-            console.log("family height " + i + ": " + this.families[i].el.offsetHeight)
             if (this.families[i].cards.length !== 0) {
                 yOffset += this.families[i].el.offsetHeight + this.familyConfig.margin
             }
@@ -67,7 +62,6 @@ export class Pillar implements RedomComponent {
 
     // centers on the card that would 
     centerBegin(height: number) {
-        console.log("center begin")
         let yOffset = this.target.y + (height / 2) + this.familyConfig.margin
         this.shift(Vector.y(this.centerY - yOffset), this.transitionTime)
     }
@@ -75,7 +69,6 @@ export class Pillar implements RedomComponent {
     // centers on the card that would be appended to the end of the pillar.
     // height refers to the height of the parent
     centerEnd(height: number) {
-        console.log("center end: " + height)
         let yOffset = this.target.y
         for (let i = 0; i < this.families.length; i++) {
             if (this.families[i].cards.length > 0) {
