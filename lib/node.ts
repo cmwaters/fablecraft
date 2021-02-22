@@ -51,6 +51,10 @@ export class Pos {
         return new Pos(this.depth, this.family, this.index)
     }
 
+    equals(pos: Pos): boolean {
+        return this.depth === pos.depth && this.family === pos.family && this.index === pos.index
+    }
+
     above(pillar: Pillar): Pos {
         // if there is a card in the same family directly above then return that
         if (this.index > 0) {

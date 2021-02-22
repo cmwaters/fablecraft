@@ -273,6 +273,35 @@ export class Tree implements RedomComponent {
     // moves a node from one position to another. Throws an error if any of the
     // positions are invalid. Updates the respective families. Does not trigger any events
     moveNode(from: Pos, to: Pos, focus: boolean = false): void {
+        // validate the position of where the node is curently at
+        let err = this.validatePos(from)
+        if (err) {
+            throw err
+        }
+
+        // pull the reference of the node and create a copy of the node at it's
+        // new position
+        let fromNode = this.nodeAt(from).node
+        let toNode = {
+            uid: fromNode.uid,
+            pos: to.copy(),
+            text: fromNode.text,
+        }
+
+        // validate the the position where the node shall be moved to
+        this.validateNewNode(toNode)
+
+        if (from.equals(to)) { return }
+        
+        if (from.depth !== to.depth) {
+            throw new Error("movement can only be along the same pillar")
+        }
+
+        let node = this.nodeAt(from)
+
+        this.pillars[to.depth].families[to.family].insertCard(toNode)
+
+
         if (focus) {
             this.selectNode(to, true)
         }
@@ -494,6 +523,8 @@ export class Tree implements RedomComponent {
                     if (this.card.atStart()) {
                         if (this.shiftMode) {
                             this.createAbove()
+                        } else if (this.altMode) {
+                            this.shiftUpwards()
                         } else {
                             this.up()
                             this.card.focus()
@@ -504,6 +535,8 @@ export class Tree implements RedomComponent {
                     if (this.card.atEnd()) {
                         if (this.shiftMode) {
                             this.createBelow()
+                        } else if (this.altMode) {
+                            this.shiftDownwards()
                         } else {
                             this.down()
                             this.card.focusStart()
