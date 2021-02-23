@@ -1,6 +1,5 @@
 import puppeteer from 'puppeteer'
 import chai from 'chai'
-import { Tree } from '../tree'
 import { JSDOM } from 'jsdom'
 
 let should = chai.should();
