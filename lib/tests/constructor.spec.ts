@@ -1,7 +1,5 @@
 import puppeteer from 'puppeteer'
 import chai from 'chai'
-import { Tree } from '../tree'
-import { defaultConfig } from '../config'
 import { JSDOM } from 'jsdom'
 
 let should = chai.should();
@@ -14,7 +12,5 @@ describe("tree", () => {
             <p>Hello world</p>
         `);
         expect(dom.window.document.querySelector("p")!.textContent).to.equal("Hello world")
-
-        let tree = new Tree(dom.window.document.body, defaultConfig())
     })
 })
