@@ -1,9 +1,12 @@
 import { RedomComponent, el, mount } from "redom";
 import { CommandLine } from './command'
 import Quill from "quill"
+import MarkdownShortcuts from 'quill-markdown-shortcuts'; 
 import { Node } from "./node";
 import { Size, Vector } from './geometry'
 import { CardConfig } from './config'
+
+Quill.register('modules/markdownShortcuts', MarkdownShortcuts)
 
 // we call this node instead of card to distinguish from the model and the view
 export class Card implements RedomComponent {
@@ -22,12 +25,8 @@ export class Card implements RedomComponent {
         this.node = node
         this.editor = new Quill(this.el as Element, {
             modules: {
-                toolbar: [
-                    [{ 'header': 1 }, { 'header': 2 }], 
-                    ['bold', 'italic', 'underline']
-                ]
+                "markdownShortcuts": {}
             },
-            theme: 'bubble'
         })
         this.editor.setText(node.text)
         this.command = new CommandLine(this.el, true)
