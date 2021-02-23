@@ -2,9 +2,12 @@
   "name": "fable-tree",
   "version": "1.0.0",
   "description": "tree structured text editor",
-  "main": "tree.ts",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
   "scripts": {
-    "test": "mocha --timeout 10000"
+    "test": "mocha --timeout 10000",
+    "prebuild": "shx rm -rf ./build",
+    "build": "tsc"
   },
   "author": "Callum Waters",
   "license": "ISC",
