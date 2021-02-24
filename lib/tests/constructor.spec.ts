@@ -1,16 +1,29 @@
-import puppeteer from 'puppeteer'
 import chai from 'chai'
-import { JSDOM } from 'jsdom'
-
-let should = chai.should();
+import { Tree } from "../src/tree"
+import { defaultConfig } from "../src/config"
 let expect = chai.expect
 
-describe("tree", () => {
-    it("compose an epic", async () => {
-        const dom = new JSDOM(`
-        <!DOCTYPE html>
-            <p>Hello world</p>
-        `);
-        expect(dom.window.document.querySelector("p")!.textContent).to.equal("Hello world")
+let container: HTMLElement
+
+describe("Fable Tree | Constructor", () => {
+    before(() => {
+        let div = document.getElementById("test-container")
+        expect(div).to.not.be.null 
+        container = div!
+    })
+
+    afterEach(() => {
+        // clear the contents after ever test
+        container.innerHTML = ""
+    })
+
+    it("works", () => {
+        expect(true).to.equal(true)
+    })
+    it("can create a tree", () => {
+        let div = document.getElementById("test-container")
+        expect(div).to.not.be.null
+        let tree = new Tree(div!, defaultConfig())
+        expect(div!.children.length).to.equal(1) 
     })
 })
