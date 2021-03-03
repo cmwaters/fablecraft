@@ -98,4 +98,19 @@ export class Pos {
         return Pos.null()
     }
 
+    shift = {
+        index: (delta: number): Pos => {
+            this.index += delta
+            return this
+        },
+        family: (delta: number): Pos => {
+            this.family += delta
+            return this
+        },
+        depth: (delta: number): Pos => {
+            this.depth += delta
+            return this
+        }
+    }
+
 }

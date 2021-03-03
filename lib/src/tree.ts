@@ -8,6 +8,8 @@ import { Config, PillarConfig, Options } from './config';
 import { Events } from './events';
 import sort from 'fast-sort'
 
+const firstCardText = "Welcome to Fablecraft"
+
 export class Tree implements RedomComponent {
 
     // ###################################### PUBLIC VARIABLES ###########################################
@@ -33,7 +35,7 @@ export class Tree implements RedomComponent {
     private expandedFamily: Family | null = null;
 
     private moveable: boolean = true;
-    private interactable: boolean = true;
+    private interactive: boolean = true;
 
     // key modes
     private ctrlMode: boolean = false;
@@ -92,7 +94,7 @@ export class Tree implements RedomComponent {
             let firstNode: Node = {
                 uid: 0,
                 pos: new Pos(),
-                text: "Hello World, Welcome to Fablecraft!"
+                text: firstCardText,
             }
             this.appendNode(firstNode)
             this.cardIndexer.push(firstNode.pos)
@@ -112,23 +114,24 @@ export class Tree implements RedomComponent {
         }
 
         document.onkeydown = (e: KeyboardEvent) => {
-            if (this.interactable) {
+            if (this.interactive) {
                 this.handleKeyDown(e)
             }
         }
 
         document.onkeyup = (e: KeyboardEvent) => {
-            if (this.interactable) {
+            if (this.interactive) {
                 this.handleKeyUp(e)
             }
         }
 
         // set event as a nop
         this.event = {
-            onNewCard: (pos: Pos) => { },
-            onMoveCard: (oldPos: Pos, newPos: Pos) => { },
-            onModifyCard: (node: Node) => { },
-            onDeleteCard: (node: Node) => { },
+            onNewNode: (pos: Pos) => { },
+            onMoveNode: (oldPos: Pos, newPos: Pos) => { },
+            onModifyNode: (node: Node) => { },
+            onDeleteNode: (node: Node) => { },
+            onSelectNode: (node: Node) => { },
         }
 
         // begin by focusing on the first card
@@ -141,12 +144,12 @@ export class Tree implements RedomComponent {
 
     // focus on this particular window, activating key and other input listeners
     focus(): void {
-        this.interactable = true;
+        this.interactive = true;
         this.moveable = true;
     }
 
     blur(moveable: boolean = false): void {
-        this.interactable = false
+        this.interactive = false
         this.moveable = moveable;
         if (this.card.hasFocus()) {
             this.card.blur()
@@ -161,7 +164,7 @@ export class Tree implements RedomComponent {
         }
 
         // unlock on the previous card
-        let lastPos = this.card.node.pos
+        let lastPos = this.card.getNode().pos
         if (lastPos.isNotNull()) {
             if (lastPos.depth > 0) {
                 // if there is a parent, make it full
@@ -374,6 +377,15 @@ export class Tree implements RedomComponent {
         this.pillars[pos.depth].families[pos.family].cards[pos.index].modify(text)
     }
 
+    // getNode retrieves a reference of the card at the position pos in the tree
+    getNode(pos: Pos): Card {
+        let err = this.validatePos(pos)
+        if (err !== null) {
+            throw err
+        }
+        return this.nodeAt(pos)
+    }
+
     // ###################################### PRIVATE METHODS ###########################################
 
     // appendNode appends a node to it's respective family. This only works when nodes are in order.
@@ -513,7 +525,7 @@ export class Tree implements RedomComponent {
     // on the window. In the future, key bindings could be made more dynamic
     private key(key: string): void {
         // if the tree is disabled then ignore
-        if (!this.interactable) {
+        if (!this.interactive) {
             return
         }
         console.log(key)

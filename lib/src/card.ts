@@ -1,16 +1,20 @@
 import { RedomComponent, el, mount } from "redom";
 import { CommandLine } from './command'
 import Quill from "quill"
-import { Node } from "./node";
+import MarkdownShortcuts from 'quill-markdown-shortcuts'; 
+import { Node, Pos } from "./node";
 import { Size, Vector } from './geometry'
 import { CardConfig } from './config'
+
+Quill.register('modules/markdownShortcuts', MarkdownShortcuts)
 
 // we call this node instead of card to distinguish from the model and the view
 export class Card implements RedomComponent {
     el: HTMLElement;
-    node: Node
     editor: Quill;
     command: CommandLine
+
+    private node: Node
 
     constructor(parent: HTMLElement, node: Node, config: CardConfig, insertBefore?: Card) {
         this.el = el("div.card", { style: { marginBottom: config.margin, marginTop: config.margin } })
@@ -22,12 +26,8 @@ export class Card implements RedomComponent {
         this.node = node
         this.editor = new Quill(this.el as Element, {
             modules: {
-                toolbar: [
-                    [{ 'header': 1 }, { 'header': 2 }], 
-                    ['bold', 'italic', 'underline']
-                ]
+                "markdownShortcuts": {}
             },
-            theme: 'bubble'
         })
         this.editor.setText(node.text)
         this.command = new CommandLine(this.el, true)
@@ -115,6 +115,22 @@ export class Card implements RedomComponent {
     highlight(): void {
         this.el.style.color = "#666";
         this.el.style.border = "1px solid #fff"
+    }
+
+    getNode(): Node {
+        return this.node
+    }
+
+    incrementIndex(): void {
+        this.node.pos.index++
+    }
+
+    decrementIndex(): void {
+        this.node.pos.index--
+    }
+
+    setPos(pos: Pos): void {
+        this.node.pos = pos
     }
 
     spotlight(): void {

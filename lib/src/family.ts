@@ -42,7 +42,7 @@ export class Family implements RedomComponent {
         }
 
         for (let i = node.pos.index; i < this.cards.length; i++) {
-            this.cards[i].node.pos.index++
+            this.cards[i].incrementIndex()
         } 
 
         if (node.pos.index === this.cards.length) {
@@ -69,21 +69,21 @@ export class Family implements RedomComponent {
     }
 
     shiftFamilyIndex(delta: number): void {
-        this.cards.forEach(card => card.node.pos.family += delta)
+        this.cards.forEach(card => card.setPos(card.getNode().pos.shift.family(delta)))
     }
 
     // delete card removes the card from the family, shifts
     // the index of the cards below down by one and returns the
     // id of the deleted card (so as to update the card indexer)
     deleteCard(index: number): number {
-        let id = this.cards[index].node.uid
-        this.cards[index].node.pos = Pos.null()
+        let id = this.cards[index].getNode().uid
+        this.cards[index].setPos(Pos.null())
 
         unmount(this.el, this.cards[index].el)
         this.cards.splice(index, 1)
 
         for (let i = index; i < this.cards.length; i++) {
-            this.cards[i].node.pos.index--
+            this.cards[i].decrementIndex()
         } 
 
         return id
