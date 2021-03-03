@@ -2,8 +2,7 @@
 // import { Model } from './model'
 
 import { el } from 'redom'
-import { Tree } from '../../lib/tree'
-import { defaultConfig } from '../../lib/config'
+import { Tree, defaultConfig } from 'fabletree'
 
 // const inverseScrollSpeed = 2;
 
