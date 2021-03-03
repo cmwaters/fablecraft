@@ -23,6 +23,7 @@
     "concurrently": "^5.3.0",
     "debug": "^4.1.1",
     "express": "^4.17.1",
+    "fabletree": "file:../lib",
     "localforage": "^1.9.0",
     "pug": "^3.0.0",
     "redom": "^3.27.1",
