@@ -8,6 +8,8 @@ import { Config, PillarConfig, Options } from './config';
 import { Events } from './events';
 import sort from 'fast-sort'
 
+const firstCardText = "Welcome to Fablecraft"
+
 export class Tree implements RedomComponent {
 
     // ###################################### PUBLIC VARIABLES ###########################################
@@ -92,7 +94,7 @@ export class Tree implements RedomComponent {
             let firstNode: Node = {
                 uid: 0,
                 pos: new Pos(),
-                text: "Hello World, Welcome to Fablecraft!"
+                text: firstCardText,
             }
             this.appendNode(firstNode)
             this.cardIndexer.push(firstNode.pos)
@@ -162,7 +164,7 @@ export class Tree implements RedomComponent {
         }
 
         // unlock on the previous card
-        let lastPos = this.card.node.pos
+        let lastPos = this.card.getNode().pos
         if (lastPos.isNotNull()) {
             if (lastPos.depth > 0) {
                 // if there is a parent, make it full
@@ -344,6 +346,15 @@ export class Tree implements RedomComponent {
 
         // now modify the text
         this.pillars[pos.depth].families[pos.family].cards[pos.index].modify(text)
+    }
+
+    // getNode retrieves a reference of the card at the position pos in the tree
+    getNode(pos: Pos): Card {
+        let err = this.validatePos(pos)
+        if (err !== null) {
+            throw err
+        }
+        return this.nodeAt(pos)
     }
 
     // ###################################### PRIVATE METHODS ###########################################
