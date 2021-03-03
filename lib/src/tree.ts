@@ -7,6 +7,7 @@ import { Card } from "./card";
 import { Config, PillarConfig, Options } from './config';
 import { Events } from './events';
 import sort from 'fast-sort'
+import "../assets/tree.css"
 
 const firstCardText = "Welcome to Fablecraft"
 
@@ -142,20 +143,9 @@ export class Tree implements RedomComponent {
 
     // ###################################### PUBLIC METHODS ###########################################
 
-    // focus on this particular window, activating key and other input listeners
-    focus(): void {
-        this.interactive = true;
-        this.moveable = true;
-    }
-
-    blur(moveable: boolean = false): void {
-        this.interactive = false
-        this.moveable = moveable;
-        if (this.card.hasFocus()) {
-            this.card.blur()
-        }
-    }
-
+    // selectNode selects a new node to focus on, closing and blurring the previously selected node and
+    // centering on the new node, highlighting the node, it's family memebers, children and parent. If focus
+    // is set to true then the text editor wil also be enabled.
     selectNode(pos: Pos, focus: boolean = false): void {
         console.log("focus on node, depth: " + pos.depth + ", family: " + pos.family + ", index: " + pos.index)
         let err = this.validatePos(pos)
@@ -284,7 +274,7 @@ export class Tree implements RedomComponent {
 
         // pull the reference of the node and create a copy of the node at it's
         // new position
-        let fromNode = this.nodeAt(from).node
+        let fromNode = this.nodeAt(from).getNode()
         let toNode = {
             uid: fromNode.uid,
             pos: to.copy(),
@@ -384,6 +374,22 @@ export class Tree implements RedomComponent {
             throw err
         }
         return this.nodeAt(pos)
+    }
+
+    // focus on this particular window, activating key and other input listeners
+    focus(): void {
+        this.interactive = true;
+        this.moveable = true;
+    }
+
+    // blur switches off this particlar window meaning that the end user can not interact with anything. the
+    // window also becomes frozen unless moveable is set to true
+    blur(moveable: boolean = false): void {
+        this.interactive = false
+        this.moveable = moveable;
+        if (this.card.hasFocus()) {
+            this.card.blur()
+        }
     }
 
     // ###################################### PRIVATE METHODS ###########################################

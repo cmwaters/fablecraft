@@ -5,6 +5,7 @@ import MarkdownShortcuts from 'quill-markdown-shortcuts';
 import { Node, Pos } from "./node";
 import { Size, Vector } from './geometry'
 import { CardConfig } from './config'
+import "../assets/quill.css"
 
 Quill.register('modules/markdownShortcuts', MarkdownShortcuts)
 
