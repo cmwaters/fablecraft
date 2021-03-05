@@ -1,6 +1,7 @@
 import { RedomComponent, el, mount, unmount } from "redom";
 import { Card } from "./card";
-import { Node, Pos } from "./node";
+import { Node } from "./node";
+import { Pos } from "./pos"
 import { FamilyConfig } from './config'
 
 export class Family implements RedomComponent {

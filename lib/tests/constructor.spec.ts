@@ -1,7 +1,7 @@
 import chai, { assert } from 'chai'
 import { Tree } from "../src/tree"
 import { defaultConfig } from "../src/config"
-import { Pos } from "../src/node"
+import { Pos } from "../src/pos"
 import { 
     TreeTypology,
     assertTypology,
@@ -17,7 +17,6 @@ describe("Fable Tree | Constructor", () => {
         expect(div).to.not.be.null 
         container = div!
         container.innerHTML = ""
-        // expect(container.children.length).to.equal(0)
     })
 
     afterEach(() => {
@@ -38,7 +37,7 @@ describe("Fable Tree | Constructor", () => {
 
 
     it("can create a tree from existing nodes", () => {
-        let typology = new TreeTypology([5]).pillar([3, 0, 4, 1])
+        let typology = new TreeTypology([5]).pillar([0, 3, 0, 4, 1])
         let nodes = typology.nodes()
         let tree = new Tree(container, defaultConfig(), nodes)
         assertTypology(tree.el, typology)

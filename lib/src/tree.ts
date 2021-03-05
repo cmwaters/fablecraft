@@ -1,5 +1,7 @@
-import { Node, Pos } from './node'
-import { Size, Vector } from "./geometry";
+import { Node } from './node'
+import { Pos } from "./pos"
+import { Vector } from "./geometry";
+import { Branch } from "./branch"
 import { Pillar } from "./pillar";
 import { Family } from "./family";
 import { RedomComponent, el, mount } from "redom";
@@ -264,16 +266,24 @@ export class Tree implements RedomComponent {
     }
 
     // moves a node from one position to another. Throws an error if any of the
-    // positions are invalid. Updates the respective families. Does not trigger any events
+    // positions are invalid. Updates the respective families. Does not trigger any events.
+    // moveNode essentially works by inserting it an exact copy in the new position and then
+    // deleting the node at the old position
     moveNode(from: Pos, to: Pos, focus: boolean = false): void {
-        // validate the position of where the node is curently at
+        // validate that the "from" position exists on the tree
         let err = this.validatePos(from)
         if (err) {
             throw err
         }
 
-        // pull the reference of the node and create a copy of the node at it's
-        // new position
+        // if to and from are the same position we return early
+        if (from.equals(to)) { return }
+
+        // create a copy of the node and it's entire branch
+        let branch = this.getBranch(from)
+
+        // validate the position of to by making it a new node. Remember we can also move a node
+        // to a place where it is appended to the end of a family (i.e. not a current valid position)
         let fromNode = this.nodeAt(from).getNode()
         let toNode = {
             uid: fromNode.uid,
@@ -281,20 +291,29 @@ export class Tree implements RedomComponent {
             text: fromNode.text,
         }
 
-        // validate the the position where the node shall be moved to
+        // validate the the position where the node shall be moved to (we treat it as if adding a new node)
         this.validateNewNode(toNode)
 
-        if (from.equals(to)) { return }
-        
-        if (from.depth !== to.depth) {
-            throw new Error("movement can only be along the same pillar")
-        }
+        // there is one exception to the above validation which is when we are trying to move a node
+        // to the next vacant position in the same family. Check this case
+        if (to.depth === from.depth && 
+            to.family === from.family && 
+            to.index === this.pillars[to.depth].families[to.family].cards.length) {
+                throw new Error("to position in the same family doesn't exist")
+            }
 
-        let node = this.nodeAt(from)
+        // okay the new position is valid
+        // delete the node and subsequent children where the node used to be
+        this.deleteNode(from)
 
-        this.pillars[to.depth].families[to.family].insertCard(toNode)
+        // change the branch to have the position of where it should be
+        this.updateBranchPos(branch, to)
 
+        // now finally insert the same node into the new position
+        // this will also update the card indexer
+        this.insertBranch(branch)
 
+        // if the user requested to focus on the new node then we do that now
         if (focus) {
             this.selectNode(to, true)
         }
@@ -390,6 +409,24 @@ export class Tree implements RedomComponent {
         if (this.card.hasFocus()) {
             this.card.blur()
         }
+    }
+
+    // string returns the structure of the tree as a multi-line indexed string. Good for debugging
+    string(withText: boolean = false): string {
+        let result = "Tree\n"
+        this.pillars.forEach((pillar, depth) => {
+            result += "\tPillar " + depth + "\n"
+            pillar.families.forEach((fam, family) => {
+                result += "\t\tFamily " + family + "\n"
+                fam.cards.forEach((card, index) => {
+                    result += "\t\t\tCard " + index + " (id:" + card.id() + ")\n"
+                    if (withText) {
+                        result += "\t\t\t" + card.getNode().text
+                    }
+                })
+            })
+        })
+        return result
     }
 
     // ###################################### PRIVATE METHODS ###########################################
@@ -882,5 +919,47 @@ export class Tree implements RedomComponent {
         this.expandedFamily = this.pillars[depth].families[family]
     }
 
+    private getBranch(pos: Pos): Branch {
+        let card = this.nodeAt(pos) 
+        let childrenIndex = this.getChildrenIndex(pos)
+        let children: Branch[] = []
+        if (pos.depth < this.pillars.length - 1) {
+            for (let index = 0; index < this.pillars[pos.depth + 1].families[childrenIndex].cards.length; index++) {
+                let childPos = new Pos(pos.depth + 1, childrenIndex, index)
+                children.push(this.getBranch(childPos))
+            }
+        }
+        return {card, children}
+    }
+
+    // updates the branches position. This assumes the position is correct
+    private updateBranchPos(branch: Branch, pos: Pos): void {
+        branch.card.setPos(pos)
+        let childrenIndex = this.getChildrenIndex(pos)
+        branch.children.forEach(b => {
+            let newPos = new Pos(pos.depth + 1, childrenIndex, b.card.getNode().pos.index)
+            this.updateBranchPos(b, newPos)
+        })
+    }
+
+    // inserts an entire branch into the tree. This assumes that the branches position is valid
+    private insertBranch(branch: Branch): void {
+        let node = branch.card.getNode()
+
+        // insert the card into the correct family
+        this.pillars[node.pos.depth].families[node.pos.family].insertCard(node)
+
+        // check if we are making an addition to the last pillar
+        if (node.pos.depth === this.pillars.length - 1) {
+            this.appendPillar()
+        }
+
+        // a new card always corresponds with the creating of a new empty family
+        this.pillars[node.pos.depth + 1].insertFamily(node.pos.index)
+
+        branch.children.forEach(b => {
+            this.insertBranch(b)
+        })        
+    }
 }
 

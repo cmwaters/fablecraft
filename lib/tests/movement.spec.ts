@@ -1,7 +1,7 @@
 import chai, { assert } from 'chai'
 import { Tree } from "../src/tree"
 import { defaultConfig } from "../src/config"
-import { Pos } from "../src/node"
+import { Pos } from "../src/pos"
 import {
     TreeTypology,
     assertTypology,
@@ -19,7 +19,8 @@ describe("Fable Tree | Movement", () => {
         container = div!
         container.innerHTML = ""
         expect(container.children.length).to.equal(0)
-        tree = new Tree(container, defaultConfig())
+        let nodes = new TreeTypology([5]).pillar([0,1,2,3,4]).nodes()
+        tree = new Tree(container, defaultConfig(), nodes)
     })
 
     afterEach(() => {
@@ -27,14 +28,36 @@ describe("Fable Tree | Movement", () => {
         container.innerHTML = ""
     })
 
-    it("can create a tree", () => {
-        expect(tree.el).to.equal(container)
-        assertTypology(tree.el, new TreeTypology([1])) // a single pillar with a single card
-        let nodeEl = getNodeAsElement(tree.el, new Pos()) // get the first card
-        let node = tree.getNode(new Pos())
-        expect(nodeEl).to.equal(node.el)
-        expect(node.editor.getText()).to.equal("Welcome to Fablecraft\n")
+    it("can move a card down within the same family", () => {
+        let oldPos = new Pos(1, 3, 1)
+        let newPos = oldPos.copy().increment()
+
+        let upperNode = tree.getNode(oldPos)
+        let lowerNode = tree.getNode(newPos)
+
+        tree.moveNode(oldPos, newPos)
+
+        // upper node shold have moved down
+        expect(tree.getNode(newPos).id(), tree.string()).to.equal(upperNode.id())
+
+        // lower node should have moved up
+        expect(tree.getNode(oldPos).id(), tree.string()).to.equal(lowerNode.id())
+    })
+
+    it("can move a card up within the same family", () => {
+        let oldPos = new Pos(1, 4, 2)
+        let newPos = oldPos.copy().decrement()
+
+        let upperNode = tree.getNode(newPos)
+        let lowerNode = tree.getNode(oldPos)
+
+        tree.moveNode(oldPos, newPos)
+
+        // upper node shold have moved down
+        expect(tree.getNode(newPos).id(), tree.string()).to.equal(upperNode.id())
+
+        // lower node should have moved up
+        expect(tree.getNode(oldPos).id(), tree.string()).to.equal(lowerNode.id())
     })
 })
-
 

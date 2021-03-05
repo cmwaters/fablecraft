@@ -1,4 +1,5 @@
-import { Node, Pos } from "../src/node"
+import { Node } from "../src/node"
+import { Pos } from "../src/pos"
 import chai from "chai"
 let expect = chai.expect
 
@@ -22,8 +23,18 @@ export class TreeTypology {
     }
 
     pillar(families: number[]): TreeTypology {
+        if (families.length !== this.lastPillarCardCount()) {
+            throw new Error("New pillar needs to have as many families as cards in the previous pillar")
+        }
         this.pillars.push({ families })
         return this
+    }
+
+    lastPillarCardCount(): number {
+        let pillar = this.pillars[this.pillars.length - 1]
+        let sum = 0
+        pillar.families.forEach(cards => sum += cards)
+        return sum
     }
 
     nodes(): Node[] {
@@ -53,7 +64,7 @@ export type PillarTypology = {
 
 export function assertTypology(el: HTMLElement, typology: TreeTypology): void {
     // assert that the element has a reference
-    expect(el.children.length).to.equal(1)
+    expect(el.children.length, "expected element to have reference child element").to.equal(1)
     expect(el.children[0].className).to.equal("reference")
 
     let reference = el.children[0]
@@ -65,15 +76,15 @@ export function assertTypology(el: HTMLElement, typology: TreeTypology): void {
     for (let i = 0; i < typology.pillars.length; i++) {
         let pillarEl = reference.children[i]
         let pillar = typology.pillars[i]
-        expect(pillarEl.className).to.equal("pillar")
-        expect(pillarEl.children.length).to.equal(pillar.families.length)
+        expect(pillarEl.className, "pillar class assertion " + i).to.equal("pillar")
+        expect(pillarEl.children.length, "pillar families assertion " + i + " pillar: " + pillarEl.toString()).to.equal(pillar.families.length)
         for (let j = 0; j < pillar.families.length; j++) {
             let familyEl = pillarEl.children[j]
-            expect(familyEl.className).to.equal("family")
-            expect(familyEl.children.length).to.equal(pillar.families[j])
+            expect(familyEl.className, "pillar " + i + " family asssertion " + j).to.equal("family")
+            expect(familyEl.children.length, "pillar " + i + " family " + j + " cards assertion" ).to.equal(pillar.families[j])
             for (let k = 0; k < pillar.families[j]; k++) {
                 let cardEl = familyEl.children[k]
-                expect(cardEl.className).to.equal("card ql-container")
+                expect(cardEl.className, "pillar " + i + " family " + j + " card class assertion " + k).to.equal("card ql-container")
             }
         }
     }

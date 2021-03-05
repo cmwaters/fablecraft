@@ -2,7 +2,8 @@ import { RedomComponent, el, mount } from "redom";
 import { CommandLine } from './command'
 import Quill from "quill"
 import MarkdownShortcuts from 'quill-markdown-shortcuts'; 
-import { Node, Pos } from "./node";
+import { Node } from "./node";
+import { Pos } from "./pos"
 import { Size, Vector } from './geometry'
 import { CardConfig } from './config'
 import "../assets/quill.css"
@@ -38,20 +39,6 @@ export class Card implements RedomComponent {
         console.log("showing command line")
         this.editor.blur()
         this.command.show()
-        // let range = this.editor.getSelection()
-        // if (!range) { return }
-        // let text = this.editor.getText()
-        // console.log(text)
-        // console.log(text.indexOf("\n"))
-        // let subtext = text.substring(range.index)
-        // let newLineIndex = subtext.indexOf("\n")
-
-        // this.editor.insertText(newLineIndex + range.index + 1, "New Command\n", {
-        //     'color': '#777777',
-        //     'italic': true
-        // })
-        // this.editor.setSelection(newLineIndex + range.index + 1, 0, "silent")
-        // this.editor.setContents(text)
     }
 
     center(): Vector {

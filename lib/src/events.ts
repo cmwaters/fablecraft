@@ -1,4 +1,5 @@
-import { Node, Pos } from "./node"
+import { Node } from "./node"
+import { Pos } from "./pos"
 
 export type Events = {
     // onNewNode is triggered whenever the user
