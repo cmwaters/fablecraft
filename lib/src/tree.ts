@@ -9,6 +9,7 @@ import { Card } from "./card";
 import { Config, PillarConfig, Options } from './config';
 import { Events } from './events';
 import sort from 'fast-sort'
+import { errors } from './errors';
 import "../assets/tree.css"
 
 const firstCardText = "Welcome to Fablecraft"
@@ -386,8 +387,8 @@ export class Tree implements RedomComponent {
         this.pillars[pos.depth].families[pos.family].cards[pos.index].modify(text)
     }
 
-    // getNode retrieves a reference of the card at the position pos in the tree
-    getNode(pos: Pos): Card {
+    // getCard retrieves a reference of the card at the position pos in the tree
+    getCard(pos: Pos): Card {
         let err = this.validatePos(pos)
         if (err !== null) {
             throw err
@@ -805,7 +806,7 @@ export class Tree implements RedomComponent {
         }
 
         if (!pos.valid()) {
-            return new Error("pos is invalid")
+            return new Error(errors.invalidPos)
         }
 
         if (pos.depth >= this.pillars.length - 1) {
@@ -827,7 +828,7 @@ export class Tree implements RedomComponent {
 
     private validateNewNode(node: Node): void {
         if (!node.pos.valid()) {
-            throw new Error("node's pos is invalid")
+            throw new Error(errors.invalidPos)
         }
 
         if (node.pos.depth >= this.pillars.length) {

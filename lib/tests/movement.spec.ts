@@ -32,32 +32,32 @@ describe("Fable Tree | Movement", () => {
         let oldPos = new Pos(1, 3, 1)
         let newPos = oldPos.copy().increment()
 
-        let upperNode = tree.getNode(oldPos)
-        let lowerNode = tree.getNode(newPos)
+        let upperNode = tree.getCard(oldPos)
+        let lowerNode = tree.getCard(newPos)
 
         tree.moveNode(oldPos, newPos)
 
         // upper node shold have moved down
-        expect(tree.getNode(newPos).id(), tree.string()).to.equal(upperNode.id())
+        expect(tree.getCard(newPos).id(), tree.string()).to.equal(upperNode.id())
 
         // lower node should have moved up
-        expect(tree.getNode(oldPos).id(), tree.string()).to.equal(lowerNode.id())
+        expect(tree.getCard(oldPos).id(), tree.string()).to.equal(lowerNode.id())
     })
 
     it("can move a card up within the same family", () => {
         let oldPos = new Pos(1, 4, 2)
         let newPos = oldPos.copy().decrement()
 
-        let upperNode = tree.getNode(newPos)
-        let lowerNode = tree.getNode(oldPos)
+        let upperNode = tree.getCard(newPos)
+        let lowerNode = tree.getCard(oldPos)
 
         tree.moveNode(oldPos, newPos)
 
         // upper node shold have moved down
-        expect(tree.getNode(newPos).id(), tree.string()).to.equal(upperNode.id())
+        expect(tree.getCard(newPos).id(), tree.string()).to.equal(upperNode.id())
 
         // lower node should have moved up
-        expect(tree.getNode(oldPos).id(), tree.string()).to.equal(lowerNode.id())
+        expect(tree.getCard(oldPos).id(), tree.string()).to.equal(lowerNode.id())
     })
 })
 
