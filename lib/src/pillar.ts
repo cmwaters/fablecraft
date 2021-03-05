@@ -1,4 +1,4 @@
-import { Node, Pos } from './node'
+import { Pos } from './pos'
 import { Vector, Size } from './geometry'
 import { RedomComponent, el, mount, unmount } from "redom";
 import { Family } from './family';

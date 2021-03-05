@@ -122,6 +122,10 @@ export class Card implements RedomComponent {
         return this.node
     }
 
+    id(): number {
+        return this.node.uid
+    }
+
     incrementIndex(): void {
         this.node.pos.index++
     }
