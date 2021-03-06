@@ -3,6 +3,7 @@ import { Card } from "./card";
 import { Node } from "./node";
 import { Pos } from "./pos"
 import { FamilyConfig } from './config'
+import { errors } from "./errors"
 
 export class Family implements RedomComponent {
     el: HTMLElement;
@@ -39,7 +40,7 @@ export class Family implements RedomComponent {
 
     insertCard(node: Node): void {
         if (node.pos.index > this.cards.length) {
-            throw new Error("card index out of bounds")
+            throw new Error(errors.indexOutOfBounds)
         }
 
         for (let i = node.pos.index; i < this.cards.length; i++) {

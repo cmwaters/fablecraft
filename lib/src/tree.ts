@@ -832,17 +832,15 @@ export class Tree implements RedomComponent {
         }
 
         if (node.pos.depth >= this.pillars.length) {
-            throw new Error("node depth must be " + (this.pillars.length - 1) + " or less. Got: " + node.pos.depth)
+            throw new Error(errors.depthExceededf(node.pos.depth, this.pillars.length - 1))
         }
 
         if (node.pos.depth === 0 && node.pos.family !== 0) {
-            throw new Error("Only one family allowed in root pillar. Family must be equal to 0 when depth is 0")
+            throw new Error(errors.oneRootFamily)
         }
 
         if (node.pos.family >= this.pillars[node.pos.depth].families.length) {
-            throw new Error("nodes family number doesn't correlate to a parent of an earlier pillar." +
-                " Last parent index: " + (this.pillars[node.pos.depth].families.length - 1) + ", node family: " +
-                node.pos.family)
+            throw new Error(errors.orphanNodef(node.pos.family, this.pillars[node.pos.depth].families.length - 1))
         }
     }
 
