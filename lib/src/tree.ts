@@ -4,11 +4,12 @@ import { Vector } from "./geometry";
 import { Branch } from "./branch"
 import { Pillar } from "./pillar";
 import { Family } from "./family";
-import { RedomComponent, el, mount } from "redom";
+import { RedomComponent, el, mount, unmount } from "redom";
 import { Card } from "./card";
 import { Config, PillarConfig, Options } from './config';
 import { Events } from './events';
 import sort from 'fast-sort'
+import { errors } from './errors';
 import "../assets/tree.css"
 
 const firstCardText = "Welcome to Fablecraft"
@@ -156,7 +157,7 @@ export class Tree implements RedomComponent {
         }
 
         // unlock on the previous card
-        let lastPos = this.card.getNode().pos
+        let lastPos = this.card.pos()
         if (lastPos.isNotNull()) {
             if (lastPos.depth > 0) {
                 // if there is a parent, make it full
@@ -284,7 +285,7 @@ export class Tree implements RedomComponent {
 
         // validate the position of to by making it a new node. Remember we can also move a node
         // to a place where it is appended to the end of a family (i.e. not a current valid position)
-        let fromNode = this.nodeAt(from).getNode()
+        let fromNode = this.nodeAt(from).node()
         let toNode = {
             uid: fromNode.uid,
             pos: to.copy(),
@@ -299,7 +300,7 @@ export class Tree implements RedomComponent {
         if (to.depth === from.depth && 
             to.family === from.family && 
             to.index === this.pillars[to.depth].families[to.family].cards.length) {
-                throw new Error("to position in the same family doesn't exist")
+                throw new Error(errors.indexOutOfBounds)
             }
 
         // okay the new position is valid
@@ -322,6 +323,7 @@ export class Tree implements RedomComponent {
     // deletes the card and recursively deletes all the offspring of that card
     // also removes the card from the indexer. Does not trigger any events.
     deleteNode(pos: Pos): void {
+        console.log("deleting node at " + pos.string())
         // first validate the position
         let err = this.validatePos(pos)
         if (err) {
@@ -341,7 +343,10 @@ export class Tree implements RedomComponent {
             // the last pillar. Remember that the last pillar is always a ghost pillar (only
             // contains empty families)
             if (pos.depth === this.pillars.length - 2 && this.pillars[pos.depth].countCards() === 0) {
-                this.pillars.pop()
+                let lastPillar = this.pillars.pop()
+                unmount(this.reference, lastPillar!)
+
+                // find the next node to select
                 let { family, index } = this.pillars[pos.depth - 1].getFamilyAndIndex(pos.family)
                 this.selectNode(new Pos(pos.depth - 1, family, index))
                 return
@@ -358,6 +363,8 @@ export class Tree implements RedomComponent {
                 return this.selectNode(nextPos)
             }
 
+            pos.shift.index(-1)
+
             nextPos = pos.below(this.pillars[pos.depth])
             if (nextPos.isNotNull()) {
                 return this.selectNode(nextPos)
@@ -367,7 +374,7 @@ export class Tree implements RedomComponent {
 
         } else {
             // we clear the text of the last remaining editor
-            this.pillars[0].families[0].cards[0].editor.setText(" ")
+            this.pillars[0].families[0].cards[0].editor.setText("")
         }
     }
 
@@ -386,8 +393,9 @@ export class Tree implements RedomComponent {
         this.pillars[pos.depth].families[pos.family].cards[pos.index].modify(text)
     }
 
-    // getNode retrieves a reference of the card at the position pos in the tree
-    getNode(pos: Pos): Card {
+    // getCard retrieves a reference of the card at the position pos in the tree. 
+    // If none is provided then it returns the card it is centered on. 
+    getCard(pos: Pos = this.current): Card {
         let err = this.validatePos(pos)
         if (err !== null) {
             throw err
@@ -419,9 +427,17 @@ export class Tree implements RedomComponent {
             pillar.families.forEach((fam, family) => {
                 result += "\t\tFamily " + family + "\n"
                 fam.cards.forEach((card, index) => {
-                    result += "\t\t\tCard " + index + " (id:" + card.id() + ")\n"
+                    result += "\t\t\tCard " + index + " (id:" + card.id() + ")"
+                    if (card.hasFocus()) {
+                        result += " - Active\n"
+                    } else if (card.pos().equals(this.current)) {
+                        result += " - Selected\n"
+                    } else {
+                        result += "\n"
+                    }
+
                     if (withText) {
-                        result += "\t\t\t" + card.getNode().text
+                        result += "\t\t\t" + card.node().text
                     }
                 })
             })
@@ -455,19 +471,17 @@ export class Tree implements RedomComponent {
 
     // recurses through pillars, deleting all families originating from the same family
     private deleteFamily(depth: number, family: number) {
+        console.log("delete family " + family + " at " + depth)
+
         // if this is an empty family then delete it and do not proceed any further
         // this is also the termination condition of the recursion
         if (this.pillars[depth].families[family].cards.length === 0) {
-            let deletedIds = this.pillars[depth].deleteFamily(family)
-            for (let id of deletedIds) {
-                this.cardIndexer[id] = Pos.null()
-            }
+            this.pillars[depth].deleteFamily(family)
             return
         }
 
         // find the index of the first and last node of the family
-        let index = 0;
-        let start = this.getChildrenIndex(new Pos(depth, family, index))
+        let start = this.getChildrenIndex(new Pos(depth, family, 0))
         let end = start + this.pillars[depth].families[family].cards.length
 
 
@@ -477,7 +491,7 @@ export class Tree implements RedomComponent {
         }
 
         // delete family
-        let deletedIds = this.pillars[depth].deleteFamily(index)
+        let deletedIds = this.pillars[depth].deleteFamily(family)
         for (let id of deletedIds) {
             this.cardIndexer[id] = Pos.null()
         }
@@ -805,7 +819,7 @@ export class Tree implements RedomComponent {
         }
 
         if (!pos.valid()) {
-            return new Error("pos is invalid")
+            return new Error(errors.invalidPos)
         }
 
         if (pos.depth >= this.pillars.length - 1) {
@@ -827,21 +841,19 @@ export class Tree implements RedomComponent {
 
     private validateNewNode(node: Node): void {
         if (!node.pos.valid()) {
-            throw new Error("node's pos is invalid")
+            throw new Error(errors.invalidPos)
         }
 
         if (node.pos.depth >= this.pillars.length) {
-            throw new Error("node depth must be " + (this.pillars.length - 1) + " or less. Got: " + node.pos.depth)
+            throw new Error(errors.depthExceededf(node.pos.depth, this.pillars.length - 1))
         }
 
         if (node.pos.depth === 0 && node.pos.family !== 0) {
-            throw new Error("Only one family allowed in root pillar. Family must be equal to 0 when depth is 0")
+            throw new Error(errors.oneRootFamily)
         }
 
         if (node.pos.family >= this.pillars[node.pos.depth].families.length) {
-            throw new Error("nodes family number doesn't correlate to a parent of an earlier pillar." +
-                " Last parent index: " + (this.pillars[node.pos.depth].families.length - 1) + ", node family: " +
-                node.pos.family)
+            throw new Error(errors.orphanNodef(node.pos.family, this.pillars[node.pos.depth].families.length - 1))
         }
     }
 
@@ -934,17 +946,22 @@ export class Tree implements RedomComponent {
 
     // updates the branches position. This assumes the position is correct
     private updateBranchPos(branch: Branch, pos: Pos): void {
+        console.log("settng node pos to " + pos.string())
         branch.card.setPos(pos)
-        let childrenIndex = this.getChildrenIndex(pos)
+        if (pos.depth >= this.pillars.length - 1) {
+            return
+        }
+        let familyIndex = this.getChildrenIndex(pos.copy().shift.depth(-1))
         branch.children.forEach(b => {
-            let newPos = new Pos(pos.depth + 1, childrenIndex, b.card.getNode().pos.index)
+            let newPos = new Pos(pos.depth + 1, familyIndex, b.card.pos().index)
             this.updateBranchPos(b, newPos)
         })
     }
 
     // inserts an entire branch into the tree. This assumes that the branches position is valid
     private insertBranch(branch: Branch): void {
-        let node = branch.card.getNode()
+        let node = branch.card.node()
+        console.log("inserting branch based on node, " + node.pos.string() )
 
         // insert the card into the correct family
         this.pillars[node.pos.depth].families[node.pos.family].insertCard(node)

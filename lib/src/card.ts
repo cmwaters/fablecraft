@@ -16,7 +16,8 @@ export class Card implements RedomComponent {
     editor: Quill;
     command: CommandLine
 
-    private node: Node
+    private position: Pos
+    private uid: number
 
     constructor(parent: HTMLElement, node: Node, config: CardConfig, insertBefore?: Card) {
         this.el = el("div.card", { style: { marginBottom: config.margin, marginTop: config.margin } })
@@ -25,7 +26,8 @@ export class Card implements RedomComponent {
         } else {
             mount(parent, this.el)
         }
-        this.node = node
+        this.position = node.pos
+        this.uid = node.uid
         this.editor = new Quill(this.el as Element, {
             modules: {
                 "markdownShortcuts": {}
@@ -58,6 +60,7 @@ export class Card implements RedomComponent {
     }
 
     backspace(): boolean {
+        console.log("BACKSPACE")
         if (this.command.hasFocus()) {
             if (this.command.txt.value.length === 0) {
                 this.command.hide()
@@ -105,24 +108,32 @@ export class Card implements RedomComponent {
         this.el.style.border = "1px solid #fff"
     }
 
-    getNode(): Node {
-        return this.node
+    node(): Node {
+        return { 
+            uid: this.uid,
+            pos: this.position,
+            text: this.editor.getText(),
+        }
+    }
+
+    pos(): Pos {
+        return this.position
     }
 
     id(): number {
-        return this.node.uid
+        return this.uid
     }
 
     incrementIndex(): void {
-        this.node.pos.index++
+        this.position.index++
     }
 
     decrementIndex(): void {
-        this.node.pos.index--
+        this.position.index--
     }
 
     setPos(pos: Pos): void {
-        this.node.pos = pos
+        this.position = pos
     }
 
     spotlight(): void {

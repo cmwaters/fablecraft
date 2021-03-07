@@ -47,7 +47,7 @@ export class TreeTypology {
                     let node = {
                         uid: uid,
                         pos: pos,
-                        text: pos.string(),
+                        text: "Hello",
                     }
                     nodes.push(node)
                     uid++
@@ -68,12 +68,13 @@ export function assertTypology(el: HTMLElement, typology: TreeTypology): void {
     expect(el.children[0].className).to.equal("reference")
 
     let reference = el.children[0]
+    let pLength = typology.pillars.length
 
     // assert that there are enough pillars (remeber there is always one pillar
     // more than what is initially created)
-    expect(reference.children.length).to.equal(typology.pillars.length + 1)
+    expect(reference.children.length).to.equal(pLength + 1)
 
-    for (let i = 0; i < typology.pillars.length; i++) {
+    for (let i = 0; i < pLength; i++) {
         let pillarEl = reference.children[i]
         let pillar = typology.pillars[i]
         expect(pillarEl.className, "pillar class assertion " + i).to.equal("pillar")
@@ -88,6 +89,11 @@ export function assertTypology(el: HTMLElement, typology: TreeTypology): void {
             }
         }
     }
+
+    // we expect the last pillar, or the ghost pillar to contain a bunch of empty families
+    let finalPillarEl = reference.children[pLength]
+    expect(finalPillarEl.className, "pillar class assertion " + pLength).to.equal("pillar")
+    expect(finalPillarEl.children.length, "should be as many empty families as cards in the last pillar").to.equal(typology.lastPillarCardCount())
 }
 
 export function getNodeAsElement(el: HTMLElement, pos: Pos): HTMLElement {

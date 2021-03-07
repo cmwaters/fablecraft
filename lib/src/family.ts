@@ -3,6 +3,7 @@ import { Card } from "./card";
 import { Node } from "./node";
 import { Pos } from "./pos"
 import { FamilyConfig } from './config'
+import { errors } from "./errors"
 
 export class Family implements RedomComponent {
     el: HTMLElement;
@@ -18,6 +19,7 @@ export class Family implements RedomComponent {
         }
         this.config = config
     }
+
     // cardOffset returns the amount of pixels between the top of the family and the
     // center of the card.
     cardOffset(index: number): number {
@@ -39,7 +41,7 @@ export class Family implements RedomComponent {
 
     insertCard(node: Node): void {
         if (node.pos.index > this.cards.length) {
-            throw new Error("card index out of bounds")
+            throw new Error(errors.indexOutOfBounds)
         }
 
         for (let i = node.pos.index; i < this.cards.length; i++) {
@@ -70,19 +72,18 @@ export class Family implements RedomComponent {
     }
 
     shiftFamilyIndex(delta: number): void {
-        this.cards.forEach(card => card.setPos(card.getNode().pos.shift.family(delta)))
+        this.cards.forEach(card => card.setPos(card.pos().shift.family(delta)))
     }
 
     // delete card removes the card from the family, shifts
     // the index of the cards below down by one and returns the
     // id of the deleted card (so as to update the card indexer)
     deleteCard(index: number): number {
-        let id = this.cards[index].getNode().uid
+        let id = this.cards[index].node().uid
         this.cards[index].setPos(Pos.null())
 
         unmount(this.el, this.cards[index].el)
         this.cards.splice(index, 1)
-
         for (let i = index; i < this.cards.length; i++) {
             this.cards[i].decrementIndex()
         } 
