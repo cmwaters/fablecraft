@@ -136,7 +136,7 @@ export class Pillar implements RedomComponent {
         
         // add the id's
         let ids: number[] = []
-        this.families[familyIndex].cards.forEach(card => ids.push(card.getNode().uid))
+        this.families[familyIndex].cards.forEach(card => ids.push(card.id()))
 
         // remove the family
         unmount(this.el, this.families[familyIndex])

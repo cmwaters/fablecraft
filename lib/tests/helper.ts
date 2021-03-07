@@ -47,7 +47,7 @@ export class TreeTypology {
                     let node = {
                         uid: uid,
                         pos: pos,
-                        text: pos.string(),
+                        text: "Hello",
                     }
                     nodes.push(node)
                     uid++
@@ -93,7 +93,7 @@ export function assertTypology(el: HTMLElement, typology: TreeTypology): void {
     // we expect the last pillar, or the ghost pillar to contain a bunch of empty families
     let finalPillarEl = reference.children[pLength]
     expect(finalPillarEl.className, "pillar class assertion " + pLength).to.equal("pillar")
-    expect(finalPillarEl.children.length).to.equal(typology.lastPillarCardCount())
+    expect(finalPillarEl.children.length, "should be as many empty families as cards in the last pillar").to.equal(typology.lastPillarCardCount())
 }
 
 export function getNodeAsElement(el: HTMLElement, pos: Pos): HTMLElement {

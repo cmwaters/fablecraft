@@ -44,3 +44,48 @@ describe("Fable Tree | Constructor", () => {
     })
 
 })
+
+describe("Fable Tree | General", () => {
+    before(() => {
+        let div = document.getElementById("test-container")
+        expect(div).to.not.be.null
+        container = div!
+        container.innerHTML = ""
+    })
+
+    afterEach(() => {
+        // clear the contents after every test
+        container.innerHTML = ""
+    })
+
+    it("can edit a card's text", () => {
+        let tree = new Tree(container, defaultConfig())
+        tree.modifyNode(new Pos(), "Hello World")
+
+        let card = tree.getCard(new Pos())
+        expect(card.editor.getText()).to.equal("Hello World\n")
+    })
+
+    it("can select different cards", () => {
+        let tree = new Tree(container, defaultConfig(), new TreeTypology([5]).pillar([0, 1, 2, 3, 4]).nodes())
+
+        let positions = [
+            new Pos(0, 0, 0),
+            new Pos(0, 0, 3),
+            new Pos(1, 1, 0),
+            new Pos(1, 3, 2)
+        ]
+
+        positions.forEach(pos => {
+            tree.selectNode(pos)
+            expect(tree.getCard().pos().equals(pos)).to.be.true
+        })
+
+        tree.selectNode(new Pos(), true)
+        setTimeout(() => {
+            expect(tree.getCard().hasFocus()).to.be.true
+        }, 150)
+    })
+})
+
+

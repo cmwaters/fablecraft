@@ -12,7 +12,7 @@ import { errors } from "../src/errors"
 
 let container: HTMLElement
 
-describe.only("Fable Tree | Creation", () => {
+describe("Fable Tree | Creation", () => {
     before(() => {
         let div = document.getElementById("test-container")
         expect(div).to.not.be.null 
@@ -106,7 +106,6 @@ describe.only("Fable Tree | Creation", () => {
         expect(node.pos.equals(new Pos())).to.be.true
         expect(node.text).to.equal("Hello World")
         let nodeEl = getNodeAsElement(tree.el, new Pos())
-        console.log(nodeEl)
         expect(nodeEl.children[0].children[0].innerHTML).to.equal("Hello World")
         let card = tree.getCard(new Pos())
         expect(card.editor.getText()).to.equal("Hello World\n")
