@@ -1,0 +1,45 @@
+.newStory {
+    
+}
+
+.textAreaWithIcon {
+    display: flex;
+    margin: 20px;
+}
+
+.textAreaWithIcon svg {
+    fill: #333;
+    width: 30px;
+    margin: 8px;
+    height: 30px;
+    display: inline-block;
+}
+
+.textAreaWithIcon textarea {
+    fill: #333;
+    width: 100%;
+    margin: 8px;
+    display: inline-block;
+    resize: none;
+}
+
+
+.inputWithIcon {
+    display: flex;
+    margin: 20px;
+}
+
+.inputWithIcon svg {
+    fill: #333;
+    width: 30px;
+    margin: 8px;
+    display: inline-block;
+}
+
+.inputWithIcon input {
+    fill: #333;
+    width: 100%;
+    margin: 8px;
+    display: inline-block;
+    padding-bottom: 5px;
+}

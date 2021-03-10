@@ -1,0 +1,95 @@
+.startView {
+    width: 100%;
+    height: 100vh;
+}
+
+.centerPanel {
+    width: 500px;
+    height: 200px; 
+    margin: auto;
+    margin-top: calc(50vh - 150px);
+    margin-bottom: calc(50vh - 150px);
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+    border-radius: 10px;
+    padding: 50px;
+    text-align: center;
+}
+
+.pretitle {
+    color: #666;
+    font-size: 12px;
+    padding: 5px;
+    font-family: "Open Sans", Arial, sans-serif;
+}
+
+.title {
+    font-family: "Playfair Display", Times, serif;
+    font-size: 52px;
+    color: #333;
+}
+
+.startButton {
+    font-size: 16px;
+    color: #333;
+    width: 120px;
+    margin: 20px auto;
+    padding: 30px;
+    font-family: "Open Sans", Arial, sans-serif;
+    display: flex;
+    cursor: pointer;
+}
+
+.startButton div {
+    display: inline-block;
+}
+
+.icon {
+    fill: #333;
+    width: 14px;
+    height: 22px;
+    margin-right: 10px;
+    display: inline-block;
+}
+
+.storyName {
+    display: flex;
+    margin: 20px;
+}
+
+.storyName input {
+    font-family: "Playfair Display", Times, serif;
+    font-size: 32px;
+    margin-bottom: 5px;
+    display: inline-block;
+}
+
+.storyName svg {
+    fill: #333;
+    width: 20px;
+    margin: 20px;
+    display: inline-block;
+}
+
+.storyDescription {
+    display: flex;
+    margin: 20px;
+    height: 100px;
+}
+
+.storyDescription textarea {
+    font-family: "Open Sans", Arial, sans-serif;
+    font-size: 16px;
+    width: 100%;
+}
+
+.storyDescription svg {
+    fill: #333;
+    width: 20px;
+    margin: 0px 20px 70px 20px;
+    display: inline-block;
+}
+
+.blankView {
+    width: 100%;
+    height: 100vh;
+}

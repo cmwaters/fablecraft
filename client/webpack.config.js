@@ -5,7 +5,7 @@ module.exports = {
 	},
 	output: {
 		filename: "[name].js",
-		path: __dirname + "/views",
+		path: __dirname + "/public",
 	},
 	resolve: {
 		extensions: [".tsx", ".ts", ".js"],
@@ -16,6 +16,10 @@ module.exports = {
 				test: /\.tsx?$/,
 				use: "ts-loader",
 				exclude: /node_modules/,
+			},
+			{
+				test: /\.css$/i,
+				use: ["style-loader", "css-loader"],
 			},
 		],
 	},

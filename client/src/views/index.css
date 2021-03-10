@@ -4,6 +4,16 @@ body {
     overflow: hidden;
 }
 
+input {
+    border: none;
+    outline: none;
+}
+
+textarea {
+    border: none;
+    outline: none;
+}
+
 .authentication {
     width: 220px;
     height: 300px;

@@ -187,7 +187,6 @@ describe.only("Fable Tree | Input", () => {
             startingTypology: new TreeTypology([1]),
             keys: [shift.down, down, shift.up, del],
             assertions: (tree: Tree) => {
-                console.log(tree.string())
                 assertTypology(tree.el, new TreeTypology([1]))
                 expect(tree.getCard().pos().equals(new Pos(0, 0, 0))).to.be.true
             }
