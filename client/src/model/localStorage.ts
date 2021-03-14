@@ -1,6 +1,6 @@
 import { Header } from "./header"
-import { Pos } from "fabletree/src/pos"
-import { Node } from "fabletree/src/node"
+import { Pos } from "fabletree"
+import { Node } from "fabletree"
 import { Story } from "./story"
 import { Model } from "."
 import localforage from "localforage"
@@ -10,6 +10,7 @@ const dbName = "fable"
 export class LocalStorage implements Model {
     stories: LocalForage
     current: LocalForage | undefined
+    header: Header | undefined
 
     constructor() {
         this.stories = localforage.createInstance({
@@ -38,23 +39,69 @@ export class LocalStorage implements Model {
 
     }
 
-    createStory(header: Header): Promise<void> {
-        return this.stories.setItem<string>(header.uid.toString(), JSON.stringify(header))
-            .then(value => { return })
-            .catch(err => { return Promise.reject(new Error(err)) })
+    async createStory(header: Header): Promise<Story> {
+        // create a new header
+        await this.stories.setItem<string>(header.uid.toString(), JSON.stringify(header))
+
+        // create an instance to track the cards of this header
+        this.current = localforage.createInstance({
+            name: dbName,
+            storeName: header.uid.toString(),
+        })
+
+        // create the first node and save it in the db
+        let firstNode: Node = {
+            uid: 0,
+            pos: new Pos(),
+            text: ""
+        }
+        await this.createNode(firstNode)
+
+        // set the header
+        this.header = header
+
+        // return the story
+        return { 
+            header: header,
+            nodes: [firstNode],
+        }
+        
     }
 
-    getStory(id: number): Promise<Story | null> {
-        return this.stories.getItem<string>(id.toString())
-            .then(value => {
-                if (!value) {
-                    return null
+    loadStory(id: number): Promise<Story | null> {
+        return new Promise<Story | null>((resolve, reject) => {
+            this.stories.getItem<string>(id.toString())
+            .then(headerString => {
+                if (!headerString) {
+                    return resolve(null)
                 }
-                return JSON.parse(value) as Story
+                this.header = JSON.parse(headerString) as Header
+                this.current = localforage.createInstance({
+                    name: dbName,
+                    storeName: this.header.uid.toString(),
+                })
+
+                let nodes: Node[] = []
+                this.current.iterate<string, void>((value: string, key: string, iterationNumber: number) => {
+                    let node = JSON.parse(value) as Node
+                    nodes.push(node)
+                }, (err: any, result: void) => {
+                    if (err) {
+                        return reject(err)
+                    } else {
+                        return resolve({ 
+                            header: this.header!,
+                            nodes: nodes,
+                        })
+                    }
+                })
+
             }).catch((err) => {
-                return Promise.reject(err)
+                return reject(err)
             })
+        })
     }
+
 
     editStory(header: Header): void {
 
@@ -68,11 +115,16 @@ export class LocalStorage implements Model {
         let stories: Header[] = []
         return new Promise<Header[]>((resolve, reject) => {
             this.stories.iterate<string, void>((value: string, key: string, iterationNumber: number) => {
-                stories.push(JSON.parse(value) as Header)
-            }).catch(err => {
-                reject(err)
+                let header = JSON.parse(value) as Header
+                console.log(header)
+                stories.push(header)
+            }, (err: any, result: void) => {
+                if (err) {
+                    return reject(err)
+                } else {
+                    return resolve(stories)
+                }
             })
-            resolve(stories)
         })
     }
 

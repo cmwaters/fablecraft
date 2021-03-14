@@ -1,7 +1,9 @@
 import { Header } from "./header"
 import { Pos } from "fabletree/src/pos"
 import { Node } from "fabletree/src/node"
-import { Story } from "./story"
+import { Story, StoryEvents } from "./story"
+
+export { Header, Story, StoryEvents }
 
 export interface Model {
 
@@ -16,9 +18,9 @@ export interface Model {
 
     deleteNode(id: number): void
 
-    getStory(id: number): Promise<Story | null>
+    loadStory(id: number): Promise<Story | null>
 
-    createStory(header: Header): Promise<void>
+    createStory(header: Header): Promise<Story>
 
     deleteStory(id: number): void
 

@@ -12,7 +12,7 @@ import sort from 'fast-sort'
 import { errors } from './errors';
 import "../assets/tree.css"
 
-const firstCardText = "Welcome to Fablecraft"
+const firstCardText = ""
 
 export class Tree implements RedomComponent {
 
@@ -71,7 +71,7 @@ export class Tree implements RedomComponent {
         this.appendPillar()
         this.pillars[0].appendFamily()
 
-        if (nodes) {
+        if (nodes && nodes.length > 0) {
             sort(nodes).asc("uid")
 
             // we take the order of the nodes to be their respective id's
@@ -104,7 +104,9 @@ export class Tree implements RedomComponent {
             this.cardIndexer.push(firstNode.pos)
         }
 
-        this.el.onresize = () => this.resize()
+        this.el.addEventListener("resize", (e: Event) => {
+            this.resize()
+        })
 
         window.onmousewheel = (ev: Event) => {
             let e = ev as WheelEvent
@@ -131,7 +133,7 @@ export class Tree implements RedomComponent {
 
         // set event as a nop
         this.event = {
-            onNewNode: (pos: Pos) => { },
+            onNewNode: (uid: number, pos: Pos) => { },
             onMoveNode: (oldPos: Pos, newPos: Pos) => { },
             onModifyNode: (node: Node) => { },
             onDeleteNode: (node: Node) => { },
@@ -767,6 +769,7 @@ export class Tree implements RedomComponent {
     // can fit in the window 1/2/3 and then use that to calculate the width and positioning of each
     // pillar so that it all fits nicely
     private resize(): void {
+        console.log("resizing window")
 
         // calculate the new center and the center delta
         let delta = this.centerPoint

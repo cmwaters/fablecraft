@@ -1,70 +1,127 @@
 import { key } from "localforage"
 import { RedomComponent, el, svg } from "redom"
-import { Component } from "../../contexts/component"
+import { Component } from "../."
 import { PenFillIcon } from "../icons"
 import "./button.css"
 
-export interface ButtonElement extends Component {
-    click(): void 
+export type ButtonState = {
+    disabled: string
+    active: string,
+    normal: string
 }
 
-export const ButtonWithIcon = (props: {
-    icon?: SVGElement
-    text: string,
-    callback: () => void,
-}): ButtonElement => {
-    return {
-        el: el("div.buttonWithIcon", [
-            props.icon,
-            el("div", props.text)
-        ], {
-            onclick: () => {
-                props.callback()
-            }
-        }),
+export interface ButtonComponent extends Component {
+    click(): void 
+    enable(): void
+    disable(): void
+}
 
-        click() {
-            props.callback()
-        },
+export class ButtonWithIcon implements ButtonComponent {
+    el: HTMLElement
+    button: HTMLButtonElement
+    icon: SVGElement
+    click: () => void
+    onkeydown: (key: string) => void = (key: string) => {}
+    onkeyup: (key: string) => void = (key: string) => {}
 
-        onkeydown(key: string) {
-            if (key === "Enter") {
-                props.callback()
+
+    constructor(props: {
+        execute: () => void,
+        icon: SVGElement
+        text: string,
+        style?: { [key: string]: any } 
+        }) {
+
+        this.click = () => {
+            if (!this.button.disabled) {
+                props.execute()
             }
         }
+        this.icon = props.icon
+        this.button = el("button", props.text, {
+            style: props.style
+        })
+        this.el = el("div.buttonWithIcon", [
+            this.icon,
+            this.button
+        ], {
+            onclick: this.click
+        })
+    }
+
+    enable() {
+        this.button.disabled = false;
+    }
+
+    disable() {
+        this.button.disabled = true;
     }
 }
 
 export const StartWritingButton = (props: {
-    callback: () => void
-}): ButtonElement => {
-    return ButtonWithIcon({
-        icon: PenFillIcon,
-        text: "Start Writing",
-        callback: () => {
-            props.callback()
-        }
+    execute: () => void
+}): ButtonComponent => {
+    let button = new ButtonWithIcon({
+        icon: PenFillIcon({}),
+        text: "Press Any Key to Start Writing",
+        execute: props.execute,
     })
+    
+    button.onkeydown = (key: string) => {
+        button.click()
+    }
+
+    return button
 }
 
-export const BorderedButton = (props: {
-    callback: () => void,
-    text: string,
-    color: string
-}): ButtonElement => {
-    return { 
-        el: el("div.borderedButton", props.text, {
+export class BorderedButton implements ButtonComponent {
+    el: HTMLButtonElement
+    click: () => void
+    backgroundColor: ButtonState
+
+    constructor(props: {
+        execute: () => void,
+        text: string,
+        backgroundColor: {
+            normal: string,
+            disabled: string,
+            active: string,
+        },
+    }) {
+        this.click = () => {
+            if (!this.el.disabled) {
+                props.execute()
+            }
+        } 
+
+        this.backgroundColor = props.backgroundColor 
+            
+        this.el = el("button", props.text, {
+            class: "borderedButton",
             style: {
-                padding: 5,
-                backgroundColor: props.color
+                backgroundColor: this.backgroundColor.normal
             },
             onclick: () => {
-                props.callback()
+                this.click()
             }
-        }),
+        })
 
-        click() {
-            props.callback()
-        }
+        this.el.addEventListener("focus", (e: FocusEvent) => {
+            this.el.style.backgroundColor = this.backgroundColor.active
+        })
+
+        this.el.addEventListener("blur", (e: FocusEvent) => {
+            this.el.style.backgroundColor = this.backgroundColor.normal
+        })
+    }
+
+    enable() {
+        this.el.disabled = false
+        this.el.style.backgroundColor = this.backgroundColor.normal
+    }
+
+    disable() {
+        this.el.disabled = true
+        this.el.style.backgroundColor = this.backgroundColor.disabled
     }
 }

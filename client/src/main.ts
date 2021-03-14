@@ -1,79 +1,78 @@
 // import { View } from './view'
 import { LocalStorage } from './model/localStorage'
-import { Model } from './model'
-
-import { Header } from './model/header'
-
-
-import { CenteredPanel } from "./components/panel"
-import { StartWritingButton } from "./components/buttons"
-import { startView } from "./views/setup"
-import config from "../config.json"
-import "./views/index.css"
-import { el, mount, RedomComponent, unmount, } from 'redom'
-import { Tree, defaultConfig } from 'fabletree'
-import { CreateFirstStoryView } from "./views/setup"
-import { Component } from "./contexts/component"
+import { Model, Header, Story } from './model'
+import { view, notifier } from './views'
+import { Tree, Pos } from "fabletree"
 
 const app = {
     model: new LocalStorage() as Model,
-    stories: [] as Header[],
-    view: null as null | Component,
+    library: [] as Header[],
+    story: null as Story | null,
+    tree: null as Tree | null,
+
+    events: {
+        onTitleChange: (newTitle: string) => {
+            if (app.story) {
+                app.story.header.title = newTitle
+                app.model.editStory(app.story.header)
+            }
+        },
+        nodes: {
+            onNewNode: (uid: number, pos: Pos) => {
+
+            }
+        }
+    },
+
+
     init: async () => {
-
-        // set up key event listeners
-        document.onkeydown = (e: KeyboardEvent) => {
-            if (app.view && app.view.onkeydown) {
-                app.view.onkeydown(e.key)
-            }
-        }
-
-        document.onkeyup = (e: KeyboardEvent) => {
-            if (app.view && app.view.onkeyup) {
-                app.view.onkeyup(e.key)
-            }
-        }
-
+        view.init()
+        notifier.outputAlsoToConsole()
 
         try {
-            app.stories = await app.model.listStories()
+            app.library = await app.model.listStories()
         } catch (err) {
-            console.error(err)
+            notifier.error(err)
         }
 
-        if (app.stories.length === 0) {
-            let start = startView({
-                startButton: StartWritingButton({
-                    callback: () => app.changeView(CreateFirstStoryView({
-                        callback: (title: string, description: string) => {
-                            app.newStory(title, description)
-                        }
-                    }))
+        if (app.library.length === 0) {
+            view.startPage((title: string, description: string): void => {
+                app.newStory(title, description).then((story: Story) => {
+                    app.story = story
+                    view.storyPage({
+                        story: story,
+                        events: app.events
+                    })
+                }).catch((err) => {
+                    notifier.error(err)
                 })
             })
-            app.changeView(start)
+        } else {
+            // load the first story
+            // TODO: We should load the most recently updated
+            app.model.loadStory(app.library[0].uid).then((story: Story | null) => {
+                if (story) {
+                    app.story = story
+                    view.storyPage({ 
+                        story: story,
+                        events: app.events,
+                    })
+                } else {
+                    notifier.error("unable to find story")
+                }
+            }).catch((err) => { notifier.error(err) })
         }
     },
-    changeView: (newView: Component) => {
-        if (app.view) {
-            unmount(document.body, app.view)
-        }
-        mount(document.body, newView)
-        app.view = newView
-    },
 
-    newStory: (title: string, description: string) => {
-        let story = {
-            header: {
-                uid: app.stories.length,
-                title: title,
-                description: description
-            },
-            cards: []
-        }
-
-        app.model.createStory(story.header)
-        app.stories.push(story.header)
+    newStory: async (title: string, description: string): Promise<Story> => {
+        console.log("creating new story " + title)
+        let story = await app.model.createStory({
+            uid: app.library.length,
+            title: title,
+            description: description
+        })
+        app.library.push(story.header)
+        return story
     }
 
 }

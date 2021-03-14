@@ -4,7 +4,7 @@ import { Pos } from "./pos"
 export type Events = {
     // onNewNode is triggered whenever the user
     // creates a new card
-    onNewNode: (pos: Pos) => void
+    onNewNode: (uid: number, pos: Pos) => void
 
     // onMoveNode is triggered when the user moves
     // a card to a new location. It does not trigger for

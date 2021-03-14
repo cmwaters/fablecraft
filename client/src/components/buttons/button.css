@@ -1,7 +1,6 @@
 .buttonWithIcon {
     font-size: 16px;
     color: #333;
-    width: 120px;
     margin: 20px auto;
     padding: 30px;
     font-family: "Open Sans", Arial, sans-serif;
@@ -24,6 +23,18 @@
 .borderedButton {
     border-radius: 5px;
     color: white;
+    padding: 10px 15px;
     cursor: pointer;
     font-family: "Open Sans", Arial, sans-serif;
+}
+
+.borderedButton:active {
+    background-color: darkblue;
+}
+
+button {
+    outline: none;
+    border: none;
+    font-family: "Open Sans", Arial, sans-serif;
+    background-color: transparent;
 }

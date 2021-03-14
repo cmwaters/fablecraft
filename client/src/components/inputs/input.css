@@ -1,5 +1,18 @@
-.newStory {
-    
+input {
+    border: none;
+    outline: none;
+}
+
+textarea {
+    border: none;
+    outline: none;
+}
+
+.storyTitle {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    height: 20px;
 }
 
 .textAreaWithIcon {
@@ -41,5 +54,4 @@
     width: 100%;
     margin: 8px;
     display: inline-block;
-    padding-bottom: 5px;
 }

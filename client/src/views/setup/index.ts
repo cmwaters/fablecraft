@@ -3,18 +3,24 @@ import { CenteredPanel } from "../../components/panel"
 import { NewStoryInput } from "../../components/inputs"
 import "./setup.css"
 
-import { Component } from "../../contexts/component"
+import { Component } from "../../components"
 
-export const startView = (props: {
+export const StartView = (props: {
     startButton: Component
 }): Component => {
 
     return { 
-        el: el("div.startView", [
+        el: el("div.page", [
             el("div.centerPanel", [
                 el("div.pretitle", "Welcome to"),
                 el("div.title", "Fablecraft"),
-                props.startButton,
+                el("div", props.startButton, {
+                    style: { 
+                        margin: "auto",
+                        display: "inline-block"
+                    }
+                } )
+                
             ])
         ]),
 
@@ -26,27 +32,19 @@ export const startView = (props: {
     }
 }
 
-export const BlankView = (props: {
-    content: Component
-}): RedomComponent => {
-    return {
-        el: el("div.blankView", props.content)
-    }
-}
-
 export const CreateFirstStoryView = (props: {
     callback: (name: string, description: string) => void
 }): RedomComponent => {
     return { 
-        el: BlankView({
-            content: CenteredPanel({
+        el: el("div.page", [
+            CenteredPanel({
                 width: 520,
                 height: 220,
-                content: NewStoryInput({
-                    callback: props.callback
+                content: new NewStoryInput({
+                    execute: props.callback
                 }),
                 padding: 40
             })
-        })
+        ])
     }
 }
