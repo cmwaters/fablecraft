@@ -1,3 +1,5 @@
+import { Events } from "./events"
+
 export type Config = {
     card: {
         width: {
@@ -52,6 +54,6 @@ export type CardConfig = {
 }
 
 export type Options = {
-
+    events?: Events 
 }
 

@@ -132,12 +132,16 @@ export class Tree implements RedomComponent {
         }
 
         // set event as a nop
-        this.event = {
-            onNewNode: (uid: number, pos: Pos) => { },
-            onMoveNode: (oldPos: Pos, newPos: Pos) => { },
-            onModifyNode: (node: Node) => { },
-            onDeleteNode: (node: Node) => { },
-            onSelectNode: (node: Node) => { },
+        if (options && options.events) {
+            this.event = options.events
+        } else {
+            this.event = {
+                onNewNode: (uid: number, pos: Pos) => { },
+                onMoveNode: (oldPos: Pos, newPos: Pos) => { },
+                onModifyNode: (node: Node) => { },
+                onDeleteNode: (node: Node) => { },
+                onSelectNode: (node: Node) => { },
+            }
         }
 
         // begin by focusing on the first card
@@ -594,11 +598,13 @@ export class Tree implements RedomComponent {
                     if (this.card.atStart()) {
                         if (this.shiftMode) {
                             this.createAbove()
+                            this.event.onNewNode(this.card.id(), this.current.copy())
                         } else if (this.altMode) {
                             this.shiftUpwards()
                         } else {
                             this.up()
                             this.card.focus()
+                            this.event.onSelectNode(this.card.node())
                         }
                     }
                     break;
@@ -606,11 +612,13 @@ export class Tree implements RedomComponent {
                     if (this.card.atEnd()) {
                         if (this.shiftMode) {
                             this.createBelow()
+                            this.event.onNewNode(this.card.id(), this.current.copy())
                         } else if (this.altMode) {
                             this.shiftDownwards()
                         } else {
                             this.down()
                             this.card.focusStart()
+                            this.event.onSelectNode(this.card.node())
                         }
                     }
                     break;
@@ -618,9 +626,11 @@ export class Tree implements RedomComponent {
                     if (this.card.atEnd()) {
                         if (this.shiftMode) {
                             this.createChild()
+                            this.event.onNewNode(this.card.id(), this.current.copy())
                         } else {
                             this.down()
                             this.card.focusStart()
+                            this.event.onSelectNode(this.card.node())
                         }
                     }
                     break;
@@ -628,11 +638,14 @@ export class Tree implements RedomComponent {
                     if (this.card.atStart()) {
                         this.left()
                         this.card.focusStart()
+                        this.event.onSelectNode(this.card.node())
                     }
                     break;
                 case "Backspace":
                     if (this.card.backspace()) {
+                        let node = this.getCard().node()
                         this.deleteNode(this.current)
+                        this.event.onDeleteNode(node)
                     }
                     break;
                 case "Escape":
@@ -645,40 +658,50 @@ export class Tree implements RedomComponent {
             case "ArrowUp":
                 if (this.shiftMode) {
                     this.createAbove()
+                    this.event.onNewNode(this.card.id(), this.current.copy())
                 } else if (this.altMode) {
                     this.shiftUpwards()
                 } else {
                     this.up();
+                    this.event.onSelectNode(this.card.node())
                 }
                 break;
             case "ArrowDown":
                 if (this.shiftMode) {
                     this.createBelow()
+                    this.event.onNewNode(this.card.id(), this.current.copy())
                 } else if (this.altMode) {
                     this.shiftDownwards()
                 } else {
                     this.down();
+                    this.event.onSelectNode(this.card.node())
                 }
                 break;
             case "ArrowLeft":
                 if (this.shiftMode) {
                     this.createParent()
+                    this.event.onNewNode(this.card.id(), this.current.copy())
                 } else {
                     this.left();
+                    this.event.onSelectNode(this.card.node())
                 }
                 break;
             case "ArrowRight":
                 if (this.shiftMode) {
                     this.createChild()
+                    this.event.onNewNode(this.card.id(), this.current.copy())
                 } else {
                     this.right();
+                    this.event.onSelectNode(this.card.node())
                 }
                 break;
             case "Enter":
                 this.card.focus();
                 break;
             case "Backspace":
+                let node = this.getCard().node()
                 this.deleteNode(this.current)
+                this.event.onDeleteNode(node)
                 break;
         }
 
@@ -747,6 +770,7 @@ export class Tree implements RedomComponent {
         let newPos = pos.above(this.pillars[pos.depth])
         if (newPos.isNotNull()) {
             this.moveNode(pos, newPos, true)
+            this.event.onMoveNode(pos, newPos)
         }
     }
 
@@ -756,6 +780,7 @@ export class Tree implements RedomComponent {
         let newPos = pos.below(this.pillars[pos.depth])
         if (newPos) {
             this.moveNode(pos, newPos, true)
+            this.event.onMoveNode(pos, newPos)
         }
     }
 
