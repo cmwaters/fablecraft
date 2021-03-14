@@ -1,5 +1,6 @@
 import chai, { assert } from 'chai'
 import { Tree } from "../src/tree"
+import { Node } from "../src/node"
 import { defaultConfig } from "../src/config"
 import { Pos } from "../src/pos"
 import {
@@ -13,18 +14,42 @@ import { errors } from "../src/errors"
 let container: HTMLElement
 let keySpeed = 150 // 150 milliseconds per action
 
+
+
 describe.only("Fable Tree | Input", () => {
+    let eventRecorder: EventRecorder
+
     before(() => {
         let div = document.getElementById("test-container")
         expect(div).to.not.be.null
         container = div!
         container.innerHTML = ""
+        eventRecorder = resetEventRecorder()
     })
 
     afterEach(() => {
         // clear the contents after every test
         container.innerHTML = ""
+        eventRecorder = resetEventRecorder()
     })
+
+    let eventSystem = {
+        onNewNode: (pos: Pos) => {
+            eventRecorder.newNode = pos
+        },
+        onMoveNode: (oldPos: Pos, newPos: Pos) => { 
+            eventRecorder.moveNode = newPos
+        },
+        onModifyNode: (node: Node) => {
+            eventRecorder.modifyNode = node.pos
+        },
+        onDeleteNode: (node: Node) => {
+            eventRecorder.deleteNode = node.pos
+        },
+        onSelectNode: (node: Node) => { 
+            eventRecorder.selectNode = node.pos
+        },
+    }
 
     type KeyEvent = {
         type: string,
@@ -81,6 +106,7 @@ describe.only("Fable Tree | Input", () => {
             keys: [escape, down],
             assertions: (tree: Tree) => {
                 expect(tree.getCard().pos().equals(new Pos(0, 0, 1))).to.be.true
+                expect(eventRecorder.selectNode.equals(new Pos(0, 0, 1))).to.be.true
             }
         },
         {
@@ -88,7 +114,8 @@ describe.only("Fable Tree | Input", () => {
             startingTypology: new TreeTypology([3]),
             keys: [escape, down, down, up],
             assertions: (tree: Tree) => {
-                expect(tree.getCard().pos().equals(new Pos(0, 0, 1)), tree.getCard().pos().string()).to.be.true
+                expect(tree.getCard().pos().equals(new Pos(0, 0, 1))).to.be.true
+                expect(eventRecorder.selectNode.equals(new Pos(0, 0, 1))).to.be.true
             }
         },
         {
@@ -97,6 +124,7 @@ describe.only("Fable Tree | Input", () => {
             keys: [escape, down, right],
             assertions: (tree: Tree) => {
                 expect(tree.getCard().pos().equals(new Pos(1, 1, 0))).to.be.true
+                expect(eventRecorder.selectNode.equals(new Pos(1, 1, 0))).to.be.true
             }
         },
         {
@@ -105,6 +133,7 @@ describe.only("Fable Tree | Input", () => {
             keys: [escape, right, down, left],
             assertions: (tree: Tree) => {
                 expect(tree.getCard().pos().equals(new Pos())).to.be.true
+                expect(eventRecorder.selectNode.equals(new Pos())).to.be.true
             }
         },
         {
@@ -115,6 +144,7 @@ describe.only("Fable Tree | Input", () => {
                 let currentCard = tree.getCard()
                 expect(currentCard.pos().equals(new Pos(0, 0, 1))).to.be.true
                 expect(currentCard.hasFocus()).to.be.true
+                expect(eventRecorder.selectNode.equals(new Pos(0, 0, 1))).to.be.true
             }
         },
         // {
@@ -135,6 +165,7 @@ describe.only("Fable Tree | Input", () => {
             keys: [escape, down, right, up, left],
             assertions: (tree: Tree) => {
                 expect(tree.getCard().pos().equals(new Pos())).to.be.true
+                expect(eventRecorder.selectNode.equals(new Pos())).to.be.true
             }
         },
         {
@@ -143,6 +174,7 @@ describe.only("Fable Tree | Input", () => {
             keys: [enter, right, escape, down, down, down, left],
             assertions: (tree: Tree) => {
                 expect(tree.getCard().pos().equals(new Pos(0, 0, 1))).to.be.true
+                expect(eventRecorder.selectNode.equals(new Pos(0, 0, 1))).to.be.true
             }
         },
         {
@@ -151,8 +183,8 @@ describe.only("Fable Tree | Input", () => {
             keys: [escape, shift.down, down, shift.up],
             assertions: (tree: Tree) => {
                 assertTypology(tree.el, new TreeTypology([2]))
-
                 expect(tree.getCard().pos().equals(new Pos(0, 0, 1))).to.be.true
+                expect(eventRecorder.newNode.equals(new Pos(0, 0, 1))).to.be.true
             }
         }, 
         {
@@ -162,6 +194,7 @@ describe.only("Fable Tree | Input", () => {
             assertions: (tree: Tree) => {
                 assertTypology(tree.el, new TreeTypology([2]))
                 expect(tree.getCard().pos().equals(new Pos())).to.be.true
+                expect(eventRecorder.newNode.equals(new Pos())).to.be.true
             }
         },
         {
@@ -171,6 +204,7 @@ describe.only("Fable Tree | Input", () => {
             assertions: (tree: Tree) => {
                 assertTypology(tree.el, new TreeTypology([1]).pillar([1]))
                 expect(tree.getCard().pos().equals(new Pos(1,0,0))).to.be.true
+                expect(eventRecorder.newNode.equals(new Pos(1,0,0))).to.be.true
             }
         },
         {
@@ -180,6 +214,7 @@ describe.only("Fable Tree | Input", () => {
             assertions: (tree: Tree) => {
                 assertTypology(tree.el, new TreeTypology([1]))
                 expect(tree.getCard().id()).to.equal(1)
+                expect(eventRecorder.deleteNode.equals(new Pos())).to.be.true
             }
         },
         {
@@ -190,13 +225,15 @@ describe.only("Fable Tree | Input", () => {
                 console.log(tree.string())
                 assertTypology(tree.el, new TreeTypology([1]))
                 expect(tree.getCard().pos().equals(new Pos(0, 0, 0))).to.be.true
+                expect(eventRecorder.newNode.equals(new Pos(0, 0, 1)), "newNode").to.be.true
+                expect(eventRecorder.deleteNode.equals(new Pos(0, 0, 1)), "deleteNode").to.be.true
             }
         }
     ]
 
     testCases.forEach(test => {
         it(test.name, (done) => {
-            let tree = new Tree(container, defaultConfig(), test.startingTypology.nodes())
+            let tree = new Tree(container, defaultConfig(), test.startingTypology.nodes(), { events: eventSystem})
             // dispatch events with 150 millisecond delay in between each
             test.keys.forEach((key: KeyEvent | string, index: number) => {
                 setTimeout(() => {
@@ -214,4 +251,22 @@ describe.only("Fable Tree | Input", () => {
             }, (test.keys.length + 1) * keySpeed)
         })
     })
+
+    type EventRecorder = {
+        newNode: Pos,
+        modifyNode: Pos,
+        deleteNode: Pos,
+        moveNode: Pos,
+        selectNode: Pos
+    }
+
+    function resetEventRecorder(): EventRecorder {
+        return { 
+            newNode: Pos.null(),
+            modifyNode: Pos.null(),
+            deleteNode: Pos.null(),
+            moveNode: Pos.null(),
+            selectNode: Pos.null(),
+        }
+    }
 })
