@@ -60,7 +60,7 @@ describe("Fable Tree | Deletion", () => {
         tree.deleteNode(new Pos())
         let card = tree.getCard(new Pos())
         expect(card.editor.getText()).to.equal("\n")
-        expect(card.node().text).to.equal("\n")
+        expect(card.node().content).to.equal("\n")
     })
 
 })

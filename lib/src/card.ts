@@ -1,6 +1,7 @@
 import { RedomComponent, el, mount } from "redom";
 import { CommandLine } from './command'
 import Quill from "quill"
+import Delta from "quill-delta"
 import MarkdownShortcuts from 'quill-markdown-shortcuts'; 
 import { Node } from "./node";
 import { Pos } from "./pos"
@@ -33,9 +34,15 @@ export class Card implements RedomComponent {
                 "markdownShortcuts": {}
             },
         })
-        this.editor.setText(node.text)
+        if (typeof node.content === "string") {
+            this.editor.setText(node.content)
+        } else {
+            this.editor.setContents(node.content, "api")
+        }
         this.command = new CommandLine(this.el, true)
     }
+
+onModifyNode: (update: Delta) => void = (update: Delta) => {}
 
     showCommandLine(): void {
         console.log("showing command line")
@@ -112,7 +119,7 @@ export class Card implements RedomComponent {
         return { 
             uid: this.uid,
             pos: this.position,
-            text: this.editor.getText(),
+            content: this.editor.getContents(),
         }
     }
 

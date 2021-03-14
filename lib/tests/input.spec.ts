@@ -9,6 +9,7 @@ import {
     getNodeAsElement,
 } from "./helper"
 let expect = chai.expect
+import Delta from "quill-delta"
 import { errors } from "../src/errors"
 
 let container: HTMLElement
@@ -34,14 +35,14 @@ describe.only("Fable Tree | Input", () => {
     })
 
     let eventSystem = {
-        onNewNode: (pos: Pos) => {
+        onNewNode: (uid: number, pos: Pos) => {
             eventRecorder.newNode = pos
         },
-        onMoveNode: (oldPos: Pos, newPos: Pos) => { 
+        onMoveNode: (uid: number, oldPos: Pos, newPos: Pos) => { 
             eventRecorder.moveNode = newPos
         },
-        onModifyNode: (node: Node) => {
-            eventRecorder.modifyNode = node.pos
+        onModifyNode: (uid: number, delta: Delta) => {
+            eventRecorder.modifyNode = uid
         },
         onDeleteNode: (node: Node) => {
             eventRecorder.deleteNode = node.pos
@@ -253,7 +254,7 @@ describe.only("Fable Tree | Input", () => {
 
     type EventRecorder = {
         newNode: Pos,
-        modifyNode: Pos,
+        modifyNode: number,
         deleteNode: Pos,
         moveNode: Pos,
         selectNode: Pos
@@ -262,7 +263,7 @@ describe.only("Fable Tree | Input", () => {
     function resetEventRecorder(): EventRecorder {
         return { 
             newNode: Pos.null(),
-            modifyNode: Pos.null(),
+            modifyNode: -1,
             deleteNode: Pos.null(),
             moveNode: Pos.null(),
             selectNode: Pos.null(),

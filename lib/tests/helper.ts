@@ -47,7 +47,7 @@ export class TreeTypology {
                     let node = {
                         uid: uid,
                         pos: pos,
-                        text: "Hello",
+                        content: uid.toString(),
                     }
                     nodes.push(node)
                     uid++
