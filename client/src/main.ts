@@ -2,7 +2,8 @@
 import { LocalStorage } from './model/localStorage'
 import { Model, Header, Story } from './model'
 import { view, notifier } from './views'
-import { Tree, Pos } from "fabletree"
+import { Tree, Pos, Node } from "fabletree"
+import Delta from "quill-delta"
 
 const app = {
     model: new LocalStorage() as Model,
@@ -10,7 +11,7 @@ const app = {
     story: null as Story | null,
     tree: null as Tree | null,
 
-    events: {
+    eventHandler: {
         onTitleChange: (newTitle: string) => {
             if (app.story) {
                 app.story.header.title = newTitle
@@ -19,8 +20,29 @@ const app = {
         },
         nodes: {
             onNewNode: (uid: number, pos: Pos) => {
-
-            }
+                if (app.story) {
+                    app.model.newNode({ 
+                        uid: uid, 
+                        pos: pos,
+                        content: ""
+                    })
+                }
+            }, 
+            onMoveNode: (uid: number, oldPos: Pos, newPos: Pos) => {
+                if (app.story) {
+                    app.model.moveNode(uid, newPos)
+                }
+            },
+            onModifyNode: (uid: number, delta: Delta) => {
+                if (app.story) {
+                    app.model.modifyNode(uid, delta)
+                }
+            },
+            onDeleteNode: (node: Node) => {
+                if (app.story) {
+                    app.model.deleteNode(node.uid)
+                }
+            },
         }
     },
 
@@ -41,7 +63,7 @@ const app = {
                     app.story = story
                     view.storyPage({
                         story: story,
-                        events: app.events
+                        events: app.eventHandler
                     })
                 }).catch((err) => {
                     notifier.error(err)
@@ -55,7 +77,7 @@ const app = {
                     app.story = story
                     view.storyPage({ 
                         story: story,
-                        events: app.events,
+                        events: app.eventHandler,
                     })
                 } else {
                     notifier.error("unable to find story")
@@ -69,7 +91,9 @@ const app = {
         let story = await app.model.createStory({
             uid: app.library.length,
             title: title,
-            description: description
+            description: description,
+            stateHeight: 0,
+            latestHeight: 0,
         })
         app.library.push(story.header)
         return story

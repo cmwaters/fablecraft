@@ -26,8 +26,8 @@
     "fabletree": "file:../lib",
     "localforage": "^1.9.0",
     "pug": "^3.0.0",
-    "redom": "^3.27.1",
-    "uuid": "^8.3.2"
+    "quill-delta": "^4.2.2",
+    "redom": "^3.27.1"
   },
   "devDependencies": {
     "@types/chai": "^4.2.13",
@@ -44,6 +44,7 @@
     "nodemon": "^1.19.1",
     "style-loader": "^2.0.0",
     "ts-loader": "^8.0.17",
+    "ts-node": "^9.1.1",
     "typescript": "^3.9.7",
     "webpack": "^4.44.1",
     "webpack-cli": "^3.3.12"

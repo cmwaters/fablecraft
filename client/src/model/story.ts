@@ -1,5 +1,6 @@
 import { Header } from "./header"
 import { Node, Events, Pos } from "fabletree"
+import Delta from "quill-delta"
 
 export type Story = {
     header: Header,
@@ -26,8 +27,8 @@ export function fillEvents(events: StoryEvents): StoryEvents {
 export function emptyNodeEvents(): Events {
     return { 
         onNewNode: (uid: number, pos: Pos) => {},
-        onMoveNode: (oldPos: Pos, newPos: Pos) => {},
-        onModifyNode: (node: Node) => {},
+        onMoveNode: (uid: number, oldPos: Pos, newPos: Pos) => {},
+        onModifyNode: (uid: number, delta: Delta) => {},
         onDeleteNode: (node: Node) => {},
         onSelectNode: (node: Node) => {},
     }
