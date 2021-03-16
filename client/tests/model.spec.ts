@@ -1,12 +1,40 @@
 import { expect } from "chai"
+import { LocalStorage } from "../src/model/localStorage"
+import { Pos } from "fabletree"
+import Delta from "quill-delta"
 
 
 describe("Model | LocalStorage", () => {
 
-    it("can save a new story", async done => {
-
+    it("passes a sanity check", () => {
         expect(1 + 1).to.equal(2)
-        done()
+    })
+
+    it("can save and load a new story", async () => {
+        
+        let db = new LocalStorage()
+
+        let storyHeader = {
+            uid: 0,
+            title: "Test Story",
+            description: "This is a test story",
+            stateHeight: 0,
+            latestHeight: 0,
+        }
+
+        let story = await db.createStory(storyHeader)
+
+        expect(story.nodes.length).to.equal(1)
+        console.log(story.nodes[0])
+        expect(story.nodes[0]).to.equal({
+            uid: 0,
+            pos: new Pos(),
+            content: new Delta(),
+        })
+
+        let loadedStory = await db.loadStory(storyHeader.uid)
+
+        expect(loadedStory).to.equal(story)
 
     })
 

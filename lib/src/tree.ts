@@ -13,8 +13,6 @@ import { errors } from './errors';
 import Delta from "quill-delta"
 import "../assets/tree.css"
 
-const firstCardText = ""
-
 export class Tree implements RedomComponent {
 
     // ###################################### PUBLIC VARIABLES ###########################################
@@ -99,7 +97,7 @@ export class Tree implements RedomComponent {
             let firstNode: Node = {
                 uid: 0,
                 pos: new Pos(),
-                content: firstCardText,
+                content: new Delta(),
             }
             this.appendNode(firstNode)
             this.cardIndexer.push(firstNode.pos)
@@ -238,6 +236,11 @@ export class Tree implements RedomComponent {
     // below by one index down. Will not cause the matching insertNode
     // event to fire
     insertNode(pos: Pos, focus: boolean = false, content: string | Delta = ""): Node {
+        // if a string we convert it to a delta as a single insert operation 
+        if (typeof content === "string") {
+            content = new Delta().insert(content)
+        }
+
         let node = {
             uid: this.cardIndexer.length,
             pos: pos,
@@ -364,7 +367,7 @@ export class Tree implements RedomComponent {
                 return this.selectNode(nextPos)
             }
 
-            pos.shift.index(-1)
+            pos.decrement()
 
             nextPos = pos.below(this.pillars[pos.depth])
             if (nextPos.isNotNull()) {
@@ -993,7 +996,7 @@ export class Tree implements RedomComponent {
         if (pos.depth >= this.pillars.length - 1) {
             return
         }
-        let familyIndex = this.getChildrenIndex(pos.copy().shift.depth(-1))
+        let familyIndex = this.getChildrenIndex(pos.copy().shift({ depth: -1 }))
         branch.children.forEach(b => {
             let newPos = new Pos(pos.depth + 1, familyIndex, b.card.pos().index)
             this.updateBranchPos(b, newPos)

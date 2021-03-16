@@ -14,22 +14,22 @@ export interface Model {
 
     createStory(header: Header): Promise<Story>
 
-    deleteStory(id: number): void
+    deleteStory(id: number): Promise<void>
 
-    editStory(header: Header): void
+    editStory(header: Header): Promise<void>
 
     listStories(): Promise<Header[]>
 
     // Node Operatons
 
-    newNode(node: Node): void
+    newNode(node: Node): Promise<void>
 
-    moveNode(id: number, pos: Pos): void
+    moveNode(id: number, pos: Pos): Promise<void>
 
-    modifyNode(id: number, delta: Delta): void
+    modifyNode(id: number, delta: Delta): Promise<void>
 
-    getNode(id: number): Node | null
+    getNode(id: number): Promise<Node | null>
 
-    deleteNode(id: number): void
+    deleteNode(id: number): Promise<void>
 
 }

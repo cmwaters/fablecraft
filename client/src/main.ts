@@ -24,7 +24,7 @@ const app = {
                     app.model.newNode({ 
                         uid: uid, 
                         pos: pos,
-                        content: ""
+                        content: new Delta(),
                     })
                 }
             }, 
