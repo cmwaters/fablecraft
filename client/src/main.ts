@@ -1,5 +1,5 @@
 // import { View } from './view'
-import { LocalStorage } from './model/localStorage'
+import { LocalStorage } from './model/local'
 import { Model, Header, Story } from './model'
 import { view, notifier } from './views'
 import { Tree, Pos, Node } from "fabletree"

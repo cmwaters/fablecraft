@@ -6,7 +6,7 @@ import {
     TreeTypology,
     assertTypology,
     getNodeAsElement,
-} from "./helper"
+} from "./utils"
 let expect = chai.expect
 
 let container: HTMLElement

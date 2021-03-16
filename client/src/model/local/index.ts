@@ -1,11 +1,12 @@
-import { Header } from "./header"
+import { Header } from "../header"
 import { Pos } from "fabletree"
 import { Node } from "fabletree"
-import { Story } from "./story"
-import { Model } from "."
+import { Story } from "../story"
+import { Model } from ".."
 import Delta from "quill-delta"
 import localforage from "localforage"
-import { errors } from "./errors"
+import { errors } from "../errors"
+import { Op, Operation } from "./operation"
 
 const dbName = "fable"
 const statePrefix = "state"
@@ -13,26 +14,44 @@ const historyPrefix = "history"
 
 export class LocalStorage implements Model {
     stories: LocalForage
-
-    // to be set when a story is loaded
-    state: LocalForage | undefined
-    history: LocalForage | undefined
-    header: Header | undefined
+    state: LocalForage
+    history: LocalForage
+    header: Header
 
     constructor() {
         this.stories = localforage.createInstance({
             name: dbName,
             storeName: "stories"
         })
+
+        this.header = {
+            uid: 0,
+            title: "",
+            description: "",
+            latestHeight: 0,
+            stateHeight: 0,
+        }
+
+        // create instances to track the state and history of the story
+        this.state = localforage.createInstance({
+            name: dbName,
+            storeName: statePrefix + this.header.uid.toString(),
+        })
+
+        this.history = localforage.createInstance({
+            name: dbName,
+            storeName: historyPrefix + this.header.uid.toString(),
+        })
     }
 
     // Story Operations
 
     async createStory(header: Header): Promise<Story> {
-        // create a new header
-        await this.stories.setItem<string>(header.uid.toString(), JSON.stringify(header))
 
         this.lockStory(header)
+
+        // create a new header
+        await this.stories.setItem<Header>(JSON.stringify(header.uid), header)
 
         // create the first node and save it in the db
         let firstNode: Node = {
@@ -40,11 +59,11 @@ export class LocalStorage implements Model {
             pos: new Pos(),
             content: new Delta()
         }
-        await this.newNode(firstNode)
+        await this.state.setItem<Node>(JSON.stringify(firstNode.uid), firstNode)
 
         // return the story
         return {
-            header: header,
+            header: this.header,
             nodes: [firstNode],
         }
 
@@ -52,13 +71,11 @@ export class LocalStorage implements Model {
 
     async loadStory(id: number): Promise<Story | null> {
 
-        let headerString = await this.stories.getItem<string>(id.toString())
+        let header = await this.stories.getItem<Header>(JSON.stringify(id))
 
-        if (headerString === null) {
+        if (header === null) {
             throw new Error(errors.storyNotFound(id))
         }
-
-        let header = JSON.parse(headerString) as Header
 
         this.lockStory(header)
 
@@ -107,41 +124,22 @@ export class LocalStorage implements Model {
 
     // Node Operations
 
-    async newNode(node: Node): Promise<void> {
-        if (!this.history || !this.header) {
-            return Promise.reject(errors.noStoryLocked)
-        }
-            
-        await this.history.setItem(JSON.stringify(this.header!.latestHeight), JSON.stringify(Op.new(node)))
-
+    async newNode(node: Node): Promise<void> {            
+        await this.history.setItem(JSON.stringify(this.header.latestHeight), JSON.stringify(Op.new(node)))
         this.header.latestHeight++
     }
 
     async moveNode(id: number, pos: Pos): Promise<void> {
-        if (!this.history || !this.header) {
-            return Promise.reject(errors.noStoryLocked)
-        }
-
-        await this.history.setItem(JSON.stringify(id), JSON.stringify(Op.move(id, pos)))
-
+        await this.history.setItem(JSON.stringify(this.header.latestHeight), JSON.stringify(Op.move(id, pos)))
         this.header.latestHeight++
     }
 
     async modifyNode(id: number, delta: Delta): Promise<void> {
-        if (!this.history || !this.header) {
-            return Promise.reject(errors.noStoryLocked)
-        }
-
-        await this.history.setItem(JSON.stringify(id), JSON.stringify(Op.modify(id, delta)))
-
+        await this.history.setItem(JSON.stringify(this.header.latestHeight), JSON.stringify(Op.modify(id, delta)))
         this.header.latestHeight++
     }
 
     async getNode(id: number): Promise<Node | null> {
-        if (!this.state || !this.header) {
-            return Promise.reject(errors.noStoryLocked)
-        }
-
         let nodeString = await this.state.getItem<string>(JSON.stringify(id))
 
         if (nodeString === null) {
@@ -152,12 +150,7 @@ export class LocalStorage implements Model {
     }
 
     async deleteNode(id: number): Promise<void> {
-        if (!this.history || !this.header) {
-            return Promise.reject(errors.noStoryLocked)
-        }
-
-        await this.history.setItem(JSON.stringify(id), JSON.stringify(Op.delete(id)))
-
+        await this.history.setItem(JSON.stringify(this.header.latestHeight), JSON.stringify(Op.delete(id)))
         this.header.latestHeight++
     }
 
@@ -181,15 +174,16 @@ export class LocalStorage implements Model {
     }
 
     private async updateState(): Promise<Node[]> {
-        if (!this.header || !this.history || !this.state) {
-            return []
-        }
-
         let nodes = await this.getState()
+
+        // check if already up to date
+        if (this.header.stateHeight === this.header.latestHeight) {
+            return nodes
+        }
 
         await this.history.iterate<string, void>( async (value: string, key: string, iterationNumber: number) => {
             let height = JSON.parse(key) as number
-            if (height === this.header!.stateHeight + 1) {
+            if (height === this.header.stateHeight + 1) {
                 let op = JSON.parse(value) as Operation
                 switch (op.type) {
                     case "modify":
@@ -215,8 +209,8 @@ export class LocalStorage implements Model {
 
                 }
                 
-                this.header!.stateHeight++
-                await this.stories.setItem(this.header!.uid.toString(), JSON.stringify(this.header))
+                this.header.stateHeight++
+                await this.stories.setItem(this.header.uid.toString(), JSON.stringify(this.header))
             }
         })
 
@@ -230,8 +224,13 @@ export class LocalStorage implements Model {
 
         let nodes: Node[] = []
 
-        await this.state!.iterate<string, void>((value: string, key: string, iterationNumber: number) => {
-            let node = JSON.parse(value) as Node
+        await this.state!.iterate<Node, void>((value: Node, key: string, iterationNumber: number) => {
+            let node = {
+                uid: value.uid,
+                pos: Object.assign(new Pos, value.pos),
+                content: Object.assign(new Delta, value.content),
+            }
+
             nodes.push(node)
         }, (err: any, result: void) => {
             if (err) {
@@ -245,56 +244,3 @@ export class LocalStorage implements Model {
 
 }
 
-type Operation = ModifyOperation | NewOperation | MoveOperation | DeleteOperation
-
-type ModifyOperation = {
-    type: "modify"
-    uid: number
-    delta: Delta
-}
-
-type NewOperation = {
-    type: "new"
-    node: Node
-}
-type DeleteOperation = {
-    type: "delete"
-    uid: number
-}
-type MoveOperation = {
-    type: "move"
-    uid: number,
-    pos: Pos
-}
-
-const Op = {
-    new: (node: Node): NewOperation => {
-        return { 
-            type: "new",
-            node: node
-        }
-    },
-
-    modify: (uid: number, delta: Delta): ModifyOperation => {
-        return { 
-            type: "modify",
-            uid: uid,
-            delta: delta
-        }
-    },
-
-    delete: (uid: number): DeleteOperation => {
-        return { 
-            type: "delete",
-            uid: uid
-        }
-    },
-
-    move: (uid: number, pos: Pos): MoveOperation => {
-        return { 
-            type: "move",
-            uid: uid,
-            pos: pos,
-        }
-    }
-}

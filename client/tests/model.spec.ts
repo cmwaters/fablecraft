@@ -1,7 +1,8 @@
 import { expect } from "chai"
-import { LocalStorage } from "../src/model/localStorage"
+import { LocalStorage } from "../src/model/local"
 import { Pos } from "fabletree"
 import Delta from "quill-delta"
+import { expectEqualNodes, expectEqualStories } from "./utils"
 
 
 describe("Model | LocalStorage", () => {
@@ -25,16 +26,16 @@ describe("Model | LocalStorage", () => {
         let story = await db.createStory(storyHeader)
 
         expect(story.nodes.length).to.equal(1)
-        console.log(story.nodes[0])
-        expect(story.nodes[0]).to.equal({
+        expectEqualNodes(story.nodes[0], { 
             uid: 0,
             pos: new Pos(),
-            content: new Delta(),
+            content: new Delta()
         })
 
         let loadedStory = await db.loadStory(storyHeader.uid)
-
-        expect(loadedStory).to.equal(story)
+        
+        expect(loadedStory).to.not.be.null
+        expectEqualStories(loadedStory!, story)
 
     })
 
