@@ -24,9 +24,10 @@ export class LocalStorage implements Model {
             storeName: "stories"
         })
 
+        // set the null value for the header
         this.header = {
             uid: 0,
-            title: "",
+            title: "Untitled",
             description: "",
             latestHeight: 0,
             stateHeight: 0,
@@ -47,6 +48,11 @@ export class LocalStorage implements Model {
     // Story Operations
 
     async createStory(header: Header): Promise<Story> {
+
+        // save the previously locked header
+        if (this.header.uid !== header.uid) {
+            await this.stories.setItem<Header>(JSON.stringify(this.header.uid), this.header)
+        }
 
         this.lockStory(header)
 
@@ -71,18 +77,26 @@ export class LocalStorage implements Model {
 
     async loadStory(id: number): Promise<Story | null> {
 
-        let header = await this.stories.getItem<Header>(JSON.stringify(id))
+        // check if we are loading a new story
+        if (this.header.uid !== id) {
+            // save the previously locked header
+            await this.stories.setItem(JSON.stringify(this.header.uid), this.header)
 
-        if (header === null) {
-            throw new Error(errors.storyNotFound(id))
+            // load the new header
+            let header = await this.stories.getItem<Header>(JSON.stringify(id))
+    
+            if (header === null) {
+                throw new Error(errors.storyNotFound(id))
+            }
+
+            // lock on to the new header
+            this.lockStory(header)
         }
-
-        this.lockStory(header)
 
         let nodes = await this.updateState()
 
         return { 
-            header: header,
+            header: this.header,
             nodes: nodes,
         }
         
@@ -90,28 +104,21 @@ export class LocalStorage implements Model {
 
 
     async editStory(header: Header): Promise<void> {
-        await this.stories.setItem<string>(header.uid.toString(), JSON.stringify(header))
+        this.lockStory(header)
 
-        if (this.header === undefined || header.uid !== this.header.uid) {
-            this.header = header
-            this.state = localforage.createInstance({
-                name: dbName,
-                storeName: header.uid.toString(),
-            })
-        }
+        await this.stories.setItem<string>(JSON.stringify(header.uid), JSON.stringify(header))
     }
 
     deleteStory(id: number): Promise<void> {
-        return this.stories.removeItem(id.toString())
+        return this.stories.removeItem(JSON.stringify(id))
     }
 
     listStories(): Promise<Header[]> {
         let stories: Header[] = []
         return new Promise<Header[]>((resolve, reject) => {
-            this.stories.iterate<string, void>((value: string, key: string, iterationNumber: number) => {
-                let header = JSON.parse(value) as Header
-                console.log(header)
-                stories.push(header)
+            this.stories.iterate<Header, void>((value: Header, key: string, iterationNumber: number) => {
+                console.log(value)
+                stories.push(value)
             }, (err: any, result: void) => {
                 if (err) {
                     return reject(err)
@@ -124,19 +131,23 @@ export class LocalStorage implements Model {
 
     // Node Operations
 
-    async newNode(node: Node): Promise<void> {            
-        await this.history.setItem(JSON.stringify(this.header.latestHeight), JSON.stringify(Op.new(node)))
+    async newNode(node: Node): Promise<void> {    
         this.header.latestHeight++
+        console.log("new node")        
+        await this.history.setItem<Operation>(JSON.stringify(this.header.latestHeight), Op.new(node))
     }
 
     async moveNode(id: number, pos: Pos): Promise<void> {
-        await this.history.setItem(JSON.stringify(this.header.latestHeight), JSON.stringify(Op.move(id, pos)))
         this.header.latestHeight++
+        console.log("move node")
+        await this.history.setItem<Operation>(JSON.stringify(this.header.latestHeight), Op.move(id, pos))
     }
 
     async modifyNode(id: number, delta: Delta): Promise<void> {
-        await this.history.setItem(JSON.stringify(this.header.latestHeight), JSON.stringify(Op.modify(id, delta)))
         this.header.latestHeight++
+        console.log("modify node " + JSON.stringify(delta))
+        console.log(this.header.latestHeight)
+        await this.history.setItem<Operation>(JSON.stringify(this.header.latestHeight), Op.modify(id, delta))
     }
 
     async getNode(id: number): Promise<Node | null> {
@@ -150,8 +161,8 @@ export class LocalStorage implements Model {
     }
 
     async deleteNode(id: number): Promise<void> {
-        await this.history.setItem(JSON.stringify(this.header.latestHeight), JSON.stringify(Op.delete(id)))
         this.header.latestHeight++
+        await this.history.setItem<Operation>(JSON.stringify(this.header.latestHeight), Op.delete(id))
     }
 
     // Private helper operations
@@ -159,6 +170,11 @@ export class LocalStorage implements Model {
     private lockStory(header: Header): void {
         // set the header
         this.header = header
+        
+        // check if the header is already locked
+        if (this.header.uid == header.uid) {
+            return
+        }
 
         // create instances to track the state and history of the story
         this.state = localforage.createInstance({
@@ -176,43 +192,50 @@ export class LocalStorage implements Model {
     private async updateState(): Promise<Node[]> {
         let nodes = await this.getState()
 
-        // check if already up to date
-        if (this.header.stateHeight === this.header.latestHeight) {
-            return nodes
-        }
-
-        await this.history.iterate<string, void>( async (value: string, key: string, iterationNumber: number) => {
-            let height = JSON.parse(key) as number
+        let height = 0
+        await this.history.iterate<Operation, void>( async (op: Operation, key: string, iterationNumber: number) => {
+            height = JSON.parse(key) as number
+            console.log("Height: " + height)
             if (height === this.header.stateHeight + 1) {
-                let op = JSON.parse(value) as Operation
                 switch (op.type) {
                     case "modify":
+                        console.log("d monidy")
                         let modifiedNode = nodes[op.uid]
-                        modifiedNode.content.transform(op.delta)
-                        await this.state!.setItem(JSON.stringify(modifiedNode.uid), JSON.stringify(modifiedNode))
+                        let delta = Object.assign(new Delta, op.delta)
+                        console.log(op.delta)
+                        modifiedNode.content.transform(delta)
+                        await this.state!.setItem<Node>(JSON.stringify(modifiedNode.uid), modifiedNode)
                         break;
 
                     case "new":
-                        await this.state!.setItem(JSON.stringify(op.node.uid), JSON.stringify(op.node))
-                        nodes.push(op.node)
+                        let node = {
+                            uid: op.node.uid,
+                            pos: Object.assign(new Pos, op.node.pos),
+                            content: Object.assign(new Delta, op.node.content)
+                        }
+                        await this.state!.setItem<Node>(JSON.stringify(node.uid), node)
+                        nodes.push(node)
                         break;
 
                     case "delete":
-                        await this.state!.removeItem(JSON.stringify(op.uid))
+                        await this.state.removeItem(JSON.stringify(op.uid))
                         nodes = nodes.splice(op.uid, 1)
                         break;
 
                     case "move":
                         let movedNode = nodes[op.uid]
-                        movedNode.pos = op.pos
+                        movedNode.pos = Object.assign(new Pos, op.pos)
+                        await this.state!.setItem<Node>(JSON.stringify(movedNode.uid), movedNode)
                         break;
-
                 }
                 
                 this.header.stateHeight++
-                await this.stories.setItem(this.header.uid.toString(), JSON.stringify(this.header))
+                await this.stories.setItem<Header>(JSON.stringify(this.header.uid), this.header)
             }
+            return undefined
         })
+        this.header.latestHeight = height
+        await this.stories.setItem<Header>(JSON.stringify(this.header.uid), this.header)
 
         return nodes
     }
