@@ -10,9 +10,8 @@ import { Config, PillarConfig, Options } from './config';
 import { Events } from './events';
 import sort from 'fast-sort'
 import { errors } from './errors';
+import Delta from "quill-delta"
 import "../assets/tree.css"
-
-const firstCardText = "Welcome to Fablecraft"
 
 export class Tree implements RedomComponent {
 
@@ -71,7 +70,7 @@ export class Tree implements RedomComponent {
         this.appendPillar()
         this.pillars[0].appendFamily()
 
-        if (nodes) {
+        if (nodes && nodes.length > 0) {
             sort(nodes).asc("uid")
 
             // we take the order of the nodes to be their respective id's
@@ -98,13 +97,15 @@ export class Tree implements RedomComponent {
             let firstNode: Node = {
                 uid: 0,
                 pos: new Pos(),
-                text: firstCardText,
+                content: new Delta(),
             }
             this.appendNode(firstNode)
             this.cardIndexer.push(firstNode.pos)
         }
 
-        this.el.onresize = () => this.resize()
+        this.el.addEventListener("resize", (e: Event) => {
+            this.resize()
+        })
 
         window.onmousewheel = (ev: Event) => {
             let e = ev as WheelEvent
@@ -133,13 +134,7 @@ export class Tree implements RedomComponent {
         if (options && options.events) {
             this.event = options.events
         } else {
-            this.event = {
-                onNewNode: (pos: Pos) => { },
-                onMoveNode: (oldPos: Pos, newPos: Pos) => { },
-                onModifyNode: (node: Node) => { },
-                onDeleteNode: (node: Node) => { },
-                onSelectNode: (node: Node) => { },
-            }
+            this.event = {}
         }
 
         // begin by focusing on the first card
@@ -240,11 +235,16 @@ export class Tree implements RedomComponent {
     // has an invalid position. Moves cards in the same family that are
     // below by one index down. Will not cause the matching insertNode
     // event to fire
-    insertNode(pos: Pos, focus: boolean = false, text: string = ""): Node {
+    insertNode(pos: Pos, focus: boolean = false, content: string | Delta = ""): Node {
+        // if a string we convert it to a delta as a single insert operation 
+        if (typeof content === "string") {
+            content = new Delta().insert(content)
+        }
+
         let node = {
             uid: this.cardIndexer.length,
             pos: pos,
-            text: text
+            content: content
         }
 
         this.validateNewNode(node) 
@@ -293,7 +293,7 @@ export class Tree implements RedomComponent {
         let toNode = {
             uid: fromNode.uid,
             pos: to.copy(),
-            text: fromNode.text,
+            content: fromNode.content,
         }
 
         // validate the the position where the node shall be moved to (we treat it as if adding a new node)
@@ -367,7 +367,7 @@ export class Tree implements RedomComponent {
                 return this.selectNode(nextPos)
             }
 
-            pos.shift.index(-1)
+            pos.decrement()
 
             nextPos = pos.below(this.pillars[pos.depth])
             if (nextPos.isNotNull()) {
@@ -441,7 +441,7 @@ export class Tree implements RedomComponent {
                     }
 
                     if (withText) {
-                        result += "\t\t\t" + card.node().text
+                        result += "\t\t\t" + card.editor.getText()
                     }
                 })
             })
@@ -596,13 +596,15 @@ export class Tree implements RedomComponent {
                     if (this.card.atStart()) {
                         if (this.shiftMode) {
                             this.createAbove()
-                            this.event.onNewNode(this.current.copy())
+                            if (this.event.onNewNode)
+                                this.event.onNewNode(this.card.id(), this.current.copy())
                         } else if (this.altMode) {
                             this.shiftUpwards()
                         } else {
                             this.up()
                             this.card.focus()
-                            this.event.onSelectNode(this.card.node())
+                            if (this.event.onSelectNode)
+                                this.event.onSelectNode(this.card.node())
                         }
                     }
                     break;
@@ -610,13 +612,15 @@ export class Tree implements RedomComponent {
                     if (this.card.atEnd()) {
                         if (this.shiftMode) {
                             this.createBelow()
-                            this.event.onNewNode(this.current.copy())
+                            if (this.event.onNewNode)
+                                this.event.onNewNode(this.card.id(), this.current.copy())
                         } else if (this.altMode) {
                             this.shiftDownwards()
                         } else {
                             this.down()
                             this.card.focusStart()
-                            this.event.onSelectNode(this.card.node())
+                            if (this.event.onSelectNode) 
+                                this.event.onSelectNode(this.card.node())
                         }
                     }
                     break;
@@ -624,11 +628,13 @@ export class Tree implements RedomComponent {
                     if (this.card.atEnd()) {
                         if (this.shiftMode) {
                             this.createChild()
-                            this.event.onNewNode(this.current.copy())
+                            if (this.event.onNewNode)
+                                this.event.onNewNode(this.card.id(), this.current.copy())
                         } else {
                             this.down()
                             this.card.focusStart()
-                            this.event.onSelectNode(this.card.node())
+                            if (this.event.onSelectNode)
+                                this.event.onSelectNode(this.card.node())
                         }
                     }
                     break;
@@ -636,14 +642,16 @@ export class Tree implements RedomComponent {
                     if (this.card.atStart()) {
                         this.left()
                         this.card.focusStart()
-                        this.event.onSelectNode(this.card.node())
+                        if (this.event.onSelectNode)
+                            this.event.onSelectNode(this.card.node())
                     }
                     break;
                 case "Backspace":
                     if (this.card.backspace()) {
                         let node = this.getCard().node()
                         this.deleteNode(this.current)
-                        this.event.onDeleteNode(node)
+                        if (this.event.onDeleteNode)
+                            this.event.onDeleteNode(node)
                     }
                     break;
                 case "Escape":
@@ -656,41 +664,49 @@ export class Tree implements RedomComponent {
             case "ArrowUp":
                 if (this.shiftMode) {
                     this.createAbove()
-                    this.event.onNewNode(this.current.copy())
+                    if (this.event.onNewNode)
+                        this.event.onNewNode(this.card.id(), this.current.copy())
                 } else if (this.altMode) {
                     this.shiftUpwards()
                 } else {
                     this.up();
-                    this.event.onSelectNode(this.card.node())
+                    if (this.event.onSelectNode)
+                        this.event.onSelectNode(this.card.node())
                 }
                 break;
             case "ArrowDown":
                 if (this.shiftMode) {
                     this.createBelow()
-                    this.event.onNewNode(this.current.copy())
+                    if (this.event.onNewNode)
+                        this.event.onNewNode(this.card.id(), this.current.copy())
                 } else if (this.altMode) {
                     this.shiftDownwards()
                 } else {
                     this.down();
-                    this.event.onSelectNode(this.card.node())
+                    if (this.event.onSelectNode)
+                        this.event.onSelectNode(this.card.node())
                 }
                 break;
             case "ArrowLeft":
                 if (this.shiftMode) {
                     this.createParent()
-                    this.event.onNewNode(this.current.copy())
+                    if (this.event.onNewNode)
+                        this.event.onNewNode(this.card.id(), this.current.copy())
                 } else {
                     this.left();
-                    this.event.onSelectNode(this.card.node())
+                    if (this.event.onSelectNode)
+                        this.event.onSelectNode(this.card.node())
                 }
                 break;
             case "ArrowRight":
                 if (this.shiftMode) {
                     this.createChild()
-                    this.event.onNewNode(this.current.copy())
+                    if (this.event.onNewNode)
+                        this.event.onNewNode(this.card.id(), this.current.copy())
                 } else {
                     this.right();
-                    this.event.onSelectNode(this.card.node())
+                    if (this.event.onSelectNode)
+                        this.event.onSelectNode(this.card.node())
                 }
                 break;
             case "Enter":
@@ -699,7 +715,8 @@ export class Tree implements RedomComponent {
             case "Backspace":
                 let node = this.getCard().node()
                 this.deleteNode(this.current)
-                this.event.onDeleteNode(node)
+                if (this.event.onDeleteNode)
+                    this.event.onDeleteNode(node)
                 break;
         }
 
@@ -768,7 +785,8 @@ export class Tree implements RedomComponent {
         let newPos = pos.above(this.pillars[pos.depth])
         if (newPos.isNotNull()) {
             this.moveNode(pos, newPos, true)
-            this.event.onMoveNode(pos, newPos)
+            if (this.event.onMoveNode)
+                this.event.onMoveNode(this.card.id(), pos, newPos)
         }
     }
 
@@ -778,7 +796,8 @@ export class Tree implements RedomComponent {
         let newPos = pos.below(this.pillars[pos.depth])
         if (newPos) {
             this.moveNode(pos, newPos, true)
-            this.event.onMoveNode(pos, newPos)
+            if (this.event.onMoveNode)
+                this.event.onMoveNode(this.card.id(), pos, newPos)
         }
     }
 
@@ -792,6 +811,7 @@ export class Tree implements RedomComponent {
     // can fit in the window 1/2/3 and then use that to calculate the width and positioning of each
     // pillar so that it all fits nicely
     private resize(): void {
+        console.log("resizing window")
 
         // calculate the new center and the center delta
         let delta = this.centerPoint
@@ -976,7 +996,7 @@ export class Tree implements RedomComponent {
         if (pos.depth >= this.pillars.length - 1) {
             return
         }
-        let familyIndex = this.getChildrenIndex(pos.copy().shift.depth(-1))
+        let familyIndex = this.getChildrenIndex(pos.copy().shift({ depth: -1 }))
         branch.children.forEach(b => {
             let newPos = new Pos(pos.depth + 1, familyIndex, b.card.pos().index)
             this.updateBranchPos(b, newPos)

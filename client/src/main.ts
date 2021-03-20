@@ -1,272 +1,108 @@
 // import { View } from './view'
-// import { Model } from './model'
+import { LocalStorage } from './model/local'
+import { Model, Header, Story } from './model'
+import { view, notifier } from './views'
+import { Tree, Pos, Node } from "fabletree"
+import Delta from "quill-delta"
 
-import { el } from 'redom'
-import { Tree, defaultConfig } from 'fabletree'
+const app = {
+    model: new LocalStorage() as Model,
+    library: [] as Header[],
+    story: null as Story | null,
+    tree: null as Tree | null,
 
-// const inverseScrollSpeed = 2;
+    eventHandler: {
+        onTitleChange: (newTitle: string) => {
+            if (app.story) {
+                app.story.header.title = newTitle
+                app.model.editStory(app.story.header)
+            }
+        },
+        nodes: {
+            onNewNode: (uid: number, pos: Pos) => {
+                if (app.story) {
+                    app.model.newNode({ 
+                        uid: uid, 
+                        pos: pos,
+                        content: new Delta(),
+                    })
+                }
+            }, 
+            onMoveNode: (uid: number, oldPos: Pos, newPos: Pos) => {
+                if (app.story) {
+                    app.model.moveNode(uid, newPos)
+                }
+            },
+            onModifyNode: (uid: number, delta: Delta) => {
+                if (app.story) {
+                    app.model.modifyNode(uid, delta)
+                }
+            },
+            onDeleteNode: (node: Node) => {
+                if (app.story) {
+                    app.model.deleteNode(node.uid)
+                }
+            },
+        }
+    },
 
-// const NEW_STORY_TITLE = "Untitled"
 
-window.onload = () => {
-    console.log("Hello World")
-    
-    let div = el("div.window")
-    document.body.appendChild(div)
+    init: async () => {
+        view.init()
+        notifier.outputAlsoToConsole()
 
-    let tree = new Tree(div, defaultConfig())
+        try {
+            app.library = await app.model.listStories()
+        } catch (err) {
+            notifier.error(err)
+        }
 
+        if (app.library.length === 0) {
+            view.startPage((title: string, description: string): void => {
+                app.newStory(title, description).then((story: Story) => {
+                    app.story = story
+                    view.storyPage({
+                        story: story,
+                        events: app.eventHandler
+                    })
+                }).catch((err) => {
+                    notifier.error(err)
+                })
+            })
+        } else {
+            // load the first story
+            // TODO: We should load the most recently updated
+            app.model.loadStory(app.library[0].uid).then((story: Story | null) => {
+                if (story) {
+                    app.story = story
+                    view.storyPage({ 
+                        story: story,
+                        events: app.eventHandler,
+                    })
+                } else {
+                    notifier.error("unable to find story")
+                }
+            }).catch((err) => { notifier.error(err) })
+        }
+    },
 
-    // Fablecraft.start()
+    newStory: async (title: string, description: string): Promise<Story> => {
+        console.log("creating new story " + title)
+        let story = await app.model.createStory({
+            uid: app.library.length,
+            title: title,
+            description: description,
+            stateHeight: 0,
+            latestHeight: 0,
+        })
+        app.library.push(story.header)
+        return story
+    }
+
 }
 
-// export class Fablecraft {
-//     model: Model
-//     view: View
-//     shiftMode: boolean = false;
-//     ctrlMode: boolean = false;
-//     altMode: boolean = false;
-//     doubleCtrl: boolean = false;
-//     // nothing is saved
-//     incognito: boolean = false;
+window.onload = async () => {
+    console.log("Starting fablecraft")
 
-//     constructor(view: View, model: Model) {
-//         this.view = view
-//         this.model = model
-
-//         document.onkeydown = (e: KeyboardEvent) => {
-//             this.handleKeyDown(e)
-//         }
-
-//         document.onkeyup = (e: KeyboardEvent) => {
-//             this.handleKeyUp(e)
-//         }
-
-//         window.onresize = () => {
-//             let newSize = new Size(window.innerWidth, window.innerHeight)
-//             this.view.window.resize(newSize)
-//         }
-
-//         window.onmousewheel = (e: WheelEvent) => {
-//             if (this.shiftMode) {
-//                 this.wheelSlide(new Vector(-e.deltaY, -e.deltaX).divide(inverseScrollSpeed))
-//             } else {
-//                 this.wheelSlide(new Vector(-e.deltaX, -e.deltaY).divide(inverseScrollSpeed))
-//             }
-//         };
-//     }
-
-//     static start() {
-
-//     }
-
-    // async login(): Promise<User> {
-    //     return new Promise<User>((resolve, reject) =>{
-    //         this.view.clear()
-    //         let login = this.view.loginPage((username:string, password:string): void => {
-    //             // we should do some client side verifying here before making the request
-    //             Client.login(username, password)
-    //                 .then((user: User) => resolve(user))
-    //                 .catch((err: string) => login.error(err))
-    //         })
-    //         this.focus(login)
-    //         this.view.navbar([
-    //             {
-    //                 name: "Incognito",
-    //                 func: () => {
-    //                     resolve(this.incognitoMode())
-    //                 }
-    //             },
-    //             {
-    //                 name: "Sign Up",
-    //                 func: () => {
-    //                     resolve(this.signup())
-    //                 }
-    //             }
-    //         ])
-    //     })
-    // }
-
-    // async signup(): Promise<User> {
-    //     return new Promise<User>((resolve, reject) => {
-    //         this.view.clear()
-    //         let signup = this.view.signupPage((username: string, email: string, password: string, confirmPassword: string) => {
-    //             if (password !== confirmPassword) {
-    //                 signup.error("Passwords don't match.")
-    //             }
-    //             // TODO: client side verification of the users sign up details
-    //             Client.signup(username, email, password)
-    //                 .then((user: User) => resolve(user))
-    //                 .catch((err: string) => signup.error(err))
-    //         })
-    //         this.focus(signup)
-    //         this.view.navbar([
-    //             {
-    //                 name: "Incognito",
-    //                 func: () => {
-    //                     resolve(this.incognitoMode())
-    //                 }
-    //             }, 
-    //             {
-    //                 name: "Log In",
-    //                 func: () => {
-    //                     resolve(this.login())
-    //                 }
-    //             }
-    //         ])
-    //     })
-    // }
-
-    // async loadStory(user: User): Promise<{story: Story, cards: Card[]}> {
-    //     // if in incognito mode then create a new story locally
-    //     if (this.incognito) {
-    //         return { 
-    //             story: {
-    //                 _id: undefined,
-    //                 title: NEW_STORY_TITLE,
-    //                 owner: user._id
-    //             },
-    //             cards: [
-    //                 {
-    //                     _id: undefined,
-    //                     text: " ",
-    //                     story: undefined,
-    //                     depth: 0, 
-    //                     index: 0,
-    //                 }
-    //             ]
-    //         }
-    //     }
-
-    //     // retrieve the last story the user has or the first in the
-    //     // list of stories the user is associated with
-    //     let story: Story
-    //     try {
-    //         if (user.lastStory) {
-    //             story = await Client.getStory(user.lastStory)
-    //         } else if (user.stories.length > 0) {
-    //             story = await Client.getStory(user.stories[0])
-    //         }
-    //     } catch (err) {
-    //         console.log(err)
-    //     }
-
-    //     // retrieve the corresponding cards to that story
-    //     let cards: Card[] = []
-    //     if (story) {
-    //         cards = await Client.getCards(story._id).catch((err) => {
-    //             if (!err.error) {
-    //                 return Client.getCards(story._id)
-    //             }
-    //         })
-    //     } else {
-    //         // else we create a new empty story
-    //         let { story, rootCard } = await Client.createStory(NEW_STORY_TITLE)
-    //         story = story
-    //         cards = [rootCard]
-    //     }
-    //     return { story, cards }
-    // }
-
-    // incognitoMode(): Promise<User> {
-    //     this.incognito = true;
-    //     return Promise.resolve({ 
-    //         // by checking _id, the client will know if the user is in incognito mode
-    //         // and wants to make requests to the server.
-    //         _id: undefined,
-    //         username: "Incognito Mode",
-    //         lastStory: undefined,
-    //         stories: []
-    //     })
-    // }
-
-    // focus(object?: ViewComponent): void {
-    //     if (this.context) {
-    //         this.context.blur()
-    //     }
-
-    //     if (object) {
-    //         this.context = object
-    //     } else if (this.defaultContext) {
-    //         this.context = this.defaultContext
-    //     }
-    //     if (this.context) {
-    //         this.context.focus()
-    //     }
-    // }
-
-    // escape(): void {
-    //     if (this.defaultContext) {
-    //         this.focus()
-    //     } else {
-    //         this.context.blur()
-    //         this.context = null
-    //     }
-    // }
-
-    // handleKeyDown(e: KeyboardEvent) {
-    //     console.log(e.key)
-    //     switch(e.key) {
-    //         case "Meta":
-    //         case "Control":
-    //             if (this.view.cli) {
-    //                 if (this.doubleCtrl) {
-    //                     this.focus(this.view.cli)
-    //                 }
-    //             }
-    //             this.doubleCtrl = true;
-    //             this.ctrlMode = true;
-    //             setTimeout(() => {
-    //                 this.doubleCtrl = false
-    //             }, 500)
-    //             break;
-    //         case "Alt":
-    //             this.altMode = true;
-    //             break;
-    //         case "Shift":
-    //             this.shiftMode = true;
-    //             break;
-    //         case "Escape":
-    //             if (this.context) {
-    //                 this.escape()
-    //             }
-    //             break;
-    //         default:
-    //             if (this.context) {
-    //                 this.context.key(e.key, this.ctrlMode, this.altMode, this.shiftMode)
-    //             }
-    //     }
-    // }
-
-    
-
-    // handleKeyUp(e: KeyboardEvent) {
-        
-    // }
-
-    // wheelSlide(delta: Vector) {
-    //     this.view.window.pan(delta)
-    // }
-
-    // setup = {
-    //     cli: () => {
-    //         if (this.view.cli) {
-    //             this.view.cli.onclick(() => {
-    //                 this.context = this.view.cli
-    //                 this.view.cli.focus()
-    //             })
-    //             // set all the commands
-    //             this.view.cli.setCommands([
-    //                 {
-    //                     name: "Settings",
-    //                     aliases: [],
-    //                     cmd: () => {
-    //                         this.view.settings()
-    //                     }
-    //                 }
-    //             ])
-    //         }
-    //     }
-    // }
- 
-// }
+    await app.init()
+}

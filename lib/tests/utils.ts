@@ -1,5 +1,6 @@
 import { Node } from "../src/node"
 import { Pos } from "../src/pos"
+import Delta from "quill-delta"
 import chai from "chai"
 let expect = chai.expect
 
@@ -47,7 +48,7 @@ export class TreeTypology {
                     let node = {
                         uid: uid,
                         pos: pos,
-                        text: "Hello",
+                        content: new Delta().insert(uid.toString()),
                     }
                     nodes.push(node)
                     uid++

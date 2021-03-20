@@ -1,14 +1,12 @@
 import { RedomComponent, el, mount } from "redom";
 import { CommandLine } from './command'
 import Quill from "quill"
-import MarkdownShortcuts from 'quill-markdown-shortcuts'; 
+import Delta from "quill-delta"
 import { Node } from "./node";
 import { Pos } from "./pos"
 import { Size, Vector } from './geometry'
 import { CardConfig } from './config'
 import "../assets/quill.css"
-
-Quill.register('modules/markdownShortcuts', MarkdownShortcuts)
 
 // we call this node instead of card to distinguish from the model and the view
 export class Card implements RedomComponent {
@@ -28,14 +26,16 @@ export class Card implements RedomComponent {
         }
         this.position = node.pos
         this.uid = node.uid
-        this.editor = new Quill(this.el as Element, {
-            modules: {
-                "markdownShortcuts": {}
-            },
-        })
-        this.editor.setText(node.text)
+        this.editor = new Quill(this.el as Element)
+        if (typeof node.content === "string") {
+            this.editor.setText(node.content)
+        } else {
+            this.editor.setContents(node.content, "api")
+        }
         this.command = new CommandLine(this.el, true)
     }
+
+onModifyNode: (update: Delta) => void = (update: Delta) => {}
 
     showCommandLine(): void {
         console.log("showing command line")
@@ -112,7 +112,7 @@ export class Card implements RedomComponent {
         return { 
             uid: this.uid,
             pos: this.position,
-            text: this.editor.getText(),
+            content: this.editor.getContents(),
         }
     }
 

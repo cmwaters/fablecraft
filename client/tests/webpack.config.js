@@ -1,11 +1,11 @@
 module.exports = {
-	mode: process.env.NODE_ENV,
+	mode: "development",
 	entry: {
-		main: "./src/main.ts",
+		unit: "./unit.ts",
 	},
 	output: {
 		filename: "[name].js",
-		path: __dirname + "/public",
+		path: __dirname + "/dist",
 	},
 	resolve: {
 		extensions: [".tsx", ".ts", ".js"],

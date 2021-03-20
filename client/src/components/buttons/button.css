@@ -1,0 +1,40 @@
+.buttonWithIcon {
+    font-size: 16px;
+    color: #333;
+    margin: 20px auto;
+    padding: 30px;
+    font-family: "Open Sans", Arial, sans-serif;
+    display: flex;
+    cursor: pointer;
+}
+
+.buttonWithIcon div {
+    display: inline-block;
+}
+
+.buttonWithIcon svg {
+    fill: #333;
+    width: 14px;
+    height: 22px;
+    margin-right: 10px;
+    display: inline-block;
+}
+
+.borderedButton {
+    border-radius: 5px;
+    color: white;
+    padding: 10px 15px;
+    cursor: pointer;
+    font-family: "Open Sans", Arial, sans-serif;
+}
+
+.borderedButton:active {
+    background-color: darkblue;
+}
+
+button {
+    outline: none;
+    border: none;
+    font-family: "Open Sans", Arial, sans-serif;
+    background-color: transparent;
+}

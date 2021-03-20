@@ -72,7 +72,7 @@ export class Family implements RedomComponent {
     }
 
     shiftFamilyIndex(delta: number): void {
-        this.cards.forEach(card => card.setPos(card.pos().shift.family(delta)))
+        this.cards.forEach(card => card.setPos(card.pos().shift({family: delta})))
     }
 
     // delete card removes the card from the family, shifts

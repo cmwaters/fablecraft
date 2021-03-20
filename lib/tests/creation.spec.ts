@@ -6,7 +6,7 @@ import {
     TreeTypology,
     assertTypology,
     getNodeAsElement,
-} from "./helper"
+} from "./utils"
 let expect = chai.expect
 import { errors } from "../src/errors"
 
@@ -104,7 +104,7 @@ describe("Fable Tree | Creation", () => {
         let node = tree.insertNode(new Pos(), true, "Hello World")
         expect(node.uid).to.equal(1)
         expect(node.pos.equals(new Pos())).to.be.true
-        expect(node.text).to.equal("Hello World")
+        expect(node.content).to.equal("Hello World")
         let nodeEl = getNodeAsElement(tree.el, new Pos())
         expect(nodeEl.children[0].children[0].innerHTML).to.equal("Hello World")
         let card = tree.getCard(new Pos())

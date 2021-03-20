@@ -49,6 +49,7 @@ export class Pos {
         return this.depth === pos.depth && this.family === pos.family && this.index === pos.index
     }
 
+    // TODO: move to pillar.ts
     above(pillar: Pillar): Pos {
         // if there is a card in the same family directly above then return that
         if (this.index > 0) {
@@ -92,19 +93,24 @@ export class Pos {
         return Pos.null()
     }
 
-    shift = {
-        index: (delta: number): Pos => {
-            this.index += delta
-            return this
-        },
-        family: (delta: number): Pos => {
-            this.family += delta
-            return this
-        },
-        depth: (delta: number): Pos => {
-            this.depth += delta
-            return this
+    shift(delta: {
+        index?: number,
+        family?: number,
+        depth?: number,
+    }): Pos {
+        if (delta.index) {
+            this.index += delta.index
         }
+
+        if (delta.family) {
+            this.family += delta.family
+        }
+
+        if (delta.depth) {
+            this.depth += delta.depth
+        }
+
+        return this
     }
 
 }
