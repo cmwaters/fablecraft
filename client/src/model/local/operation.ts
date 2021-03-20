@@ -23,7 +23,7 @@ export type MoveOperation = {
     pos: Pos
 }
 
-export const Op = {
+export const op = {
     new: (node: Node): NewOperation => {
         return {
             type: "new",
