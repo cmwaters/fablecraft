@@ -105,7 +105,7 @@ export class StoryTitle implements RedomComponent {
 
     constructor(props: {
         title: string,
-        onTitleChange: (newTitle: string) => void,
+        onTitleChange?: (newTitle: string) => void,
     }) {
         let inputComponent = new InputWithIcon({
             icon: FileTextFillIcon({
@@ -132,7 +132,9 @@ export class StoryTitle implements RedomComponent {
 
         this.input.onkeydown = (e: KeyboardEvent) => {
             if (e.key === "Enter" && this.input.value.length > 0) {
-                props.onTitleChange(this.input.value)
+                if (props.onTitleChange) {
+                    props.onTitleChange(this.input.value)
+                }
             }
         }
     }

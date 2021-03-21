@@ -76,7 +76,7 @@ export class Tree implements RedomComponent {
             // we take the order of the nodes to be their respective id's
             nodes.forEach(node => {
                 if (node.uid !== this.cardIndexer.length) {
-                    throw new Error("non-montonically increasing node uid")
+                    throw new Error("non-montonically increasing node uid got " + node.uid + ", expected " + this.cardIndexer.length)
                 }
                 this.cardIndexer.push(node.pos)
             })

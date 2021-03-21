@@ -1,6 +1,7 @@
 import { Node, Pos } from "fabletree"
 import Delta from "quill-delta"
 import { expect } from "chai";
+import localforage from "localforage"
 import { Story, Header } from "../src/model"
 
 export function expectEqualStories(s1: Story, s2: Story) {
@@ -36,4 +37,30 @@ export function expectEqualDeltas(d1: Delta, d2: Delta) {
     let diff = d1.diff(d2);
 
     expect(diff.ops.length).to.equal(0, JSON.stringify(diff))
+}
+
+export async function expectStateSize(id: number, size: number) {
+    let nodes = localforage.createInstance({
+        name: "fable",
+        storeName: "state" + id.toString(),
+    })
+    let len = await nodes.length()
+    expect(len).to.equal(size)
+}
+
+export async function expectHistorySize(id: number, size: number) {
+    let history = localforage.createInstance({
+        name: "fable",
+        storeName: "history" + id.toString(),
+    })
+    let len = await history.length()
+    expect(len).to.equal(size)
+}
+
+export function printNodes(nodes: Node[]): string {
+    let string = ""
+    nodes.forEach(node => {
+        string += "Node{uid: " + node.uid + ", pos: " + node.pos.string() + " contents: " + node.content.toString() + " }\n"
+    })
+    return string
 }

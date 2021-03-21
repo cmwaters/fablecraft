@@ -2,9 +2,10 @@ import { Header } from "./header"
 import { Pos } from "fabletree/src/pos"
 import { Node } from "fabletree/src/node"
 import { Story, StoryEvents } from "./story"
+import { errors } from "./errors"
 import Delta from "quill-delta"
 
-export { Header, Story, StoryEvents }
+export { Header, Story, StoryEvents, errors }
 
 export interface Model {
 
@@ -16,7 +17,7 @@ export interface Model {
 
     deleteStory(id: number): Promise<void>
 
-    editStory(header: Header): Promise<void>
+    editStory(header: Header): Promise<Header>
 
     listStories(): Promise<Header[]>
 
@@ -28,7 +29,8 @@ export interface Model {
 
     modifyNode(id: number, delta: Delta): Promise<void>
 
-    getNode(id: number): Promise<Node | null>
+    // TODO: I'm not sure if it's necessary to load individual nodes
+    // getNode(id: number): Promise<Node | null>
 
     deleteNode(id: number): Promise<void>
 

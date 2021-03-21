@@ -25,10 +25,6 @@ export class StoryView implements Component {
             }
         }))
 
-        if (props.events.onTitleChange === undefined) {
-            props.events.onTitleChange = (newTitle: string) => {}
-        } 
-
         mount(this.el, this.windows[0])
         mount(this.el, new StoryTitle({
             title: props.story.header.title,
@@ -37,7 +33,9 @@ export class StoryView implements Component {
 
 
         setTimeout(() => {
-            this.tree = new Tree(this.windows[0], defaultConfig(), props.story.nodes)
+            this.tree = new Tree(this.windows[0], defaultConfig(), props.story.nodes, {
+                events: props.events.nodes
+            })
         }, 100)
     }
 } 

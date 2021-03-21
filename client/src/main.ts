@@ -20,6 +20,7 @@ const app = {
         },
         nodes: {
             onNewNode: (uid: number, pos: Pos) => {
+                console.log("new node event triggered")
                 if (app.story) {
                     app.model.newNode({ 
                         uid: uid, 
@@ -54,7 +55,7 @@ const app = {
         try {
             app.library = await app.model.listStories()
         } catch (err) {
-            notifier.error(err)
+            notifier.error(err.toString())
         }
 
         if (app.library.length === 0) {
