@@ -1,5 +1,6 @@
 // import { View } from './view'
 import { LocalStorage } from './model/local'
+import localforage from "localforage"
 import { Model, Header, Story } from './model'
 import { view, notifier } from './views'
 import { Tree, Pos, Node } from "fabletree"
@@ -10,43 +11,6 @@ const app = {
     library: [] as Header[],
     story: null as Story | null,
     tree: null as Tree | null,
-
-    eventHandler: {
-        onTitleChange: (newTitle: string) => {
-            if (app.story) {
-                app.story.header.title = newTitle
-                app.model.editStory(app.story.header)
-            }
-        },
-        nodes: {
-            onNewNode: (uid: number, pos: Pos) => {
-                console.log("new node event triggered")
-                if (app.story) {
-                    app.model.newNode({ 
-                        uid: uid, 
-                        pos: pos,
-                        content: new Delta(),
-                    })
-                }
-            }, 
-            onMoveNode: (uid: number, oldPos: Pos, newPos: Pos) => {
-                if (app.story) {
-                    app.model.moveNode(uid, newPos)
-                }
-            },
-            onModifyNode: (uid: number, delta: Delta) => {
-                if (app.story) {
-                    app.model.modifyNode(uid, delta)
-                }
-            },
-            onDeleteNode: (node: Node) => {
-                if (app.story) {
-                    app.model.deleteNode(node.uid)
-                }
-            },
-        }
-    },
-
 
     init: async () => {
         view.init()
@@ -67,13 +31,13 @@ const app = {
                         events: app.eventHandler
                     })
                 }).catch((err) => {
-                    notifier.error(err)
+                    notifier.error(err.toString())
                 })
             })
         } else {
-            // load the first story
-            // TODO: We should load the most recently updated
-            app.model.loadStory(app.library[0].uid).then((story: Story | null) => {
+            // load the most recent story
+            app.library.sort((a, b) => a.lastUpdated - b.lastUpdated)
+            await app.model.loadStory(app.library[0].uid).then((story: Story | null) => {
                 if (story) {
                     app.story = story
                     view.storyPage({ 
@@ -81,9 +45,11 @@ const app = {
                         events: app.eventHandler,
                     })
                 } else {
-                    notifier.error("unable to find story")
+                    throw new Error("unable to find story " + app.library[0].title)
                 }
-            }).catch((err) => { notifier.error(err) })
+            }).catch((err) => { 
+                notifier.error(err.toString()) 
+            })
         }
     },
 
@@ -95,10 +61,50 @@ const app = {
             description: description,
             stateHeight: 0,
             latestHeight: 0,
+            lastUpdated: 0,
         })
         app.library.push(story.header)
         return story
-    }
+    },
+
+    eventHandler: {
+        onTitleChange: (newTitle: string) => {
+            if (app.story) {
+                app.story.header.title = newTitle
+                app.model.editStory(app.story.header)
+            }
+        },
+        nodes: {
+            onNewNode: (uid: number, pos: Pos) => {
+                console.log("new node event triggered")
+                if (app.story) {
+                    app.model.newNode({
+                        uid: uid,
+                        pos: pos,
+                        content: new Delta(),
+                    })
+                }
+            },
+            onMoveNode: (uid: number, oldPos: Pos, newPos: Pos) => {
+                console.log("move node event triggered")
+                if (app.story) {
+                    app.model.moveNode(uid, newPos)
+                }
+            },
+            onModifyNode: (uid: number, delta: Delta) => {
+                console.log("modify node event triggered")
+                if (app.story) {
+                    app.model.modifyNode(uid, delta)
+                }
+            },
+            onDeleteNode: (node: Node) => {
+                console.log("delete node event triggered")
+                if (app.story) {
+                    app.model.deleteNode(node.uid)
+                }
+            },
+        }
+    },
 
 }
 

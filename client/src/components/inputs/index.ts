@@ -24,8 +24,8 @@ export class NewStoryInput implements Component {
 
         let storyTitle = new InputWithIcon({
             style: {
-                font: "Playfair Display",
-                size: 32,
+                fontFamily: "Playfair Display",
+                fontSize: 32,
             },
             icon: EaselFillIcon,
             placeholder: "Story Title",
@@ -116,7 +116,7 @@ export class StoryTitle implements RedomComponent {
             }),
             value: props.title,
             style: {
-                fontFamily: "Playfair Display",
+                fontFamily: "Open Sans",
                 fontSize: 12,
                 margin: 5,
                 color: "#7c848c",
@@ -155,6 +155,9 @@ export class InputWithIcon implements RedomComponent {
         autofocus?: boolean
         style?: { [key: string]: any } 
         }) {
+        console.log("style")
+        console.log(props.style)
+        console.log(props.autofocus)
         this.icon = props.icon
         this.input = el("input", {
             value: props.value !== undefined ? props.value : "",

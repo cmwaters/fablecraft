@@ -17,6 +17,7 @@ export class StoryView implements Component {
         events: StoryEvents
     }) {
         console.log(props.story.header)
+        console.log(props.story.nodes)
         this.el = el(".page")
         this.windows.push(el("div", {
             style: {

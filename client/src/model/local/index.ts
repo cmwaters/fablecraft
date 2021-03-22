@@ -1,6 +1,5 @@
 import { Header } from "../header"
-import { Pos } from "fabletree"
-import { Node } from "fabletree"
+import { Pos, Node } from "fabletree"
 import { Story } from "../story"
 import { Model } from ".."
 import Delta from "quill-delta"
@@ -20,6 +19,7 @@ const nullHeader = {
     description: "",
     latestHeight: 0,
     stateHeight: 0,
+    lastUpdated: Date.now(),
 }
 
 export class LocalStorage implements Model {
@@ -66,6 +66,7 @@ export class LocalStorage implements Model {
             await this.stories.setItem<Header>(JSON.stringify(this.header.uid), this.header)
         }
 
+        header.lastUpdated = Date.now()
         this.lockStory(header)
 
         // create a new header
@@ -90,9 +91,7 @@ export class LocalStorage implements Model {
     async loadStory(id: number): Promise<Story | null> {
 
         console.log("loading story " + id)
-        if (this.header.uid === -1) {
-            throw new Error(errors.storyNotFound(id))
-        }
+        this.checkNonNegativeID(id)
 
         // check if we are loading a new story
         if (this.header.uid !== id) {
@@ -149,6 +148,8 @@ export class LocalStorage implements Model {
     }
 
     async deleteStory(id: number): Promise<void> {
+        this.checkNonNegativeID(id)
+
         if (this.header.uid === -1) {
             throw new Error(errors.storyNotFound(id))
         }
@@ -174,6 +175,7 @@ export class LocalStorage implements Model {
         let stories: Header[] = []
         return new Promise<Header[]>((resolve, reject) => {
             this.stories.iterate<Header, void>((value: Header, key: string, iterationNumber: number) => {
+                console.log(key)
                 console.log(value)
                 stories.push(value)
             }, (err: any, result: void) => {
@@ -240,6 +242,7 @@ export class LocalStorage implements Model {
 
     private nextHeight(): string {
         this.header.latestHeight++
+        this.header.lastUpdated = Date.now()
         return encode(this.header.latestHeight)
     }
 
@@ -314,6 +317,7 @@ export class LocalStorage implements Model {
                             this.state.removeItem(encode(op.uid))
                                 .catch((err: any) => reject(err))
                             nodes[op.uid].pos = Pos.null()
+                            nodes[op.uid].content = new Delta()
                             break;
     
                         case "move":
@@ -339,8 +343,6 @@ export class LocalStorage implements Model {
                     this.stories.setItem<Header>(JSON.stringify(this.header.uid), this.header)
                         .catch((err: any) => reject(err))
                 }
-
-                nodes = this.removeDeletedNodes(nodes)
                     
                 return resolve(nodes)
             })
@@ -373,17 +375,10 @@ export class LocalStorage implements Model {
         return nodes
     }
 
-    private removeDeletedNodes(nodes: Node[]): Node[] {
-        console.log("removing deleted nodes...")
-        for (let i = nodes.length - 1; i >= 0; i--) {
-            if (nodes[i].pos.isNull()) {
-                console.log(i)
-                console.log(nodes[i])
-                nodes.splice(i, 1)
-                console.log(nodes)
-            }
+    private checkNonNegativeID(id: number) {
+        if (id < 0) {
+            throw new Error(errors.negativeID(id))
         }
-        return nodes
     }
 
 }

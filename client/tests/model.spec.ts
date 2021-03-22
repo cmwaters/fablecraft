@@ -19,6 +19,7 @@ const defaultStoryHeader = {
     description: "This is a test story",
     stateHeight: 0,
     latestHeight: 0,
+    lastUpdated: 0,
 }
 
 // NOTE: all tests are linked. Please be careful when using it.only
@@ -56,6 +57,7 @@ describe("Model | LocalStorage", () => {
             description: "",
             latestHeight: 0,
             stateHeight: 0,
+            lastUpdated: 0
         }
 
         let differentStory = await db.createStory(differentHeader)
@@ -196,8 +198,10 @@ describe("Model | LocalStorage", () => {
             uid: 1,
             title: "A new story",
             description: "",
-            stateHeight: 100, // this value should be ignored
-            latestHeight: 100, // this value should be ignored
+            // these values should be ignored
+            stateHeight: 100, 
+            latestHeight: 100,
+            lastUpdated: 0
         }
 
         let returnedHeader = await db.editStory(changedHeader)
@@ -214,7 +218,8 @@ describe("Model | LocalStorage", () => {
             title: "A new story",
             description: "",
             stateHeight: 0,
-            latestHeight: 0
+            latestHeight: 0,
+            lastUpdated: 0,
         }
 
         try {
