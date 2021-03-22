@@ -5,8 +5,11 @@ import { Component } from "../components"
 import { Story, StoryEvents } from "../model"
 import { mount, unmount, el } from "redom"
 import { notifier } from "./notifier"
-import { Tree, defaultConfig } from "fabletree"
+import { IconButton } from "../components/buttons"
+import { PersonFillIcon } from "../components/icons"
+import { StoryTitle } from "../components/inputs"
 import "./view.css"
+import { Events } from "fabletree"
 
 export { notifier }
 
@@ -41,11 +44,40 @@ export const view = {
         }))
     },
 
+    libraryPage: (props: {
+        story: Story,
+        events: Events,
+    }) => {
+        view.change(new StoryView({
+            story: props.story,
+            events: props.events
+        }))
+        mount(view.current, el("div"))
+    },
+
     storyPage: (props: {
         story: Story
         events: StoryEvents
+        home: () => void
     }) => {
-        view.change(new StoryView(props))
+        view.change(new StoryView({
+            story: props.story,
+            events: props.events.nodes!
+        }))
+        mount(view.current!, new StoryTitle({
+            title: props.story.header.title,
+            onTitleChange: props.events.onTitleChange
+        }))
+        mount(view.current!, el("div", new IconButton({
+            execute: props.home,
+            icon: PersonFillIcon({}),
+            width: 30
+        }), {
+            style: {
+                position: "absolute",
+                
+            }
+        }))
     },
 
     change: (page: Component) => {

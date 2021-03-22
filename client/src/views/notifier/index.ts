@@ -1,6 +1,7 @@
 import { Notification } from "../../components/notifications"
 import { el, mount, unmount } from "redom"
 import config from "../../../config.json"
+import "./notifier.css"
 
 const INFO_COLOR = "white"
 const WARNING_COLOR = "#ffbc49"

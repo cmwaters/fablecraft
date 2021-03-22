@@ -164,7 +164,7 @@ export class Card implements RedomComponent {
 
     dull(): void {
         console.log("making node dull")
-        this.el.style.color = "#999";
+        this.el.style.color = "#aaa";
         this.el.style.boxShadow = "0 0 0 0";
     }
 

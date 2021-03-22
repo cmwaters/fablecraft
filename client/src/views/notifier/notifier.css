@@ -1,5 +1,6 @@
 .notifier {
     position: absolute;
+    top: 0px;
     right: 0px; 
     width: 300px;
     height: 100vh;

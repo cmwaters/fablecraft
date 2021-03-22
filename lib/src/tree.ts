@@ -230,6 +230,7 @@ export class Tree implements RedomComponent {
             // focus on the car 
             this.card.focus()
         }
+
         // adjust the position of the card so that it is always in the center even
         // when the user is typing
         // TODO: perhaps this is something we can optimize
@@ -273,7 +274,8 @@ export class Tree implements RedomComponent {
         }
 
         // a new card always corresponds with the creating of a new empty family
-        this.pillars[node.pos.depth + 1].insertFamily(node.pos.index)
+        let familyIndex = this.pillars[pos.depth].countCards(pos.family) + pos.index
+        this.pillars[node.pos.depth + 1].insertFamily(familyIndex)
 
         // finally we add the node to the cardIndexer
         this.cardIndexer.push(node.pos)
@@ -827,9 +829,13 @@ export class Tree implements RedomComponent {
         console.log("resizing window")
 
         // calculate the new center and the center delta
-        let delta = this.centerPoint
+        let oldCenterPoint = this.centerPoint.copy()
         this.calculateCenterPoint()
-        delta = delta.subtract(this.centerPoint).multiply(2)
+        let delta = this.centerPoint.subtract(oldCenterPoint).multiply(2)
+        // check if there has been a change in the size of the element
+        if (delta.isZero()) {
+            return
+        }
 
         // calculate the new width and the width delta
         let widthDelta = this.cardWidth

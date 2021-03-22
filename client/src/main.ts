@@ -28,7 +28,8 @@ const app = {
                     app.story = story
                     view.storyPage({
                         story: story,
-                        events: app.eventHandler
+                        events: app.eventHandler,
+                        home: app.home 
                     })
                 }).catch((err) => {
                     notifier.error(err.toString())
@@ -43,6 +44,7 @@ const app = {
                     view.storyPage({ 
                         story: story,
                         events: app.eventHandler,
+                        home: app.home,
                     })
                 } else {
                     throw new Error("unable to find story " + app.library[0].title)
@@ -51,6 +53,11 @@ const app = {
                 notifier.error(err.toString()) 
             })
         }
+    },
+
+    home: () => {
+        console.log("going to the home page")
+        view.libraryPage()
     },
 
     newStory: async (title: string, description: string): Promise<Story> => {
