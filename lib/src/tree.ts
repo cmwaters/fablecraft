@@ -76,26 +76,31 @@ export class Tree implements RedomComponent {
 
             sort(nodes).asc("uid")
 
+            let currentNodes: Node[] = [] 
+
             // we take the order of the nodes to be their respective id's
             nodes.forEach(node => {
                 if (node.uid !== this.cardIndexer.length) {
                     throw new Error("non-montonically increasing node uid got " + node.uid + ", expected " + this.cardIndexer.length)
                 }
                 this.cardIndexer.push(node.pos)
+                if (node.pos.isNotNull()) {
+                    currentNodes.push(node)
+                }
             })
 
             // now sort the nodes so we can easily build the tree
-            sort(nodes).asc([
+            sort(currentNodes).asc([
                 n => n.pos.depth, 
                 n => n.pos.family,
                 n => n.pos.index
             ])
 
-            if (nodes[0].pos.depth !== 0) {
+            if (currentNodes[0].pos.depth !== 0) {
                 throw new Error("there must be at least one node with depth 0")
             }
 
-            nodes.forEach(node => this.appendNode(node))
+            currentNodes.forEach(node => this.appendNode(node))
         } else {
             let firstNode: Node = {
                 uid: 0,

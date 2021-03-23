@@ -344,10 +344,23 @@ export class LocalStorage implements Model {
                         .catch((err: any) => reject(err))
                 }
                     
-                return resolve(nodes)
+                return resolve(this.fill(nodes))
             })
         })
 
+    }
+
+    private fill(nodes: Node[]): Node[] {
+        for (let i = 0; i < nodes.length; i++) {
+            while (nodes[i].uid !== i) {
+                nodes.splice(i, 0, {
+                    uid: i,
+                    pos: Pos.null(),
+                    content: new Delta(),
+                })
+            }
+        }
+        return nodes
     }
 
     private async getState(): Promise<Node[]> {

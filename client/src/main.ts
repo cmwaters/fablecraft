@@ -9,8 +9,7 @@ import Delta from "quill-delta"
 const app = {
     model: new LocalStorage() as Model,
     library: [] as Header[],
-    story: null as Story | null,
-    tree: null as Tree | null,
+    story: undefined as Story | undefined,
 
     init: async () => {
         view.init()
@@ -24,21 +23,25 @@ const app = {
 
         if (app.library.length === 0) {
             view.startPage((title: string, description: string): void => {
-                app.newStory(title, description).then((story: Story) => {
-                    app.story = story
-                    view.storyPage({
-                        story: story,
-                        events: app.eventHandler,
-                        home: app.home 
+                app.createUser().then(() => {
+                    app.newStory(title, description).then((story: Story) => {
+                        app.story = story
+                        notifier.info("Welcome to Fablecraft")
+                        view.storyPage({
+                            story: story,
+                            events: app.eventHandler,
+                            home: app.home
+                        })
+                    }).catch((err) => {
+                        notifier.error(err.toString())
                     })
-                }).catch((err) => {
-                    notifier.error(err.toString())
-                })
+                }).catch((err) => {notifier.error(err.toString())})
+                
             })
         } else {
             // load the most recent story
-            app.library.sort((a, b) => a.lastUpdated - b.lastUpdated)
-            await app.model.loadStory(app.library[0].uid).then((story: Story | null) => {
+            let lastStory = app.mostRecentStory()
+            await app.model.loadStory(lastStory.uid).then((story: Story | null) => {
                 if (story) {
                     app.story = story
                     view.storyPage({ 
@@ -47,7 +50,7 @@ const app = {
                         home: app.home,
                     })
                 } else {
-                    throw new Error("unable to find story " + app.library[0].title)
+                    throw new Error("unable to find story " + lastStory.title)
                 }
             }).catch((err) => { 
                 notifier.error(err.toString()) 
@@ -57,21 +60,47 @@ const app = {
 
     home: () => {
         console.log("going to the home page")
-        view.libraryPage()
+        app.model.loadStory(0).then((story: Story | null) => {
+            if (story) {
+                view.libraryPage({ 
+                    story: story,
+                    events: app.eventHandler.nodes,
+                })
+            }
+        })
+    },
+
+    createUser: async () => {
+        await app.newStory("user", "").catch(err => { notifier.error(err) })
     },
 
     newStory: async (title: string, description: string): Promise<Story> => {
         console.log("creating new story " + title)
-        let story = await app.model.createStory({
-            uid: app.library.length,
-            title: title,
-            description: description,
-            stateHeight: 0,
-            latestHeight: 0,
-            lastUpdated: 0,
-        })
-        app.library.push(story.header)
-        return story
+        try {
+            let story = await app.model.createStory({
+                uid: app.library.length,
+                title: title,
+                description: description,
+                stateHeight: 0,
+                latestHeight: 0,
+                lastUpdated: 0,
+            })
+            app.library.push(story.header)
+            return story
+        } catch (err) {
+            notifier.error(err.toString())
+            return Promise.reject(err)
+        }
+    },
+
+    mostRecentStory(): Header {
+        let mostRecent = app.library[0]
+        for (let i = 1; i < app.library.length; i++) {
+            if (app.library[i].lastUpdated > mostRecent.lastUpdated) {
+                mostRecent = app.library[i]
+            }
+        }
+        return mostRecent
     },
 
     eventHandler: {

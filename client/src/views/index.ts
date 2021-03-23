@@ -52,7 +52,7 @@ export const view = {
             story: props.story,
             events: props.events
         }))
-        mount(view.current, el("div"))
+        mount(view.current!, el("div"))
     },
 
     storyPage: (props: {
@@ -70,12 +70,17 @@ export const view = {
         }))
         mount(view.current!, el("div", new IconButton({
             execute: props.home,
-            icon: PersonFillIcon({}),
+            icon: PersonFillIcon({
+                style: {
+                    fill: "#7c848c"
+                }
+            }),
             width: 30
         }), {
             style: {
                 position: "absolute",
-                
+                right: 10,
+                top: 10,
             }
         }))
     },
