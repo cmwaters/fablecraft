@@ -271,7 +271,12 @@ export class Tree implements RedomComponent {
         this.validateNewNode(node) 
 
         // insert the card into the correct family
-        this.pillars[node.pos.depth].families[node.pos.family].insertCard(node)
+        let card = this.pillars[node.pos.depth].families[node.pos.family].insertCard(node)
+        card.onClick = (id: number) => {
+            if (this.card.id() !== id) {
+                this.selectNodeById(id, true)
+            }
+        }
 
         // check if we are making an addition to the last pillar
         if (node.pos.depth === this.pillars.length - 1) {
@@ -476,7 +481,12 @@ export class Tree implements RedomComponent {
     private appendNode(node: Node): void {
         this.validateNewNode(node)
 
-        this.pillars[node.pos.depth].families[node.pos.family].appendCard(node)
+        let card = this.pillars[node.pos.depth].families[node.pos.family].appendCard(node)
+        card.onClick = (id: number) => {
+            if (this.card.id() !== id) {
+                this.selectNodeById(id, true)
+            }
+        }
 
         if (node.pos.depth === this.pillars.length - 1) {
             this.appendPillar()
@@ -872,13 +882,13 @@ export class Tree implements RedomComponent {
 
     }
 
-    private selectNodeById(id: number) {
+    private selectNodeById(id: number, focus?: boolean) {
         if (id >= this.cardIndexer.length || id < 0) {
             console.error("focus on invalid index. Expected non negative number less than " + this.cardIndexer.length + " but got " + id)
         }
         let pos = this.cardIndexer[id]
         if (pos) {
-            this.selectNode(pos);
+            this.selectNode(pos, focus);
         }
     }
 

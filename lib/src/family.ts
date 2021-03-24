@@ -39,7 +39,7 @@ export class Family implements RedomComponent {
         return offset + (this.cards[index].el.offsetHeight / 2)
     }
 
-    insertCard(node: Node): void {
+    insertCard(node: Node): Card {
         if (node.pos.index > this.cards.length) {
             throw new Error(errors.indexOutOfBounds)
         }
@@ -54,17 +54,19 @@ export class Family implements RedomComponent {
 
         let card = new Card(this.el, node, this.config.card, this.cards[node.pos.index])
         this.cards.splice(node.pos.index, 0, card)
-
-        
+        return card
     }
 
-    appendCard(node: Node): void {
-        // if this is the first card we need to reset set it's height
-        // to auto so that is dynamically expands to the size of the cards
+    appendCard(node: Node): Card {
+        // if this is the first card we need to reset it's height
+        // to auto so that it can dynamically expand to the size of the cards
         if (this.cards.length === 0) {
             this.el.style.height = "auto"
         }
-        this.cards.push(new Card(this.el, node, this.config.card))
+
+        let card = new Card(this.el, node, this.config.card)
+        this.cards.push(card)
+        return card
     }
 
     isEmpty(): boolean {

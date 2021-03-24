@@ -53,6 +53,7 @@ export class LocalStorage implements Model {
 
     async createStory(header: Header): Promise<Story> {
 
+        // check if it is not the first header
         if (this.header.uid !== -1) {
             if (this.header.uid == header.uid) {
                 throw new Error(errors.storyAlreadyExists(header.uid))
@@ -63,8 +64,11 @@ export class LocalStorage implements Model {
                 throw new Error(errors.storyAlreadyExists(header.uid))
             }
             
+            // save the old header
             await this.stories.setItem<Header>(JSON.stringify(this.header.uid), this.header)
         }
+
+        this.checkNonNegativeID(header.uid)
 
         header.lastUpdated = Date.now()
         this.lockStory(header)

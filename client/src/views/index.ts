@@ -44,7 +44,7 @@ export const view = {
         }))
     },
 
-    libraryPage: (props: {
+    userPage: (props: {
         story: Story,
         events: Events,
     }) => {

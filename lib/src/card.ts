@@ -15,6 +15,7 @@ export class Card implements RedomComponent {
     command: CommandLine
     onModify?: (update: Delta) => void
     onMove?: (pos: Pos, oldPos: Pos) => void
+    onClick?: (id: number) => void
 
     private position: Pos
     private uid: number
@@ -47,6 +48,11 @@ export class Card implements RedomComponent {
             }
         })
         this.updateFrequency = config.updateFrequency
+        this.el.onclick = () => {
+            if (this.onClick) {
+                this.onClick(this.uid)
+            }
+        }
     }
 
     
