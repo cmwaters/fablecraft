@@ -100,7 +100,9 @@ export class LocalStorage implements Model {
         // check if we are loading a new story
         if (this.header.uid !== id) {
             // save the previously locked header
-            await this.stories.setItem(JSON.stringify(this.header.uid), this.header)
+            if (this.header.uid !== -1) {
+                await this.stories.setItem(JSON.stringify(this.header.uid), this.header)
+            }
 
             // load the new header
             let header = await this.stories.getItem<Header>(JSON.stringify(id))
@@ -120,10 +122,8 @@ export class LocalStorage implements Model {
         return { 
             header: this.header,
             nodes: nodes,
-        }
-        
+        }   
     }
-
 
     async editStory(header: Header): Promise<Header> {
         console.log("edit story " + header.uid)
@@ -154,11 +154,11 @@ export class LocalStorage implements Model {
     async deleteStory(id: number): Promise<void> {
         this.checkNonNegativeID(id)
 
-        if (this.header.uid === -1) {
-            throw new Error(errors.storyNotFound(id))
-        }
-
         if (this.header.uid !== id) {
+            // save the previously locked header
+            await this.stories.setItem(JSON.stringify(this.header.uid), this.header)
+
+            // retrieve the header to be deleted and lock on it
             let header = await this.stories.getItem<Header>(JSON.stringify(id))
             if (header === null) {
                 throw new Error(errors.storyNotFound(id))

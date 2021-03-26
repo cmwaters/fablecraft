@@ -1,5 +1,5 @@
 import { RedomComponent, el } from "redom"
-import { CenteredPanel } from "../../components/panel"
+import { CenteredPanel, NewUserPanel } from "../../components/panel"
 import { NewStoryInput } from "../../components/inputs"
 import "./setup.css"
 
@@ -27,6 +27,26 @@ export const StartView = (props: {
         onkeydown(key: string): void {
             if (props.startButton.onkeydown) {
                 props.startButton.onkeydown(key)
+            }
+        }
+    }
+}
+
+export const NewUserView = (props: {
+    execute: (username: string) => void
+}): Component => {
+    let panel = NewUserPanel({
+        width: 520,
+        height: 220,
+        execute: props.execute
+    })
+
+    return { 
+        el: el("div.page", panel),
+
+        onkeydown: (key: string) => {
+            if (panel.onkeydown) {
+                panel.onkeydown(key)
             }
         }
     }

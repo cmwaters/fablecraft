@@ -1,4 +1,4 @@
-import { StartView, CreateFirstStoryView } from "./setup"
+import { StartView, CreateFirstStoryView, NewUserView } from "./setup"
 import { StoryView } from "./story"
 import { StartWritingButton } from "../components/buttons"
 import { Component } from "../components"
@@ -9,7 +9,6 @@ import { IconButton } from "../components/buttons"
 import { PersonFillIcon } from "../components/icons"
 import { StoryTitle } from "../components/inputs"
 import "./view.css"
-import { Events } from "fabletree"
 
 export { notifier }
 
@@ -34,11 +33,11 @@ export const view = {
         view.enableNotifications()
     },
 
-    startPage: (callback: (title: string, description: string) => void) => {
+    startPage: (execute: (username: string) => void) => {
         view.change(StartView({
             startButton: StartWritingButton({
-                execute: () => view.change(CreateFirstStoryView({
-                    callback: callback,
+                execute: () => view.change(NewUserView({
+                    execute: execute,
                 }))
             })
         }))
@@ -46,13 +45,18 @@ export const view = {
 
     userPage: (props: {
         story: Story,
-        events: Events,
+        events: StoryEvents,
     }) => {
         view.change(new StoryView({
             story: props.story,
-            events: props.events
+            events: props.events.nodes!
         }))
         mount(view.current!, el("div"))
+        mount(view.current!, new StoryTitle({
+            title: props.story.header.title,
+            onTitleChange: props.events.onTitleChange,
+            iconFn: PersonFillIcon
+        }))
     },
 
     storyPage: (props: {

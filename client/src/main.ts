@@ -28,25 +28,6 @@ const app = {
             // we need to create and save a new user and then load the user page
             app.createUser()
         }
-
-        if (app.library.length === 0) {
-            view.startPage((title: string, description: string): void => {
-                app.createUser().then(() => {
-                    app.newStory(title, description).then((story: Story) => {
-                        app.story = story
-                        notifier.info("Welcome to Fablecraft")
-                        view.storyPage({
-                            story: story,
-                            events: app.eventHandler,
-                            home: app.loadUserPage
-                        })
-                    }).catch((err) => {
-                        notifier.error(err)
-                    })
-                }).catch((err) => {notifier.error(err)})
-                
-            })
-        }
     },
 
     initializeState: async ():Promise<boolean> => {
@@ -83,7 +64,7 @@ const app = {
             if (story) {
                 view.userPage({ 
                     story: story,
-                    events: app.eventHandler.nodes,
+                    events: app.eventHandler,
                 })
             }
         }).catch((err) => notifier.error(err))
@@ -107,7 +88,19 @@ const app = {
     },
 
     createUser: async () => {
-        await app.newStory("user", "").catch(err => { notifier.error(err) })
+        view.startPage((username: string): void => {
+            app.newStory(username, "description").then((story: Story) => {
+                app.story = story
+                app.user = story.header
+                notifier.info("Welcome to Fablecraft")
+                view.userPage({
+                    story: story,
+                    events: app.eventHandler,
+                })
+            }).catch((err) => {
+                notifier.error(err)
+            })
+        })
     },
 
     newStory: async (title: string, description: string): Promise<Story> => {
