@@ -125,3 +125,51 @@ export class BorderedButton implements ButtonComponent {
         this.el.style.backgroundColor = this.backgroundColor.disabled
     }
 }
+
+export class IconButton implements ButtonComponent {
+    el: HTMLButtonElement
+    icon: SVGElement
+    click: () => void
+
+    constructor(props: {
+        execute: () => void,
+        icon: SVGElement
+        width: number,
+    }) {
+        this.click = () => {
+            if (!this.el.disabled) {
+                props.execute()
+            }
+        }
+
+        this.icon = props.icon
+
+        this.el = el("button", this.icon, {
+            class: "iconButton",
+            style: {
+                width: props.width,
+            },
+            onclick: () => {
+                this.click()
+            }
+        })
+
+        // this.el.addEventListener("focus", (e: FocusEvent) => {
+        //     this.el.style.backgroundColor = this.backgroundColor.active
+        // })
+
+        // this.el.addEventListener("blur", (e: FocusEvent) => {
+        //     this.el.style.backgroundColor = this.backgroundColor.normal
+        // })
+    }
+
+    enable() {
+        this.el.disabled = false
+        // this.el.style.backgroundColor = this.backgroundColor.normal
+    }
+
+    disable() {
+        this.el.disabled = true
+        // this.el.style.backgroundColor = this.backgroundColor.disabled
+    }
+}

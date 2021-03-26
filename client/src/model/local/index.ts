@@ -1,6 +1,5 @@
 import { Header } from "../header"
-import { Pos } from "fabletree"
-import { Node } from "fabletree"
+import { Pos, Node } from "fabletree"
 import { Story } from "../story"
 import { Model } from ".."
 import Delta from "quill-delta"
@@ -13,6 +12,15 @@ import { op, Operation } from "./operation"
 const dbName = "fable"
 const statePrefix = "state"
 const historyPrefix = "history"
+
+const nullHeader = {
+    uid: -1,
+    title: "",
+    description: "",
+    latestHeight: 0,
+    stateHeight: 0,
+    lastUpdated: Date.now(),
+}
 
 export class LocalStorage implements Model {
     stories: LocalForage
@@ -27,13 +35,7 @@ export class LocalStorage implements Model {
         })
 
         // set the null value for the header
-        this.header = {
-            uid: 0,
-            title: "Untitled",
-            description: "",
-            latestHeight: 0,
-            stateHeight: 0,
-        }
+        this.header = nullHeader
 
         // create instances to track the state and history of the story
         this.state = localforage.createInstance({
@@ -51,11 +53,24 @@ export class LocalStorage implements Model {
 
     async createStory(header: Header): Promise<Story> {
 
-        // save the previously locked header
-        if (this.header.uid !== header.uid) {
+        // check if it is not the first header
+        if (this.header.uid !== -1) {
+            if (this.header.uid == header.uid) {
+                throw new Error(errors.storyAlreadyExists(header.uid))
+            } 
+    
+            let checkHeader = await this.stories.getItem<Header>(JSON.stringify(header.uid))
+            if (checkHeader) {
+                throw new Error(errors.storyAlreadyExists(header.uid))
+            }
+            
+            // save the old header
             await this.stories.setItem<Header>(JSON.stringify(this.header.uid), this.header)
         }
 
+        this.checkNonNegativeID(header.uid)
+
+        header.lastUpdated = Date.now()
         this.lockStory(header)
 
         // create a new header
@@ -67,7 +82,7 @@ export class LocalStorage implements Model {
             pos: new Pos(),
             content: new Delta()
         }
-        await this.state.setItem<Node>(JSON.stringify(firstNode.uid), firstNode)
+        await this.state.setItem<Node>(encode(firstNode.uid), firstNode)
 
         // return the story
         return {
@@ -79,10 +94,15 @@ export class LocalStorage implements Model {
 
     async loadStory(id: number): Promise<Story | null> {
 
+        console.log("loading story " + id)
+        this.checkNonNegativeID(id)
+
         // check if we are loading a new story
         if (this.header.uid !== id) {
             // save the previously locked header
-            await this.stories.setItem(JSON.stringify(this.header.uid), this.header)
+            if (this.header.uid !== -1) {
+                await this.stories.setItem(JSON.stringify(this.header.uid), this.header)
+            }
 
             // load the new header
             let header = await this.stories.getItem<Header>(JSON.stringify(id))
@@ -97,28 +117,69 @@ export class LocalStorage implements Model {
 
         let nodes = await this.updateState()
 
+        console.log(nodes)
+
         return { 
             header: this.header,
             nodes: nodes,
-        }
-        
+        }   
     }
 
+    async editStory(header: Header): Promise<Header> {
+        console.log("edit story " + header.uid)
 
-    async editStory(header: Header): Promise<void> {
-        this.lockStory(header)
+        if (this.header.uid === -1) {
+            throw new Error(errors.storyNotFound(header.uid))
+        }
+
+        if (this.header.uid !== header.uid) {
+            // save the previously locked header
+            await this.stories.setItem(JSON.stringify(this.header.uid), this.header)
+
+            let oldHeader = await this.stories.getItem<Header>(JSON.stringify(header.uid))
+            if (oldHeader === null) {
+                throw new Error(errors.storyNotFound(header.uid))
+            }
+            this.lockStory(oldHeader)
+        }
+
+        this.header.title = header.title
+        this.header.description = header.description
 
         await this.stories.setItem<string>(JSON.stringify(header.uid), JSON.stringify(header))
+
+        return this.header
     }
 
-    deleteStory(id: number): Promise<void> {
-        return this.stories.removeItem(JSON.stringify(id))
+    async deleteStory(id: number): Promise<void> {
+        this.checkNonNegativeID(id)
+
+        if (this.header.uid !== id) {
+            // save the previously locked header
+            await this.stories.setItem(JSON.stringify(this.header.uid), this.header)
+
+            // retrieve the header to be deleted and lock on it
+            let header = await this.stories.getItem<Header>(JSON.stringify(id))
+            if (header === null) {
+                throw new Error(errors.storyNotFound(id))
+            }
+            this.lockStory(header)
+        }
+
+        await this.state.clear()
+
+        await this.history.clear()
+
+        await this.stories.removeItem(JSON.stringify(id))
+
+        this.lockStory(nullHeader)
     }
 
     listStories(): Promise<Header[]> {
         let stories: Header[] = []
         return new Promise<Header[]>((resolve, reject) => {
             this.stories.iterate<Header, void>((value: Header, key: string, iterationNumber: number) => {
+                console.log(key)
                 console.log(value)
                 stories.push(value)
             }, (err: any, result: void) => {
@@ -132,13 +193,61 @@ export class LocalStorage implements Model {
     }
 
     // Node Operations
-    private nextHeight(): string {
-        this.header.latestHeight++
-        return encode(this.header.latestHeight)
+
+    async newNode(node: Node): Promise<void> {    
+        console.log("new node at height " + this.header.latestHeight)
+        if (this.header.uid === -1 ) {
+            throw new Error(errors.noStoryLocked)
+        }   
+        await this.history.setItem<Operation>(this.nextHeight(), op.new(node))
     }
 
-    private encodeNode(node: Node): string {
-        return JSON.stringify(node)
+    async moveNode(id: number, pos: Pos): Promise<void> {
+        console.log("move node")
+        if (this.header.uid === -1) {
+            throw new Error(errors.noStoryLocked)
+        }
+        await this.history.setItem<Operation>(this.nextHeight(), op.move(id, pos))
+    }
+
+    async modifyNode(id: number, delta: Delta): Promise<void> {
+        console.log("modify node " + JSON.stringify(delta))
+        console.log(this.header.latestHeight)
+        if (this.header.uid === -1) {
+            throw new Error(errors.noStoryLocked)
+        }
+        await this.history.setItem<Operation>(this.nextHeight(), op.modify(id, delta))
+    }
+
+    // TODO: I'm not sure if we need to be able to load individual nodes
+    // async getNode(id: number): Promise<Node | null> {
+    //     if (this.header.uid === -1) {
+    //         throw new Error(errors.noStoryLocked)
+    //     }
+
+    //     let nodeString = await this.state.getItem<string>(encode(id))
+
+    //     if (nodeString === null) {
+    //         return Promise.reject(errors.nodeNotFound(id))
+    //     }
+
+    //     return this.decodeNode(nodeString)
+    // }
+
+    async deleteNode(id: number): Promise<void> {
+        if (this.header.uid === -1) {
+            throw new Error(errors.noStoryLocked)
+        }
+
+        await this.history.setItem<Operation>(this.nextHeight(), op.delete(id))
+    }
+
+    // Private helper operations
+
+    private nextHeight(): string {
+        this.header.latestHeight++
+        this.header.lastUpdated = Date.now()
+        return encode(this.header.latestHeight)
     }
 
     private decodeNode(nodeString: string): Node {
@@ -150,46 +259,14 @@ export class LocalStorage implements Model {
         }
     }
 
-    async newNode(node: Node): Promise<void> {    
-        console.log("new node at height " + this.header.latestHeight)        
-        await this.history.setItem<Operation>(this.nextHeight(), op.new(node))
-    }
-
-    async moveNode(id: number, pos: Pos): Promise<void> {
-        console.log("move node")
-        await this.history.setItem<Operation>(this.nextHeight(), op.move(id, pos))
-    }
-
-    async modifyNode(id: number, delta: Delta): Promise<void> {
-        console.log("modify node " + JSON.stringify(delta))
-        console.log(this.header.latestHeight)
-        await this.history.setItem<Operation>(this.nextHeight(), op.modify(id, delta))
-    }
-
-    async getNode(id: number): Promise<Node | null> {
-        let nodeString = await this.state.getItem<string>(JSON.stringify(id))
-
-        if (nodeString === null) {
-            return Promise.reject(errors.nodeNotFound(id))
-        }
-
-        return JSON.parse(nodeString) as Node
-    }
-
-    async deleteNode(id: number): Promise<void> {
-        await this.history.setItem<Operation>(this.nextHeight(), op.delete(id))
-    }
-
-    // Private helper operations
-
     private lockStory(header: Header): void {
-        // set the header
-        this.header = header
-        
         // check if the header is already locked
         if (this.header.uid == header.uid) {
             return
         }
+
+        // set the header
+        this.header = header
 
         // create instances to track the state and history of the story
         this.state = localforage.createInstance({
@@ -223,7 +300,7 @@ export class LocalStorage implements Model {
                             console.log(modifiedNode.content)
                             modifiedNode.content = modifiedNode.content.compose(delta)
                             console.log(modifiedNode.content)
-                            this.state!.setItem<Node>(JSON.stringify(modifiedNode.uid), modifiedNode)
+                            this.state.setItem<Node>(encode(modifiedNode.uid), modifiedNode)
                                 .catch((err: any) => reject(err))
                             break;
     
@@ -234,23 +311,24 @@ export class LocalStorage implements Model {
                                 pos: Object.assign(new Pos, op.node.pos),
                                 content: Object.assign(new Delta, op.node.content)
                             }
-                            this.state!.setItem<Node>(JSON.stringify(node.uid), node)
+                            this.state.setItem<Node>(encode(node.uid), node)
                                 .catch((err: any) => reject(err))
                             nodes.push(node)
                             break;
     
                         case "delete":
                             console.log("processing delete node " + op.uid)
-                            this.state.removeItem(JSON.stringify(op.uid))
+                            this.state.removeItem(encode(op.uid))
                                 .catch((err: any) => reject(err))
                             nodes[op.uid].pos = Pos.null()
+                            nodes[op.uid].content = new Delta()
                             break;
     
                         case "move":
                             console.log("processing move node")
                             let movedNode = nodes[op.uid]
                             movedNode.pos = Object.assign(new Pos, op.pos)
-                            this.state!.setItem<Node>(JSON.stringify(movedNode.uid), movedNode)
+                            this.state!.setItem<Node>(encode(movedNode.uid), movedNode)
                                 .catch((err: any) => reject(err))
                             break;
                     }
@@ -269,13 +347,24 @@ export class LocalStorage implements Model {
                     this.stories.setItem<Header>(JSON.stringify(this.header.uid), this.header)
                         .catch((err: any) => reject(err))
                 }
-
-                nodes = this.removeDeletedNodes(nodes)
                     
-                return resolve(nodes)
+                return resolve(this.fill(nodes))
             })
         })
 
+    }
+
+    private fill(nodes: Node[]): Node[] {
+        for (let i = 0; i < nodes.length; i++) {
+            while (nodes[i].uid !== i) {
+                nodes.splice(i, 0, {
+                    uid: i,
+                    pos: Pos.null(),
+                    content: new Delta(),
+                })
+            }
+        }
+        return nodes
     }
 
     private async getState(): Promise<Node[]> {
@@ -303,17 +392,10 @@ export class LocalStorage implements Model {
         return nodes
     }
 
-    private removeDeletedNodes(nodes: Node[]): Node[] {
-        console.log("removing deleted nodes...")
-        for (let i = nodes.length - 1; i >= 0; i--) {
-            if (nodes[i].pos.isNull()) {
-                console.log(i)
-                console.log(nodes[i])
-                nodes.splice(i, 1)
-                console.log(nodes)
-            }
+    private checkNonNegativeID(id: number) {
+        if (id < 0) {
+            throw new Error(errors.negativeID(id))
         }
-        return nodes
     }
 
 }

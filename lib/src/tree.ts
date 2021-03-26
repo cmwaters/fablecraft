@@ -54,7 +54,7 @@ export class Tree implements RedomComponent {
         // we add a reference element inside the given element. This allow for easier navigation
         // as the user movements move the entire reference frame as opposed to all the individual
         // elements inside
-        this.reference = el("div.reference");
+        this.reference = el("div#reference");
         mount(this.el, this.reference);
 
         // calculate what the optimal width for each card should be
@@ -71,28 +71,36 @@ export class Tree implements RedomComponent {
         this.pillars[0].appendFamily()
 
         if (nodes && nodes.length > 0) {
+            console.log("adding existing nodes")
+            console.log(nodes)
+
             sort(nodes).asc("uid")
+
+            let currentNodes: Node[] = [] 
 
             // we take the order of the nodes to be their respective id's
             nodes.forEach(node => {
                 if (node.uid !== this.cardIndexer.length) {
-                    throw new Error("non-montonically increasing node uid")
+                    throw new Error("non-montonically increasing node uid got " + node.uid + ", expected " + this.cardIndexer.length)
                 }
                 this.cardIndexer.push(node.pos)
+                if (node.pos.isNotNull()) {
+                    currentNodes.push(node)
+                }
             })
 
             // now sort the nodes so we can easily build the tree
-            sort(nodes).asc([
+            sort(currentNodes).asc([
                 n => n.pos.depth, 
                 n => n.pos.family,
                 n => n.pos.index
             ])
 
-            if (nodes[0].pos.depth !== 0) {
+            if (currentNodes[0].pos.depth !== 0) {
                 throw new Error("there must be at least one node with depth 0")
             }
 
-            nodes.forEach(node => this.appendNode(node))
+            currentNodes.forEach(node => this.appendNode(node))
         } else {
             let firstNode: Node = {
                 uid: 0,
@@ -103,9 +111,10 @@ export class Tree implements RedomComponent {
             this.cardIndexer.push(firstNode.pos)
         }
 
-        this.el.addEventListener("resize", (e: Event) => {
+        window.onresize = (ev: UIEvent) => {
+            console.log(ev)
             this.resize()
-        })
+        }
 
         window.onmousewheel = (ev: Event) => {
             let e = ev as WheelEvent
@@ -165,7 +174,6 @@ export class Tree implements RedomComponent {
             }
             // deactivate and dull the previously focused card
             this.card.blur();
-            // this.card.editor.off("text-change", this.recenterCard)
 
             // dull out the previous family
             this.pillar.families[lastPos.family].dull()
@@ -210,11 +218,24 @@ export class Tree implements RedomComponent {
         }
 
         // shift the current pillar to vertically center on the locked card
-        console.log("centering on card at " + pos.string())
         this.pillars[pos.depth].centerCard(pos.family, pos.index);
         if (focus) {
+            // add the event listeners. NOTE: we add the listeners dynamically every time. This allows nodes
+            // to be adaptive when an event listener is modified
+            this.card.onModify = (delta: Delta) => {
+                if (this.event.onModifyNode) {
+                    this.event.onModifyNode(this.card.id(), delta)
+                }
+            }
+            this.card.onMove = (pos: Pos, oldPos: Pos) => {
+                if (this.event.onMoveNode) {
+                    this.event.onMoveNode(this.card.id(), oldPos, pos)
+                }
+            }
+            // focus on the car 
             this.card.focus()
         }
+
         // adjust the position of the card so that it is always in the center even
         // when the user is typing
         // TODO: perhaps this is something we can optimize
@@ -250,7 +271,12 @@ export class Tree implements RedomComponent {
         this.validateNewNode(node) 
 
         // insert the card into the correct family
-        this.pillars[node.pos.depth].families[node.pos.family].insertCard(node)
+        let card = this.pillars[node.pos.depth].families[node.pos.family].insertCard(node)
+        card.onClick = (id: number) => {
+            if (this.card.id() !== id) {
+                this.selectNodeById(id, true)
+            }
+        }
 
         // check if we are making an addition to the last pillar
         if (node.pos.depth === this.pillars.length - 1) {
@@ -258,7 +284,8 @@ export class Tree implements RedomComponent {
         }
 
         // a new card always corresponds with the creating of a new empty family
-        this.pillars[node.pos.depth + 1].insertFamily(node.pos.index)
+        let familyIndex = this.pillars[pos.depth].countCards(pos.family) + pos.index
+        this.pillars[node.pos.depth + 1].insertFamily(familyIndex)
 
         // finally we add the node to the cardIndexer
         this.cardIndexer.push(node.pos)
@@ -383,10 +410,8 @@ export class Tree implements RedomComponent {
     }
 
     // modifyNode alters the text of the node at position pos in the tree
-    // TODO: we should find away to make subtler changes rather than replacing
-    // the entire nodes text
     // NOTE: this does not trigger an event
-    modifyNode(pos: Pos, text: string): void {
+    modifyNode(pos: Pos, delta: Delta): void {
         // first validate the position
         let err = this.validatePos(pos)
         if (err) {
@@ -394,7 +419,7 @@ export class Tree implements RedomComponent {
         }
 
         // now modify the text
-        this.pillars[pos.depth].families[pos.family].cards[pos.index].modify(text)
+        this.pillars[pos.depth].families[pos.family].cards[pos.index].modify(delta)
     }
 
     // getCard retrieves a reference of the card at the position pos in the tree. 
@@ -456,7 +481,12 @@ export class Tree implements RedomComponent {
     private appendNode(node: Node): void {
         this.validateNewNode(node)
 
-        this.pillars[node.pos.depth].families[node.pos.family].appendCard(node)
+        let card = this.pillars[node.pos.depth].families[node.pos.family].appendCard(node)
+        card.onClick = (id: number) => {
+            if (this.card.id() !== id) {
+                this.selectNodeById(id, true)
+            }
+        }
 
         if (node.pos.depth === this.pillars.length - 1) {
             this.appendPillar()
@@ -602,7 +632,7 @@ export class Tree implements RedomComponent {
                             this.shiftUpwards()
                         } else {
                             this.up()
-                            this.card.focus()
+                            this.card.focus("end")
                             if (this.event.onSelectNode)
                                 this.event.onSelectNode(this.card.node())
                         }
@@ -618,7 +648,7 @@ export class Tree implements RedomComponent {
                             this.shiftDownwards()
                         } else {
                             this.down()
-                            this.card.focusStart()
+                            this.card.focus("start")
                             if (this.event.onSelectNode) 
                                 this.event.onSelectNode(this.card.node())
                         }
@@ -632,7 +662,7 @@ export class Tree implements RedomComponent {
                                 this.event.onNewNode(this.card.id(), this.current.copy())
                         } else {
                             this.down()
-                            this.card.focusStart()
+                            this.card.focus("start")
                             if (this.event.onSelectNode)
                                 this.event.onSelectNode(this.card.node())
                         }
@@ -641,7 +671,7 @@ export class Tree implements RedomComponent {
                 case "ArrowLeft":
                     if (this.card.atStart()) {
                         this.left()
-                        this.card.focusStart()
+                        this.card.focus("start")
                         if (this.event.onSelectNode)
                             this.event.onSelectNode(this.card.node())
                     }
@@ -814,9 +844,13 @@ export class Tree implements RedomComponent {
         console.log("resizing window")
 
         // calculate the new center and the center delta
-        let delta = this.centerPoint
+        let oldCenterPoint = this.centerPoint.copy()
         this.calculateCenterPoint()
-        delta = delta.subtract(this.centerPoint).multiply(2)
+        let delta = this.centerPoint.subtract(oldCenterPoint).multiply(2)
+        // check if there has been a change in the size of the element
+        if (delta.isZero()) {
+            return
+        }
 
         // calculate the new width and the width delta
         let widthDelta = this.cardWidth
@@ -848,13 +882,13 @@ export class Tree implements RedomComponent {
 
     }
 
-    private selectNodeById(id: number) {
+    private selectNodeById(id: number, focus?: boolean) {
         if (id >= this.cardIndexer.length || id < 0) {
             console.error("focus on invalid index. Expected non negative number less than " + this.cardIndexer.length + " but got " + id)
         }
         let pos = this.cardIndexer[id]
         if (pos) {
-            this.selectNode(pos);
+            this.selectNode(pos, focus);
         }
     }
 
@@ -907,7 +941,8 @@ export class Tree implements RedomComponent {
             family: {
                 margin: this.config.margin.family,
                 card: {
-                    margin: this.config.margin.card
+                    margin: this.config.margin.card,
+                    updateFrequency: this.config.card.updateFrequency
                 }
             },
             width: this.cardWidth,

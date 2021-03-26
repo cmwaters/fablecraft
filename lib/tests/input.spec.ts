@@ -7,7 +7,7 @@ import {
     TreeTypology,
     assertTypology,
     getNodeAsElement,
-} from "./utils"
+} from "./helper"
 let expect = chai.expect
 import Delta from "quill-delta"
 import { errors } from "../src/errors"

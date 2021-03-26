@@ -1,7 +1,7 @@
 import { RedomComponent, el, place } from 'redom'
 import { Component } from "../"
 import { BorderedButton } from '../buttons'
-import { FileTextFillIcon, EaselFillIcon } from "../icons"
+import { FileTextFillIcon, EaselFillIcon, IconConstuctor } from "../icons"
 import "./input.css"
 
 export class NewStoryInput implements Component {
@@ -24,10 +24,10 @@ export class NewStoryInput implements Component {
 
         let storyTitle = new InputWithIcon({
             style: {
-                font: "Playfair Display",
-                size: 32,
+                fontFamily: "Playfair Display",
+                fontSize: 32,
             },
-            icon: EaselFillIcon,
+            icon: EaselFillIcon({}),
             placeholder: "Story Title",
             autofocus: true
         })
@@ -105,10 +105,14 @@ export class StoryTitle implements RedomComponent {
 
     constructor(props: {
         title: string,
-        onTitleChange: (newTitle: string) => void,
+        onTitleChange?: (newTitle: string) => void,
+        iconFn?: IconConstuctor,
     }) {
+        if (!props.iconFn) {
+            props.iconFn = FileTextFillIcon
+        }
         let inputComponent = new InputWithIcon({
-            icon: FileTextFillIcon({
+            icon: props.iconFn({
                 style: {
                     fill: "#7c848c",
                     width: 20,
@@ -116,7 +120,7 @@ export class StoryTitle implements RedomComponent {
             }),
             value: props.title,
             style: {
-                fontFamily: "Playfair Display",
+                fontFamily: "Open Sans",
                 fontSize: 12,
                 margin: 5,
                 color: "#7c848c",
@@ -132,7 +136,9 @@ export class StoryTitle implements RedomComponent {
 
         this.input.onkeydown = (e: KeyboardEvent) => {
             if (e.key === "Enter" && this.input.value.length > 0) {
-                props.onTitleChange(this.input.value)
+                if (props.onTitleChange) {
+                    props.onTitleChange(this.input.value)
+                }
             }
         }
     }

@@ -33,3 +33,8 @@ export function emptyNodeEvents(): Events {
         onSelectNode: (node: Node) => {},
     }
 }
+
+// export class UserStory implements Story {
+//     header: Header,
+//     node: Node[],
+// }

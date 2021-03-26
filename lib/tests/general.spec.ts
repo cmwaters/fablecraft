@@ -2,11 +2,12 @@ import chai, { assert } from 'chai'
 import { Tree } from "../src/tree"
 import { defaultConfig } from "../src/config"
 import { Pos } from "../src/pos"
+import Delta from "quill-delta"
 import { 
     TreeTypology,
     assertTypology,
     getNodeAsElement,
-} from "./utils"
+} from "./helper"
 let expect = chai.expect
 
 let container: HTMLElement
@@ -60,7 +61,7 @@ describe("Fable Tree | General", () => {
 
     it("can edit a card's text", () => {
         let tree = new Tree(container, defaultConfig())
-        tree.modifyNode(new Pos(), "Hello World")
+        tree.modifyNode(new Pos(), new Delta().insert("Hello World"))
 
         let card = tree.getCard(new Pos())
         expect(card.editor.getText()).to.equal("Hello World\n")

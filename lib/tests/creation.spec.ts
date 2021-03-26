@@ -6,7 +6,7 @@ import {
     TreeTypology,
     assertTypology,
     getNodeAsElement,
-} from "./utils"
+} from "./helper"
 let expect = chai.expect
 import { errors } from "../src/errors"
 

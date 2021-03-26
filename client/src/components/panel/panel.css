@@ -4,3 +4,10 @@
     border-radius: 10px;
     text-align: center;
 }
+
+.newUserInternal {
+    display: inline-block;
+    font-size: 14px; 
+    font-family: "Open Sans";
+    color: "#666"
+}

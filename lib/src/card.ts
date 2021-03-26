@@ -13,9 +13,18 @@ export class Card implements RedomComponent {
     el: HTMLElement;
     editor: Quill;
     command: CommandLine
+    onModify?: (update: Delta) => void
+    onMove?: (pos: Pos, oldPos: Pos) => void
+    onClick?: (id: number) => void
 
     private position: Pos
     private uid: number
+    private diff: Delta = new Delta()
+    private updater: NodeJS.Timeout | undefined = undefined
+
+    // TODO: instead of updating every x seconds, perhaps a smarter method would be only to
+    // fire an event when the user hasn't inputted any more in the last x seconds (similar to google drive)
+    private updateFrequency: number
 
     constructor(parent: HTMLElement, node: Node, config: CardConfig, insertBefore?: Card) {
         this.el = el("div.card", { style: { marginBottom: config.margin, marginTop: config.margin } })
@@ -33,9 +42,20 @@ export class Card implements RedomComponent {
             this.editor.setContents(node.content, "api")
         }
         this.command = new CommandLine(this.el, true)
+        this.editor.on("text-change", (delta: Delta, oldDelta: Delta, source: string) => {
+            if (source === "user") {
+                this.diff = this.diff.compose(delta)
+            }
+        })
+        this.updateFrequency = config.updateFrequency
+        this.el.onclick = () => {
+            if (this.onClick) {
+                this.onClick(this.uid)
+            }
+        }
     }
 
-onModifyNode: (update: Delta) => void = (update: Delta) => {}
+    
 
     showCommandLine(): void {
         console.log("showing command line")
@@ -47,16 +67,8 @@ onModifyNode: (update: Delta) => void = (update: Delta) => {}
         return new Size(this.el.clientWidth, this.el.clientHeight).center()
     }
 
-    modify(text: string) {
-        this.editor.setText(text)
-    }
-
-    focusStart(): void {
-        setTimeout(() => {
-            this.editor.focus()
-        }, 100)
-
-        this.spotlight()
+    modify(delta: Delta) {
+        this.editor.updateContents(delta, "api")
     }
 
     backspace(): boolean {
@@ -80,10 +92,22 @@ onModifyNode: (update: Delta) => void = (update: Delta) => {}
         }
     }
 
-    focus(): void {
+    focus(pos: "start" | "end" | number = "end"): void {
         setTimeout(() => {
+            this.updater = setInterval(() => {
+                if (this.diff.length() > 0) {
+                    if (this.onModify) {
+                        this.onModify(this.diff)
+                        this.diff = new Delta()
+                    }
+                }
+            }, this.updateFrequency)
             this.editor.focus()
-            this.editor.setSelection(this.editor.getLength(), 0, "user")
+            if (pos === "end") {
+                this.editor.setSelection(this.editor.getLength(), 0, "user")
+            } else if (typeof pos === "number") {
+                this.editor.setSelection(pos, 0, "user")
+            }
         }, 100)
 
         this.spotlight()
@@ -105,7 +129,7 @@ onModifyNode: (update: Delta) => void = (update: Delta) => {}
 
     highlight(): void {
         this.el.style.color = "#666";
-        this.el.style.border = "1px solid #fff"
+        this.el.style.boxShadow = "0 0 0 0";
     }
 
     node(): Node {
@@ -133,21 +157,36 @@ onModifyNode: (update: Delta) => void = (update: Delta) => {}
     }
 
     setPos(pos: Pos): void {
+        if (this.onMove) {
+            this.onMove(pos, this.position)
+        }
         this.position = pos
     }
 
     spotlight(): void {
         this.el.style.color = "#444";
-        this.el.style.border = "1px solid #ccc"
+        this.el.style.boxShadow = "0 4px 8px 0 rgba(0, 0, 0, 0.2)";
     }
 
     dull(): void {
         console.log("making node dull")
-        this.el.style.color = "#999";
-        this.el.style.border = "1px solid #fff"
+        this.el.style.color = "#aaa";
+        this.el.style.boxShadow = "0 0 0 0";
     }
 
     blur(): void {
+        // flush out the remaining changes as an event
+        if (this.diff.length() > 0) {
+            if (this.onModify) {
+                this.onModify(this.diff)
+                this.diff = new Delta()
+            }
+        }
+        // stop the ticker
+        if (this.updater) {
+            clearInterval(this.updater)
+            this.updater = undefined
+        }
         this.editor.blur()
         this.command.hide()
     }

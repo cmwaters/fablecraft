@@ -8,7 +8,7 @@
     "test:unit": "cd tests && webpack && karma start",
     "build:dev": "NODE_ENV=development webpack --watch",
     "build": "NODE_ENV=production webpack",
-    "dev": "concurrently \"npm run build-dev\" \"npm run start-dev\"",
+    "dev": "concurrently \"npm run build:dev\" \"npm run start:dev\"",
     "start": "NODE_ENV=production node index.js",
     "start:dev": "NODE_ENV=development nodemon index.js",
     "lint": "eslint -c .eslintrc.js --ext .ts",

@@ -6,15 +6,16 @@ export type Config = {
             min: number;
             max: number;
         };
+        updateFrequency: number;
     };
     margin : {
-        pillar: number,
-        family: number
-        card: number
+        pillar: number;
+        family: number;
+        card: number;
     }
-    frameRate: number
-    transitionTime: number
-    inverseScrollSpeed: number
+    frameRate: number;
+    transitionTime: number;
+    inverseScrollSpeed: number;
 };
 
 export function defaultConfig(): Config {
@@ -23,11 +24,12 @@ export function defaultConfig(): Config {
             width: {
                 min: 250,
                 max: 400
-            }
+            },
+            updateFrequency: 2000,  // every 2 seconds
         },
         margin: {
-            pillar: 40,
-            family: 25,
+            pillar: 10,
+            family: 40,
             card: 10
         }, 
         frameRate: 30,
@@ -51,6 +53,7 @@ export type FamilyConfig = {
 
 export type CardConfig = {
     margin: number
+    updateFrequency: number,
 }
 
 export type Options = {

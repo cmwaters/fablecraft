@@ -4,4 +4,5 @@ export type Header = {
     description: string
     stateHeight: number
     latestHeight: number,
+    lastUpdated: number,
 }

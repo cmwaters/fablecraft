@@ -1,11 +1,10 @@
 import { el, mount } from "redom"
 import { Story } from "../../model"
-import { Tree, defaultConfig } from "fabletree"
-import { StoryTitle } from "../../components/inputs"
+import { Tree, defaultConfig, Events } from "fabletree"
 import "./story.css"
+import { notifier } from "../"
 
 import { Component } from "../../components"
-import { StoryEvents } from "../../model/story"
 
 export class StoryView implements Component {
     el: HTMLElement
@@ -14,9 +13,10 @@ export class StoryView implements Component {
 
     constructor(props: {
         story: Story
-        events: StoryEvents
+        events: Events,
     }) {
         console.log(props.story.header)
+        console.log(props.story.nodes)
         this.el = el(".page")
         this.windows.push(el("div", {
             style: {
@@ -25,20 +25,22 @@ export class StoryView implements Component {
             }
         }))
 
-        if (props.events.onTitleChange === undefined) {
-            props.events.onTitleChange = (newTitle: string) => {}
-        } 
-
         mount(this.el, this.windows[0])
-        mount(this.el, new StoryTitle({
-            title: props.story.header.title,
-            onTitleChange: props.events.onTitleChange
-        }))
 
 
         setTimeout(() => {
-            this.tree = new Tree(this.windows[0], defaultConfig(), props.story.nodes)
+            try {
+                this.tree = new Tree(this.windows[0], defaultConfig(), props.story.nodes, {
+                    events: props.events
+                })
+            } catch (err) {
+                notifier.error(err.toString())
+            }
         }, 100)
+    }
+
+    split() {
+
     }
 } 
 
