@@ -1,0 +1,17 @@
+{
+  "name": "orderedkeys",
+  "version": "1.0.0",
+  "description": "order preserving number conversion",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha",
+    "build": "tsc"
+  },
+  "author": "Callum Waters",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/mocha": "^8.2.1",
+    "fast-check": "^2.14.0",
+    "mocha": "^8.3.2"
+  }
+}
