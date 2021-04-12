@@ -1,5 +1,5 @@
 import { Events } from "./events"
-import { Command } from "./commands"
+import { Command } from "commandline"
 
 export type Config = {
     card: {

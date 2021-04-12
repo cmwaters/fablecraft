@@ -1,19 +1,22 @@
 import { RedomComponent, el, mount } from "redom";
 import Quill from "quill"
-import CommandLine, { Command } from "../../lib/quill/commandline"
+import CommandLine, { Command } from "../quill/commandline"
 import Delta from "quill-delta"
 import { Node } from "./node";
 import { Pos } from "./pos"
 import { Size, Vector } from './geometry'
 import { CardConfig } from './config'
 import { CardBlot, StoryBlot } from "./blot"
-import { NewStoryCommand } from "./commands"
+import { NewStoryCommand, NewCardCommand, SplitCardCommand } from "./command"
 import "../assets/quill.css"
 import "../assets/tree.css"
+// import { Commander } from "../../lib/quill/commandline/blots"
 
+console.log("registering blots and modules")
 Quill.register(StoryBlot)
 Quill.register(CardBlot)
-Quill.register('modules/commandline', CommandLine)
+// console.log(Commander)
+Quill.register("modules/commandline", CommandLine)
 
 export class Card implements RedomComponent {
     el: HTMLElement;
@@ -45,13 +48,11 @@ export class Card implements RedomComponent {
         this.editor = new Quill(this.el as Element, {
             modules: { 
                 'commandline': {
-                    'commands': [NewStoryCommand],
+                    'commands': [NewStoryCommand, NewCardCommand, SplitCardCommand],
                 }
             }
         })
         this.editor.insertText(0, "Hello World")
-        this.editor.insertEmbed(6, "card", 32);
-        this.editor.insertEmbed(0, "story", true)
 
         this.editor.on("text-change", (delta: Delta, oldDelta: Delta, source: string) => {
             if (source === "user") {

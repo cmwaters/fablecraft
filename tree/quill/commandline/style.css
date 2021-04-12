@@ -1,0 +1,29 @@
+.ql-command-interface {
+    display: flex;
+    padding: 4px 0px;
+    width: 100%;
+}
+
+.ql-command-container {
+    width: 100%;
+}
+
+.ql-command-suggestion-focus {
+    width: 100%;
+    height: 50px;
+    background-color: #49c2ff;
+}
+
+
+
+.ql-command-suggestion {
+    width: 100%;
+    height: 50px;
+    background-color: #e8e8e8;
+}
+
+.ql-command-line-icon {
+    display: table-cell;
+    width: 16px;
+    padding-right: 8px;
+}

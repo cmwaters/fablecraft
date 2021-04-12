@@ -60,26 +60,3 @@
     border-radius: 3px;
     padding: 0px 3px;
 }
-
-.ql-command-line {
-    background-color: lightblue;
-    width: 100%;
-}
-
-.ql-command-line-icon {
-    padding: 8px;
-    width: 16px;
-}
-
-.ql-command-line-interface {
-    margin-top: -19px;
-    margin-bottom: -19px;
-    display: flex;
-}
-
-.ql-command-line-interface input {
-    outline: none;
-    background-color: transparent;
-    border: none;
-    width: 100%;
-}
