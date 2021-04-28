@@ -148,8 +148,9 @@ describe("Model | LocalStorage", () => {
         let story = await db.loadStory(defaultStoryHeader.uid)
         expect(story).to.not.be.null
         if (story) {
-            expect(story.nodes.length).to.equal(1, "amount of nodes")
-            expect(story.nodes[0].uid).to.equal(0, "first node id")
+            expect(story.nodes.length).to.equal(2, "amount of nodes")
+            // deleted node should be tombstoned
+            expect(story.nodes[1].pos.isNull()).to.be.true
             expect(story.header.latestHeight).to.equal(5)
             expect(story.header.stateHeight).to.equal(5)
         }
@@ -177,14 +178,19 @@ describe("Model | LocalStorage", () => {
         let story = await db.loadStory(defaultStoryHeader.uid)
         expect(story).to.not.be.null
         if (story) {
-            expect(story.nodes.length).to.equal(2, "amount of nodes in story")
+            expect(story.nodes.length).to.equal(3, "amount of nodes in story")
             console.log(story.nodes[0].content)
             expectEqualNodes(story.nodes[0], { 
+                uid: 0,
+                pos: Pos.null(),
+                content: new Delta(),
+            })
+            expectEqualNodes(story.nodes[1], { 
                 uid: 1,
                 pos: new Pos(1, 0, 0),
                 content: new Delta().insert("Hello World")
             })
-            expectEqualNodes(story.nodes[1], {
+            expectEqualNodes(story.nodes[2], {
                 uid: 2,
                 pos: new Pos(),
                 content: new Delta().insert("This is Fablecraft")
