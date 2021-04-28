@@ -1,4 +1,5 @@
 import { Events } from "./events"
+import { Command } from "commandline"
 
 export type Config = {
     card: {
@@ -58,5 +59,6 @@ export type CardConfig = {
 
 export type Options = {
     events?: Events 
+    commands?: Command[]
 }
 

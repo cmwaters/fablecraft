@@ -12,19 +12,19 @@ export const notifier = {
     consoleOutput: false,
     el: el("div.notifier"),
 
-    info(header: any, subtext?: string, pointer?: () => void) {
+    info(header: Error | string, subtext?: string, pointer?: () => void) {
         this.create(header, INFO_COLOR, subtext, pointer)
     },
 
-    warning(header: any, subtext?: string, pointer?: () => void) {
+    warning(header: Error | string, subtext?: string, pointer?: () => void) {
         this.create(header, WARNING_COLOR, subtext, pointer)
     },
 
-    error(header: any, subtext?: string, pointer?: () => void) {
+    error(header: Error | string, subtext?: string, pointer?: () => void) {
         this.create(header, ERROR_COLOR, subtext, pointer)
     },
 
-    create(header: any, color: string, subtext?: string, pointer?: () => void) {
+    create(header: Error | string, color: string, subtext?: string, pointer?: () => void) {
         if (notifier.consoleOutput) {
             if (color === ERROR_COLOR) {
                 console.error(header)

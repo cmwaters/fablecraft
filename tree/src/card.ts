@@ -1,18 +1,24 @@
 import { RedomComponent, el, mount } from "redom";
-import { CommandLine } from './command'
 import Quill from "quill"
+import CommandLine, { Command } from "../quill/commandline"
 import Delta from "quill-delta"
 import { Node } from "./node";
 import { Pos } from "./pos"
 import { Size, Vector } from './geometry'
 import { CardConfig } from './config'
+import { CardBlot, StoryBlot } from "./blot"
+import BaseCommands from "./command"
 import "../assets/quill.css"
+import "../assets/tree.css"
 
-// we call this node instead of card to distinguish from the model and the view
+Quill.register(StoryBlot)
+Quill.register(CardBlot)
+Quill.register("modules/commandline", CommandLine)
+
 export class Card implements RedomComponent {
     el: HTMLElement;
     editor: Quill;
-    command: CommandLine
+    cli: CommandLine | null = null;
     onModify?: (update: Delta) => void
     onMove?: (pos: Pos, oldPos: Pos) => void
     onClick?: (id: number) => void
@@ -21,12 +27,14 @@ export class Card implements RedomComponent {
     private uid: number
     private diff: Delta = new Delta()
     private updater: NodeJS.Timeout | undefined = undefined
+    private commands: Command[] = []
 
     // TODO: instead of updating every x seconds, perhaps a smarter method would be only to
     // fire an event when the user hasn't inputted any more in the last x seconds (similar to google drive)
     private updateFrequency: number
 
     constructor(parent: HTMLElement, node: Node, config: CardConfig, insertBefore?: Card) {
+        console.log("creating card " + node.uid)
         this.el = el("div.card", { style: { marginBottom: config.margin, marginTop: config.margin } })
         if (insertBefore) {
             mount(parent, this.el, insertBefore.el)
@@ -35,18 +43,20 @@ export class Card implements RedomComponent {
         }
         this.position = node.pos
         this.uid = node.uid
-        this.editor = new Quill(this.el as Element)
-        if (typeof node.content === "string") {
-            this.editor.setText(node.content)
-        } else {
-            this.editor.setContents(node.content, "api")
-        }
-        this.command = new CommandLine(this.el, true)
+        this.editor = new Quill(this.el as Element, {
+            modules: { 
+                'commandline': {
+                    'commands': BaseCommands,
+                }
+            }
+        })
+
         this.editor.on("text-change", (delta: Delta, oldDelta: Delta, source: string) => {
             if (source === "user") {
                 this.diff = this.diff.compose(delta)
             }
         })
+
         this.updateFrequency = config.updateFrequency
         this.el.onclick = () => {
             if (this.onClick) {
@@ -55,12 +65,9 @@ export class Card implements RedomComponent {
         }
     }
 
-    
-
+    // to be replaced by the command line module
     showCommandLine(): void {
-        console.log("showing command line")
-        this.editor.blur()
-        this.command.show()
+        console.log("show command line")
     }
 
     center(): Vector {
@@ -73,9 +80,9 @@ export class Card implements RedomComponent {
 
     backspace(): boolean {
         console.log("BACKSPACE")
-        if (this.command.hasFocus()) {
-            if (this.command.txt.value.length === 0) {
-                this.command.hide()
+        if (this.cli && this.cli.hasFocus()) {
+            if (this.cli.txt.value.length === 0) {
+                this.cli.hide()
                 this.editor.focus()
             }
             return false
@@ -84,8 +91,8 @@ export class Card implements RedomComponent {
     }
 
     escape(): void {
-        if (this.command.hasFocus()) {
-            this.command.hide()
+        if (this.cli && this.cli.hasFocus()) {
+            this.cli.hide()
             this.editor.focus()
         } else {
             this.blur()
@@ -124,7 +131,7 @@ export class Card implements RedomComponent {
     }
 
     hasFocus(): boolean {
-        return this.editor.hasFocus() || this.command.hasFocus()
+        return this.editor.hasFocus()
     }
 
     highlight(): void {
@@ -188,7 +195,7 @@ export class Card implements RedomComponent {
             this.updater = undefined
         }
         this.editor.blur()
-        this.command.hide()
+        // this.cli.hide()
     }
 
 }

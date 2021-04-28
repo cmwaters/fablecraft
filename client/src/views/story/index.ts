@@ -34,7 +34,7 @@ export class StoryView implements Component {
                     events: props.events
                 })
             } catch (err) {
-                notifier.error(err.toString())
+                notifier.error(err)
             }
         }, 100)
     }
