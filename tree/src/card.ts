@@ -7,15 +7,12 @@ import { Pos } from "./pos"
 import { Size, Vector } from './geometry'
 import { CardConfig } from './config'
 import { CardBlot, StoryBlot } from "./blot"
-import { NewStoryCommand, NewCardCommand, SplitCardCommand } from "./command"
+import BaseCommands from "./command"
 import "../assets/quill.css"
 import "../assets/tree.css"
-// import { Commander } from "../../lib/quill/commandline/blots"
 
-console.log("registering blots and modules")
 Quill.register(StoryBlot)
 Quill.register(CardBlot)
-// console.log(Commander)
 Quill.register("modules/commandline", CommandLine)
 
 export class Card implements RedomComponent {
@@ -37,6 +34,7 @@ export class Card implements RedomComponent {
     private updateFrequency: number
 
     constructor(parent: HTMLElement, node: Node, config: CardConfig, insertBefore?: Card) {
+        console.log("creating card " + node.uid)
         this.el = el("div.card", { style: { marginBottom: config.margin, marginTop: config.margin } })
         if (insertBefore) {
             mount(parent, this.el, insertBefore.el)
@@ -48,11 +46,10 @@ export class Card implements RedomComponent {
         this.editor = new Quill(this.el as Element, {
             modules: { 
                 'commandline': {
-                    'commands': [NewStoryCommand, NewCardCommand, SplitCardCommand],
+                    'commands': BaseCommands,
                 }
             }
         })
-        this.editor.insertText(0, "Hello World")
 
         this.editor.on("text-change", (delta: Delta, oldDelta: Delta, source: string) => {
             if (source === "user") {

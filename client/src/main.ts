@@ -62,6 +62,8 @@ const app = {
     loadUserPage: () => {
         app.model.loadStory(0).then((story: Story | null) => {
             if (story) {
+                console.log("setting story")
+                app.story = story
                 view.userPage({ 
                     story: story,
                     events: app.eventHandler,
@@ -74,6 +76,8 @@ const app = {
         await app.model.loadStory(header.uid).then((story: Story | null) => {
             if (story) {
                 app.story = story
+                console.log("setting story")
+                console.log(app.story)
                 view.storyPage({
                     story: story,
                     events: app.eventHandler,
@@ -158,8 +162,10 @@ const app = {
                 }
             },
             onModifyNode: (uid: number, delta: Delta) => {
-                console.log("modify node event triggered")
+                console.log("modify node event triggered - that right")
+                console.log(app.story)
                 if (app.story) {
+                    console.log("here")
                     app.model.modifyNode(uid, delta)
                 }
             },

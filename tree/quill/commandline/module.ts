@@ -1,5 +1,6 @@
 import Quill from "quill"
 import Parchment from "parchment"
+import Delta from "quill-delta"
 let Module = Quill.import('core/module')
 let Inline = Quill.import('blots/inline')
 
@@ -58,15 +59,20 @@ class CommandLine extends Module {
 
         this.quill.keyboard.bindings[8] = [({
             key: 8, format: ["cli-interface"], handler: (range: any, context: any) => {
-                console.log("backspace")
-                console.log(range)
                 if (!this.isActive()) { return }
-                if (this.interface.value().length < 2 || range.index <= this.index + 1) {
+                if (range.index < this.index + 1) {
                     this.hide()
+                } else if (range.index == this.index + 1) {
+                    this.quill.updateContents(new Delta()
+                        .retain(range.index - 1)
+                        .insert("", { br: true })
+                        .delete(1)
+                    )
                 } else {
-                    // FIXME: this always throws an error because the
-                    // function isn't declared even although it exists
-                    this.quill.keyboard.handleBackspace(range, context)
+                    this.quill.updateContents(new Delta()
+                        .retain(range.index - 1)
+                        .delete(1)
+                    )
                 }
             }
         })]
@@ -152,7 +158,7 @@ class CommandLine extends Module {
 
     hide() {
         console.log("hiding command line")
-        this.quill.scroll.deleteAt(this.index, this.interface.cache.length + 1)
+        this.quill.scroll.deleteAt(this.index, this.interface.cache.length)
         this.quill.setSelection(this.priorIndex, 0, "api")
         this.reset()
     }
@@ -209,14 +215,8 @@ class CommandLine extends Module {
         let input = this.interface.children.head.text.toLowerCase()
         console.log(input)
         this.commands.forEach(command => {
-            if (command.name == input) {
+            if (command.name.toLowerCase() == input) {
                 command.cmd()
-            } else {
-                command.aliases.forEach(alias => {
-                    if (alias == input) {
-                        command.cmd()
-                    }
-                })
             }
         })
         this.hide()
@@ -247,15 +247,8 @@ class CommandLine extends Module {
         input = input.toLowerCase()
         let commands: Command[] = []
         this.commands.forEach(command => {
-            if (command.name.match(input)) {
+            if (command.name.toLowerCase().match(input)) {
                 commands.push(command)
-            } else {
-                for (let alias of command.aliases) {
-                    if (alias.match(input)) { 
-                        commands.push(command)
-                        break
-                    }
-                }
             }
         })
         return commands
