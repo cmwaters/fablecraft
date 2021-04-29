@@ -1,5 +1,4 @@
 import Quill from "quill"
-// import Parchment from "parchment"
 import Delta from "quill-delta"
 let Module = Quill.import('core/module')
 let Inline = Quill.import('blots/inline')
@@ -232,7 +231,7 @@ class CommandLine extends Module {
             console.log("matched " + cmds.length + " commands.")
             for (let cmd of cmds) {
                 console.log("adding suggestion " + cmd.name)
-                let suggestion = Parchment.create("cli-suggestion", cmd)
+                let suggestion = new CommandSuggestion(CommandSuggestion.create(), cmd)
                 this.suggestions.unshift(suggestion)
                 this.cli.appendChild(suggestion)
             }
