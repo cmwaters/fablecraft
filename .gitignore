@@ -1,4 +1,5 @@
 node_modules/
+static/main.js
 .idea
 .env
 archive/

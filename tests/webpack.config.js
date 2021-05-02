@@ -2,6 +2,7 @@ module.exports = {
 	mode: "development",
 	entry: {
 		unit: "./unit.ts",
+		tree: "./tree/unit.ts"
 	},
 	output: {
 		filename: "[name].js",

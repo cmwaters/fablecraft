@@ -59,6 +59,7 @@ export class Tree implements RedomComponent {
 
         // calculate what the optimal width for each card should be
         this.calculateCardWidth();
+        console.log("width: " + this.cardWidth)
 
         // calculate the center point of the element
         this.calculateCenterPoint()

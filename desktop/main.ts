@@ -1,21 +1,20 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, screen } from "electron";
 import * as path from "path";
 
 function createWindow() {
     // Create the browser window.
+    let screenSize = screen.getPrimaryDisplay().size 
     const mainWindow = new BrowserWindow({
-        height: 600,
-        webPreferences: {
-            preload: path.join(__dirname, "preload.js"),
-        },
-        width: 800,
+        width: screenSize.width,
+        height: screenSize.height,
+        titleBarStyle: 'hiddenInset',
+        // webPreferences: {
+        //     preload: path.join(__dirname, "preload.js"),
+        // },
     });
 
     // and load the index.html of the app.
-    mainWindow.loadFile(path.join(__dirname, "../index.html"));
-
-    // Open the DevTools.
-    mainWindow.webContents.openDevTools();
+    mainWindow.loadFile(path.join(__dirname, "../../static/index.html"));
 }
 
 // This method will be called when Electron has finished

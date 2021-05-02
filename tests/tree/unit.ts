@@ -1,5 +1,5 @@
-import "../assets/quill.css"
-import "../assets/tree.css"
+import "../../tree/quill.css"
+import "../../tree/tree.css"
 
 import "./general.spec.ts"
 import "./creation.spec.ts"

@@ -29,9 +29,9 @@ export function defaultConfig(): Config {
             updateFrequency: 2000,  // every 2 seconds
         },
         margin: {
-            pillar: 10,
+            pillar: 20,
             family: 40,
-            card: 10
+            card: 20
         }, 
         frameRate: 30,
         transitionTime: 300,

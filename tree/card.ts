@@ -8,7 +8,7 @@ import { Size, Vector } from './geometry'
 import { CardConfig } from './config'
 import { CardBlot, StoryBlot } from "./blot"
 import BaseCommands from "./command"
-import "./quill.css"
+import '~quill/dist/quill.core.css';
 import "./tree.css"
 
 Quill.register(StoryBlot)
@@ -35,12 +35,14 @@ export class Card implements RedomComponent {
 
     constructor(parent: HTMLElement, node: Node, config: CardConfig, insertBefore?: Card) {
         console.log("creating card " + node.uid)
+        console.log("margin " + config.margin)
         this.el = el("div.card", { style: { marginBottom: config.margin, marginTop: config.margin } })
         if (insertBefore) {
             mount(parent, this.el, insertBefore.el)
         } else {
             mount(parent, this.el)
         }
+        console.log("margin " + this.el.style.marginBottom)
         this.position = node.pos
         this.uid = node.uid
         this.editor = new Quill(this.el as Element, {

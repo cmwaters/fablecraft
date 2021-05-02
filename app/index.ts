@@ -181,3 +181,5 @@ window.onload = async () => {
 
     await app.init()
 }
+
+export default app
