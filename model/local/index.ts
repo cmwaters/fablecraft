@@ -295,6 +295,9 @@ export class LocalStorage implements Model {
                         case "modify":
                             console.log("processing modify node")
                             let modifiedNode = nodes[op.uid]
+                            if (modifiedNode === undefined) {
+                                throw new Error("modified node with id " + op.uid + " not found. Delta: " + op.delta.toString())
+                            }
                             let delta = Object.assign(new Delta, op.delta)
                             delta.ops.forEach(op => op = Object.assign(Delta.Op, op))
                             console.log(modifiedNode.content)

@@ -3,6 +3,7 @@ import { Model, Header, Story } from '../model'
 import { view, notifier } from '../view'
 import { Pos, Node } from "../tree"
 import Delta from "quill-delta"
+import "../assets/index.styl"
 
 const app = {
     model: new LocalStorage() as Model,

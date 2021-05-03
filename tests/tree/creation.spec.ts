@@ -1,7 +1,5 @@
 import chai, { assert } from 'chai'
-import { Tree } from "../../tree/tree"
-import { defaultConfig } from "../../tree/config"
-import { Pos } from "../../tree/pos"
+import { Tree, defaultConfig, Pos } from "../../tree"
 import { 
     TreeTypology,
     assertTypology,
@@ -12,7 +10,7 @@ import { errors } from "../../tree/errors"
 
 let container: HTMLElement
 
-describe("Fable Tree | Creation", () => {
+describe("Tree | Creation", () => {
     before(() => {
         let div = document.getElementById("test-container")
         expect(div).to.not.be.null 

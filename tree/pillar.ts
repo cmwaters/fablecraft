@@ -1,4 +1,3 @@
-import { Pos } from './pos'
 import { Vector, Size } from './geometry'
 import { RedomComponent, el, mount, unmount } from "redom";
 import { Family } from './family';
@@ -21,8 +20,13 @@ export class Pillar implements RedomComponent {
     private target: Vector
 
     constructor(parent: HTMLElement, xOffset: number, config: PillarConfig) {
-        this.el = el("div.pillar", { style: { left: xOffset, width: config.width } });
+        console.log("xOffset " + xOffset)
+        this.el = el("div.pillar", { style: { 
+            left: xOffset + "px", 
+            width: config.width + "px",
+        } });
         mount(parent, this.el)
+        console.log("xOffset " + this.el.offsetLeft)
         this.pos = new Vector(xOffset, 0)
         this.target = this.pos.copy()
         this.centerY = config.centerY
@@ -46,6 +50,7 @@ export class Pillar implements RedomComponent {
         }
         // calculate the offset of the card itself within the family
         yOffset += this.families[family].cardOffset(index) + this.familyConfig.margin
+        console.log("centering card " + (this.centerY - yOffset))
         this.shift(Vector.y(this.centerY - yOffset), this.transitionTime)
     }
 
@@ -219,6 +224,7 @@ export class Pillar implements RedomComponent {
 
     private moveBy(delta: Vector): void {
         this.pos.shift(delta)
+        console.log("moving by " + delta.string() + " to " + this.pos.string())
         this.pos.setElement(this.el)
     }
 

@@ -2,12 +2,16 @@ import { Node } from "../../tree/node"
 import { Pos } from "../../tree/pos"
 import Delta from "quill-delta"
 import chai from "chai"
+import e from "express"
 let expect = chai.expect
+
+export const testWidth = 800
+export const testHeight = 600
 
 const div = document.createElement('div');
 div.id = "test-container"
-div.style.width = "100%";
-div.style.height = "100vh";
+div.style.width = testWidth + "px";
+div.style.height = testHeight + "px";
 document.body.appendChild(div)
 
 beforeEach(() => {
@@ -98,5 +102,26 @@ export function assertTypology(el: HTMLElement, typology: TreeTypology): void {
 }
 
 export function getNodeAsElement(el: HTMLElement, pos: Pos): HTMLElement {
+    expect(el.id).to.equal("test-container")
     return el.children[0].children[pos.depth].children[pos.family].children[pos.index] as HTMLElement
+}
+
+export function getPillarAsElement(el: HTMLElement, depth: number): HTMLElement {
+    expect(el.id).to.equal("test-container")
+    return el.children[0].children[depth] as HTMLElement
+}
+
+export function getFamilyAsElement(el: HTMLElement, depth: number, family: number): HTMLElement {
+    expect(el.id).to.equal("test-container")
+    return el.children[0].children[depth].children[family] as HTMLElement
+}
+
+export function assertSize(el: HTMLElement, width: number, height: number) {
+    expect(el.offsetWidth).to.equal(width, "different width than expected")
+    expect(el.offsetHeight).to.equal(height, "different height than expected")
+}
+
+export function assertPosition(el: HTMLElement, top: number, left: number) {
+    expect(el.offsetTop).to.equal(top, "different top than expected")
+    expect(el.offsetLeft).to.equal(left, "different left than expected")
 }

@@ -6,7 +6,7 @@ import { notifier } from "./components/notifier"
 import { IconButton } from "./components/buttons"
 import { PersonFillIcon } from "./components/icons"
 import { StoryTitle } from "./components/inputs"
-import "./view.css"
+import "../assets/view.styl"
 
 export { notifier }
 

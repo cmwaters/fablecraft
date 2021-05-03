@@ -11,7 +11,6 @@ import { Events } from './events';
 import { sort } from 'fast-sort'
 import { errors } from './errors';
 import Delta from "quill-delta"
-import "./tree.css"
 
 export class Tree implements RedomComponent {
 
@@ -54,7 +53,7 @@ export class Tree implements RedomComponent {
         // we add a reference element inside the given element. This allow for easier navigation
         // as the user movements move the entire reference frame as opposed to all the individual
         // elements inside
-        this.reference = el("div#reference");
+        this.reference = el("div.reference");
         mount(this.el, this.reference);
 
         // calculate what the optimal width for each card should be

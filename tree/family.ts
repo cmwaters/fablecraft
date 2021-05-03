@@ -11,7 +11,10 @@ export class Family implements RedomComponent {
     cards: Card[] = [];
 
     constructor(parent: HTMLElement, config: FamilyConfig, insertBefore?: Family) {
-        this.el = el("div.family", { style: { marginBottom: config.margin, marginTop: config.margin}})
+        this.el = el("div.family", { style: { 
+            marginBottom: config.margin + "px", 
+            marginTop: config.margin + "px",
+        }})
         if (insertBefore) {
             mount(parent, this.el, insertBefore)
         } else {

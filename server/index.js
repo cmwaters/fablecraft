@@ -4,11 +4,11 @@ const PORT = process.env.PORT || 8080;
 
 const app = express();
 
-app.use(express.static(path.dirname(__dirname) + '/static'));
+app.use(express.static(path.dirname(__dirname) + '/dist'));
 
 app.get('/', (req, res, next) => {
   console.log("Starting client")
-  res.sendFile(path.join(__dirname + '/static/index.html'));
+  res.sendFile(path.join(__dirname + '/dist/index.html'));
 })
 
 app.listen(PORT, () => {

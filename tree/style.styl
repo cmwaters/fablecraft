@@ -1,62 +1,48 @@
-#reference {
+.reference
     position: absolute;
     height: 100vh;
     width: 100%;
-}
 
-.pillar{
+.pillar
     position: absolute;
-    top: 50vh;
-}
+    top: 0px;
+    left: 0px;
 
-.family {
+.family .card
     position: relative;
     width: 100%;
-}
 
-.card {
-    position: relative;
-    width: 100%; 
+.card
     background-color: white;
     border-radius: 3px;
     min-height: 40px;
     padding: 5px;
     color: #aaa;
-}
 
-
-.command {
+.command
     padding: 0px 15px 8px 15px;
     width: 100%;
     display: flex;
-}
+    &:.img 
+        display: inline-block;
+        width: 21px;
+        padding-right: 5px;
 
-.command .img {
-    display: inline-block;
-    width: 21px;
-    padding-right: 5px;
-}
+    &:input
+        display: inline-block;
+        font-size: 12px;;
+        color: #333;
+        border: none;
+        outline: none;
 
-.command input {
-    display: inline-block;
-
-    /* font-family: "Open Sans", Arial, sans-serif;
-    letter-spacing: 1px; */
-    font-size: 12px;;
-    color: #333;
-    border: none;
-    outline: none;
-}
-
-.ql-story{
+.ql-story
     background-color: red;
     width: 100%;
     height: 100px;
     border-radius: 10px;
-}
 
-.ql-card {
+
+.ql-card
     border: 1px solid #666;
     border-radius: 3px;
     padding: 0px 3px;
-}

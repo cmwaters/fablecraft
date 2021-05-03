@@ -1,8 +1,5 @@
 import chai, { assert } from 'chai'
-import { Tree } from "../../tree/tree"
-import { Node } from "../../tree/node"
-import { defaultConfig } from "../../tree/config"
-import { Pos } from "../../tree/pos"
+import { Tree, Node, defaultConfig, Pos } from "../../tree"
 import {
     TreeTypology,
     assertTypology,
@@ -10,14 +7,11 @@ import {
 } from "./helper"
 let expect = chai.expect
 import Delta from "quill-delta"
-import { errors } from "../../tree/errors"
 
 let container: HTMLElement
 let keySpeed = 150 // 150 milliseconds per action
 
-
-
-describe.only("Fable Tree | Input", () => {
+describe.skip("Tree | Input", () => {
     let eventRecorder: EventRecorder
 
     before(() => {

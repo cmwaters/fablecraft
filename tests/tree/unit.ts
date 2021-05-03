@@ -1,6 +1,4 @@
-import "../../tree/quill.css"
-import "../../tree/tree.css"
-
+import "./helper.ts"
 import "./general.spec.ts"
 import "./creation.spec.ts"
 import "./deletion.spec.ts"

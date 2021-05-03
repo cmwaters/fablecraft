@@ -1,3 +1,5 @@
+const path = require('path');
+
 module.exports = {
 	mode: "development",
 	entry: {
@@ -22,6 +24,10 @@ module.exports = {
 				test: /\.css$/i,
 				use: ["style-loader", "css-loader"],
 			},
+			{
+				test: /\.styl$/,
+				use: ['css-loader', 'stylus-loader'],
+			}
 		],
 	},
 };
