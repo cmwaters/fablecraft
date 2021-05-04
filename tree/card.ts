@@ -69,11 +69,6 @@ export class Card implements RedomComponent {
         }
     }
 
-    // to be replaced by the command line module
-    showCommandLine(): void {
-        console.log("show command line")
-    }
-
     center(): Vector {
         return new Size(this.el.clientWidth, this.el.clientHeight).center()
     }

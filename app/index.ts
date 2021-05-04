@@ -2,11 +2,21 @@ import { LocalStorage } from '../model/local'
 import { Model, Header, Story } from '../model'
 import { view, notifier } from '../view'
 import { Pos, Node } from "../tree"
+import winston from "winston"
 import Delta from "quill-delta"
 import "../assets/index.styl"
 
+window.onload = async () => {
+    console.log("Starting fablecraft")
+
+    await app.init()
+}
+
 const app = {
-    model: new LocalStorage() as Model,
+    logger: createLoggers(),
+    model: new LocalStorage({
+        logger: winston.loggers.get("model")
+    }) as Model,
     library: [] as Header[],
     story: undefined as Story | undefined,
     user: undefined as Header | undefined,
@@ -14,9 +24,6 @@ const app = {
     init: async () => {
         // set up view by setting event listeners and enabling notifications
         view.init()
-
-        // set notifier to also print to console (DEBUG MODE)
-        notifier.outputAlsoToConsole()
 
         // attempt to load any existing state
         let success = await app.initializeState()
@@ -91,6 +98,7 @@ const app = {
     },
 
     createUser: async () => {
+        if (app.logger) this
         app.newStory("user", "description").then((story: Story) => {
             app.story = story
             app.user = story.header
@@ -177,10 +185,41 @@ const app = {
 
 }
 
-window.onload = async () => {
-    console.log("Starting fablecraft")
-
-    await app.init()
+function createLoggers(): winston.Logger {
+    let loggerTypes = ["app", "model", "tree"]
+    let loggers: winston.Logger[] = []
+    loggerTypes.forEach(name => {
+        loggers.push(winston.loggers.add(name, {
+            format: winston.format.combine(
+                winston.format.label({ label: name }),
+                winston.format.json()
+            ),
+        }))
+    })
+    if (process.env.NODE_ENV !== 'production') {
+        loggers.forEach((logger, index) => {
+            logger.add(new winston.transports.File({
+                filename: loggerTypes[index] + "-combined.log",
+                level: "debug",
+            }))
+            logger.add(new winston.transports.Console({
+                level: "info",
+                format: winston.format.combine(
+                    winston.format.colorize(),
+                    winston.format.simple()
+                )
+            }))
+        })
+    } else {
+        loggers.forEach((logger, index) => {
+            logger.add(new winston.transports.File({
+                filename: loggerTypes[index] + "-error.log",
+                level: "error"
+            }))
+        })
+    }
+    // return the app logger
+    return loggers[0]
 }
 
 export default app

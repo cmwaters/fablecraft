@@ -1,5 +1,6 @@
 import { Events } from "./events"
 import { Command } from "../lib/quill/commandline"
+import winston from "winston"
 
 export type Config = {
     card: {
@@ -60,5 +61,6 @@ export type CardConfig = {
 export type Options = {
     events?: Events 
     commands?: Command[]
+    logger?: winston.Logger
 }
 

@@ -6,15 +6,18 @@ import { notifier } from "./components/notifier"
 import { IconButton } from "./components/buttons"
 import { PersonFillIcon } from "./components/icons"
 import { StoryTitle } from "./components/inputs"
+import winston from "winston"
 import "../assets/view.styl"
 
 export { notifier }
 
 export const view = {
-
+    logger: undefined as winston.Logger | undefined, 
     current: null as Component | null,
 
     init: () => {
+        view.logger = winston.loggers.get("app")
+
         // set up key event listeners
         document.onkeydown = (e: KeyboardEvent) => {
             if (view.current && view.current.onkeydown) {
