@@ -12,6 +12,6 @@
   "devDependencies": {
     "@types/mocha": "^8.2.1",
     "fast-check": "^2.14.0",
-    "mocha": "^8.3.2"
+    "mocha": "^10.1.0"
   }
 }
