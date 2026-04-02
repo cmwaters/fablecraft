@@ -1,0 +1,26 @@
+[package]
+name = "fablecraft"
+version = "0.1.0"
+description = "Fablecraft desktop application"
+authors = ["Codex"]
+edition = "2021"
+default-run = "fablecraft"
+
+[lib]
+name = "fablecraft_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "=2.5.6", features = [] }
+
+[dependencies]
+rusqlite = { version = "=0.32.1", features = ["bundled"] }
+serde = { version = "1.0.216", features = ["derive"] }
+serde_json = "1.0.133"
+# Keep Tauri's transitive graph compatible with the local Rust 1.86 toolchain.
+serde_with = "=3.11.0"
+tauri = { version = "=2.10.3", features = [] }
+tauri-plugin-dialog = "=2.6.0"
+time = "=0.3.36"
+thiserror = "=2.0.9"
+uuid = { version = "=1.11.0", features = ["v4", "serde"] }

@@ -1,0 +1,146 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: var(--fc-color-text, #171513);
+  background: var(--fc-color-app, #f5ece6);
+  font-family: var(--fc-font-content, "Iowan Old Style", Georgia, serif);
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--fc-color-surface, #fdf6ef);
+}
+
+html[data-fc-runtime="desktop"],
+body[data-fc-runtime="desktop"],
+body[data-fc-runtime="desktop"] #root {
+  height: 100%;
+  overflow: hidden;
+}
+
+body[data-fc-runtime="web"] {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+code {
+  font-family:
+    "SFMono-Regular",
+    ui-monospace,
+    "Cascadia Code",
+    "Source Code Pro",
+    Menlo,
+    monospace;
+}
+
+::selection {
+  background: rgba(143, 114, 81, 0.2);
+}
+
+.fc-editor p {
+  margin: 0;
+}
+
+.fc-preview > * {
+  margin: 0;
+}
+
+.fc-preview > * + * {
+  margin-top: 0.9rem;
+}
+
+.fc-editor p + p {
+  margin-top: 0.9rem;
+}
+
+.fc-editor ul,
+.fc-editor ol {
+  margin: 0.8rem 0 0;
+  padding-left: 1.5rem;
+}
+
+.fc-editor ul {
+  list-style: disc;
+}
+
+.fc-editor ol {
+  list-style: decimal;
+}
+
+.fc-editor li + li {
+  margin-top: 0.3rem;
+}
+
+.fc-editor li p {
+  margin: 0;
+}
+
+.fc-preview li > * + * {
+  margin-top: 0.35rem;
+}
+
+.fc-editor h1,
+.fc-editor h2,
+.fc-editor h3 {
+  font-family: var(--fc-font-content);
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.fc-editor h1 {
+  font-size: 1.65em;
+}
+
+.fc-editor h2 {
+  font-size: 1.4em;
+}
+
+.fc-editor h3 {
+  font-size: 1.2em;
+}
+
+.fc-editor h1 + p,
+.fc-editor h2 + p,
+.fc-editor h3 + p,
+.fc-editor p + ul,
+.fc-editor p + ol,
+.fc-editor ul + p,
+.fc-editor ol + p {
+  margin-top: 0.75rem;
+}
+
+.fc-editor .is-editor-empty:first-child::before {
+  color: var(--fc-color-muted);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.fc-no-scrollbar {
+  scrollbar-width: none;
+}
+
+.fc-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

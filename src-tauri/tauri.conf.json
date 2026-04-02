@@ -1,0 +1,31 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Fablecraft",
+  "version": "0.1.0",
+  "identifier": "com.fablecraft.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Fablecraft",
+        "backgroundColor": [253, 246, 239],
+        "width": 1440,
+        "height": 920,
+        "resizable": true,
+        "center": true,
+        "theme": "Light",
+        "titleBarStyle": "Transparent",
+        "hiddenTitle": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  }
+}
