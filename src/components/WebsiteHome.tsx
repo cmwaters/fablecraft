@@ -35,14 +35,14 @@ export function WebsiteHome() {
                     className="fc-site-action fc-site-action-primary"
                     href={macDownload.url}
                   >
-                    Download preview
+                    Download for macOS
                   </a>
                 ) : (
                   <span
                     aria-disabled
                     className="fc-site-action fc-site-action-muted"
                   >
-                    Download preview
+                    Download for macOS
                   </span>
                 )}
               </div>

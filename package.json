@@ -9,6 +9,7 @@
     "mcp:build": "cargo build --release --manifest-path src-tauri/Cargo.toml --bin fablecraft-mcp",
     "preview": "vite preview",
     "tauri": "tauri",
+    "tauri:build:macos-dmg": "tauri build --bundles dmg",
     "test": "vitest run",
     "test:watch": "vitest"
   },

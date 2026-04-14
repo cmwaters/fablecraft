@@ -31,7 +31,7 @@ The product is:
 #### Public Website
 
 - public home for Fablecraft
-- primary download destination for the desktop app (hero link when an artifact URL is configured)
+- primary download destination for the desktop app (hero link targets the latest GitHub macOS release artifact when release config is set)
 - place to explain the product and show the editor in action (hero plus product screenshot)
 - release notes, update guidance, bug reports, and feature requests may live on external surfaces until dedicated pages return
 - later, the place to sign in for sync and hosted AI connector flows once those are specified
@@ -450,14 +450,14 @@ Hero slogan:
 Core jobs:
 
 - communicate what Fablecraft is and who it is for
-- drive desktop downloads from `https://fablecraft.xyz` (hero CTA links to the configured macOS artifact URL when set)
+- drive desktop downloads from `https://fablecraft.xyz` (hero CTA links to the latest GitHub macOS DMG via a stable `releases/latest/download/...` URL when release config is set)
 - explain the spatial tree and local-first writing model through a single product screenshot
 - prepare a future authenticated surface for sync and AI connector management
 - deeper distribution and support surfaces (release notes, multi-platform download grid, feedback forms) may return or move to external pages as the product matures
 
 Initial site structure (current):
 
-- hero section with the core slogan and a download CTA (disabled label when no download URL is configured)
+- hero section with the core slogan and a download CTA (disabled label when the GitHub release config is absent)
 - product screenshot section immediately below the hero (`public/screenshot.png`), then the footer
 
 Rules:
@@ -465,6 +465,7 @@ Rules:
 - the site is a marketing, distribution, and support surface first
 - the desktop app remains the primary place where writing happens
 - update delivery may be website-backed, but the writing workflow stays local-first
+- the macOS website download should resolve against the latest GitHub Release asset without client-side GitHub API calls
 - feedback and release communication may use external tools (for example GitHub Issues or mail) until dedicated site sections are restored
 - future sync and AI connector features require a separate explicit scope definition before implementation
 - the website should stay sparse: generous spacing, minimal copy, and only the information required to download, understand, update, or contact the product

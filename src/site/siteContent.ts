@@ -25,10 +25,24 @@ export interface SiteFeedbackEndpointConfig {
   featureRequestUrl: string | null;
 }
 
+export interface SiteGithubReleaseConfig {
+  assetName: string | null;
+  owner: string | null;
+  repo: string | null;
+}
+
 function readSiteEnv(name: string) {
   const value = (import.meta.env as Record<string, string | boolean | undefined>)[name];
 
   return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+export function buildGithubLatestReleaseAssetUrl(config: SiteGithubReleaseConfig) {
+  if (!config.owner || !config.repo || !config.assetName) {
+    return null;
+  }
+
+  return `https://github.com/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/releases/latest/download/${encodeURIComponent(config.assetName)}`;
 }
 
 export const siteVersion = packageJson.version;
@@ -42,16 +56,22 @@ export const siteFeedbackEndpoints: SiteFeedbackEndpointConfig = {
   featureRequestUrl: readSiteEnv("VITE_FABLECRAFT_FEATURE_REQUEST_URL"),
 };
 
+export const siteGithubRelease: SiteGithubReleaseConfig = {
+  assetName: readSiteEnv("VITE_FABLECRAFT_DOWNLOAD_MAC_ASSET_NAME"),
+  owner: readSiteEnv("VITE_FABLECRAFT_GITHUB_OWNER"),
+  repo: readSiteEnv("VITE_FABLECRAFT_GITHUB_REPO"),
+};
+
+const macDownloadUrl = buildGithubLatestReleaseAssetUrl(siteGithubRelease);
+
 export const siteDownloads: SiteDownloadOption[] = [
   {
-    availability: readSiteEnv("VITE_FABLECRAFT_DOWNLOAD_MAC_URL") ? "available" : "soon",
-    ctaLabel: readSiteEnv("VITE_FABLECRAFT_DOWNLOAD_MAC_URL")
-      ? "Download for macOS"
-      : "macOS link pending",
+    availability: macDownloadUrl ? "available" : "soon",
+    ctaLabel: macDownloadUrl ? "Download for macOS" : "macOS link pending",
     description:
-      "The primary desktop preview. Manual install and manual updates from the latest public build.",
+      "The primary desktop preview, served from the latest public GitHub release as a macOS DMG.",
     platform: "macOS",
-    url: readSiteEnv("VITE_FABLECRAFT_DOWNLOAD_MAC_URL"),
+    url: macDownloadUrl,
   },
   {
     availability: readSiteEnv("VITE_FABLECRAFT_DOWNLOAD_WINDOWS_URL") ? "available" : "soon",

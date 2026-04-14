@@ -1,0 +1,46 @@
+name: Release macOS
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos-arm64:
+    runs-on: macos-14
+
+    env:
+      RELEASE_ASSET_NAME: Fablecraft-macos-arm64.dmg
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build macOS DMG bundle
+        run: npm run tauri:build:macos-dmg
+
+      - name: Stage release asset
+        run: |
+          mkdir -p release-assets
+          mv src-tauri/target/release/bundle/dmg/*.dmg "release-assets/${RELEASE_ASSET_NAME}"
+
+      - name: Publish GitHub release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/${{ env.RELEASE_ASSET_NAME }}
+          generate_release_notes: true

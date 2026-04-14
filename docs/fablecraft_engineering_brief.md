@@ -47,7 +47,8 @@ This brief translates it into **buildable engineering instructions**.
 
 ### Website Deployment
 - static frontend deployment should work cleanly on Vercel
-- release download URLs must stay environment-configurable (`siteContent`); optional future feedback endpoints can reuse the same pattern when site forms return
+- the macOS release download must be derived from environment-configured GitHub metadata (`siteContent`) so the website can point at `releases/latest/download/...` without browser-side API calls
+- optional future feedback endpoints can reuse the same environment-driven pattern when site forms return
 - the website must still render gracefully when those hosted endpoints are not configured
 
 ---
@@ -89,7 +90,7 @@ This brief translates it into **buildable engineering instructions**.
 ### Website Layer
 - runtime split between browser and Tauri
 - public landing page (hero, product screenshot, footer) and marketing content
-- hero download link when `VITE_FABLECRAFT_DOWNLOAD_MAC_URL` is configured; `siteContent` retains env slots for future multi-platform or off-page distribution
+- hero download link when `VITE_FABLECRAFT_GITHUB_OWNER`, `VITE_FABLECRAFT_GITHUB_REPO`, and `VITE_FABLECRAFT_DOWNLOAD_MAC_ASSET_NAME` are configured; `siteContent` retains Windows/Linux env slots for future multi-platform or off-page distribution
 - future authenticated surface for sync and AI connector management
 - sparse editorial layout with generous whitespace and minimal copy
 - hero-led composition with a very light header and line-based section dividers where sections exist
@@ -199,9 +200,10 @@ animation: ~140ms ease-in-out
 - add a browser-only companion website inside the same frontend repo
 - detect runtime at startup so browser builds render the website and Tauri builds keep the editor
 - implement a minimal sophisticated landing page for `https://fablecraft.xyz`
-- include hero, a scroll-first product screenshot served from `public/screenshot.png`, and footer; the hero download control uses `siteDownloads` (macOS `VITE_FABLECRAFT_DOWNLOAD_MAC_URL`) when present, otherwise a muted non-link label
-- keep release artifact URLs environment-configurable for Vercel deployment (`siteContent` retains Windows/Linux envs for future hero or off-site use)
+- include hero, a scroll-first product screenshot served from `public/screenshot.png`, and footer; the hero download control uses `siteDownloads` and builds the macOS URL from GitHub release env metadata when present, otherwise a muted non-link label
+- keep release metadata environment-configurable for Vercel deployment (`siteContent` retains Windows/Linux env URLs for future hero or off-site use)
 - keep browser layouts scrollable without breaking the desktop app's fixed-height workspace shell
+- add a GitHub Actions release workflow that runs on `v*` tags, builds an arm64 macOS `.dmg`, renames it to the stable public asset name `Fablecraft-macos-arm64.dmg`, and uploads it to the GitHub Release
 
 ---
 
@@ -312,7 +314,10 @@ animation: ~140ms ease-in-out
 - the website uses a minimal editorial layout distinct from the desktop editor UI
 - the website and desktop app share the same soft pink-white paper and dark-ink visual language
 - the Tauri startup window background must match the light paper surface so the transparent title bar does not flash white
-- when `VITE_FABLECRAFT_DOWNLOAD_MAC_URL` is set, the hero primary action is a working download link; when unset, the same label renders disabled (muted)
+- when `VITE_FABLECRAFT_GITHUB_OWNER`, `VITE_FABLECRAFT_GITHUB_REPO`, and `VITE_FABLECRAFT_DOWNLOAD_MAC_ASSET_NAME` are set, the hero primary action is a working download link to `https://github.com/<owner>/<repo>/releases/latest/download/<asset>`; when unset, the same label renders disabled (muted)
+- the canonical public macOS asset is `Fablecraft-macos-arm64.dmg`, uploaded by the tagged GitHub release workflow
+- `.env.example` documents the required website env vars for Vercel or other static hosting
+- maintainers publish a new website-backed macOS download by pushing a `v*` tag that matches the desktop version and letting the GitHub Actions workflow attach the renamed DMG asset to the release
 - Tauri desktop behavior remains unchanged when the app runs in desktop mode
 
 ---
@@ -335,7 +340,7 @@ animation: ~140ms ease-in-out
 - command palette works
 - search works
 - import/export works
-- browser build ships the public website (hero, screenshot, footer) with a working hero download link when the macOS artifact env URL is set
+- browser build ships the public website (hero, screenshot, footer) with a working hero download link when the GitHub macOS release env metadata is set
 
 ---
 
