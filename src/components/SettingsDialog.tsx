@@ -1,4 +1,5 @@
 import {
+  Fragment,
   useEffect,
   useId,
   useRef,
@@ -72,8 +73,8 @@ function SettingGroup<T extends string>({
       : moveEnd
         ? options.length - 1
         : movePrevious
-          ? (selectedIndex - 1 + options.length) % options.length
-          : (selectedIndex + 1) % options.length;
+          ? Math.max(0, selectedIndex - 1)
+          : Math.min(options.length - 1, selectedIndex + 1);
 
     onChange(options[nextIndex]!.value);
   }
@@ -106,62 +107,55 @@ function SettingGroup<T extends string>({
           </div>
         </div>
         <div
-          className="relative inline-flex min-w-[320px] rounded-full p-1 sm:justify-end"
-          style={{
-            boxShadow: "inset 0 0 0 1.5px rgba(23, 20, 18, 0.16)",
-          }}
+          className="inline-flex min-w-[320px] items-center rounded-full p-1"
+          style={{ boxShadow: "inset 0 0 0 1.5px rgba(23, 20, 18, 0.16)" }}
         >
-          <div
-            aria-hidden="true"
-            className="absolute bottom-1 top-1 rounded-full bg-[var(--fc-color-surface)] shadow-[var(--fc-shadow-soft)] transition duration-[var(--fc-animation-ms)] ease-[var(--fc-animation-easing)]"
-            style={{
-              left: selectedIndex === 0 ? "4px" : "calc(50% + 2px)",
-              width: "calc(50% - 6px)",
-            }}
-          />
-          {options.map((option, index) => {
-            const isActive = option.value === value;
-
-            return (
+          {options.map((option, index) => (
+            <Fragment key={option.value}>
               <button
-                aria-pressed={isActive}
-                className="relative z-[1] flex flex-1 items-center justify-center gap-3 rounded-full px-4 py-2.5 text-left transition duration-[var(--fc-animation-ms)] ease-[var(--fc-animation-easing)]"
-                key={option.value}
+                aria-pressed={option.value === value}
+                className="flex flex-1 items-center justify-center px-4 py-2.5"
                 onClick={() => onChange(option.value)}
-                onMouseDown={(event) => {
-                  event.preventDefault();
-                }}
+                onMouseDown={(event) => event.preventDefault()}
                 tabIndex={-1}
                 type="button"
               >
-                {isActive ? (
-                  <span
-                    aria-hidden="true"
-                    className="relative inline-flex h-8 w-[58px] shrink-0 items-center rounded-full"
-                    style={{
-                      boxShadow: "inset 0 0 0 2px var(--fc-color-text)",
-                    }}
-                  >
-                    <span
-                      className="absolute h-3.5 w-[2px] rounded-full bg-[var(--fc-color-text)]"
-                      style={{
-                        left: index === 0 ? "12px" : "42px",
-                      }}
-                    />
-                    <span
-                      className="absolute h-3.5 w-3.5 rounded-full bg-[var(--fc-color-text)]"
-                      style={{
-                        left: index === 0 ? "36px" : "10px",
-                      }}
-                    />
-                  </span>
-                ) : null}
-                <span className="text-[length:var(--fc-content-size)] leading-[1.3] text-[var(--fc-color-text)]">
+                <span
+                  className="text-[length:var(--fc-content-size)] leading-[1.3] transition duration-[var(--fc-animation-ms)] ease-[var(--fc-animation-easing)]"
+                  style={{
+                    color: option.value === value
+                      ? "var(--fc-color-text)"
+                      : "var(--fc-color-muted)",
+                  }}
+                >
                   {option.label}
                 </span>
               </button>
-            );
-          })}
+
+              {index === 0 && (
+                <span
+                  aria-hidden="true"
+                  className="relative inline-flex h-8 w-[58px] shrink-0 items-center rounded-full"
+                  style={{ boxShadow: "inset 0 0 0 2px var(--fc-color-text)" }}
+                >
+                  <span
+                    className="absolute h-3.5 w-[2px] rounded-full bg-[var(--fc-color-text)]"
+                    style={{
+                      left: selectedIndex === 0 ? "42px" : "12px",
+                      transition: "left var(--fc-animation-ms) var(--fc-animation-easing)",
+                    }}
+                  />
+                  <span
+                    className="absolute h-3.5 w-3.5 rounded-full bg-[var(--fc-color-text)]"
+                    style={{
+                      left: selectedIndex === 0 ? "10px" : "36px",
+                      transition: "left var(--fc-animation-ms) var(--fc-animation-easing)",
+                    }}
+                  />
+                </span>
+              )}
+            </Fragment>
+          ))}
         </div>
       </div>
     </section>

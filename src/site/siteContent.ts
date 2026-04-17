@@ -21,8 +21,7 @@ export interface SiteFutureMilestone {
 }
 
 export interface SiteFeedbackEndpointConfig {
-  bugReportUrl: string | null;
-  featureRequestUrl: string | null;
+  feedbackUrl: string;
 }
 
 export interface SiteGithubReleaseConfig {
@@ -49,20 +48,26 @@ export const siteVersion = packageJson.version;
 
 export const siteContactEmail = readSiteEnv("VITE_FABLECRAFT_CONTACT_EMAIL");
 
-// TODO: Replace env-driven placeholders with real hosted release assets and
-// support destinations once the Vercel and Supabase deployment pipeline is chosen.
+export const siteUrl = "https://fablecraft.xyz";
+
 export const siteFeedbackEndpoints: SiteFeedbackEndpointConfig = {
-  bugReportUrl: readSiteEnv("VITE_FABLECRAFT_BUG_REPORT_URL"),
-  featureRequestUrl: readSiteEnv("VITE_FABLECRAFT_FEATURE_REQUEST_URL"),
+  feedbackUrl: `${siteUrl}/api/feedback`,
 };
 
-export const siteGithubRelease: SiteGithubReleaseConfig = {
-  assetName: readSiteEnv("VITE_FABLECRAFT_DOWNLOAD_MAC_ASSET_NAME"),
+const githubReleaseBase: Pick<SiteGithubReleaseConfig, "owner" | "repo"> = {
   owner: readSiteEnv("VITE_FABLECRAFT_GITHUB_OWNER"),
   repo: readSiteEnv("VITE_FABLECRAFT_GITHUB_REPO"),
 };
 
-const macDownloadUrl = buildGithubLatestReleaseAssetUrl(siteGithubRelease);
+const macDownloadUrl = buildGithubLatestReleaseAssetUrl({
+  ...githubReleaseBase,
+  assetName: readSiteEnv("VITE_FABLECRAFT_DOWNLOAD_MAC_ASSET_NAME"),
+});
+
+const linuxDownloadUrl = buildGithubLatestReleaseAssetUrl({
+  ...githubReleaseBase,
+  assetName: readSiteEnv("VITE_FABLECRAFT_DOWNLOAD_LINUX_ASSET_NAME"),
+});
 
 export const siteDownloads: SiteDownloadOption[] = [
   {
@@ -74,6 +79,14 @@ export const siteDownloads: SiteDownloadOption[] = [
     url: macDownloadUrl,
   },
   {
+    availability: linuxDownloadUrl ? "available" : "soon",
+    ctaLabel: linuxDownloadUrl ? "Download for Linux" : "Linux build soon",
+    description:
+      "AppImage for x86_64 Linux, served from the latest public GitHub release.",
+    platform: "Linux",
+    url: linuxDownloadUrl,
+  },
+  {
     availability: readSiteEnv("VITE_FABLECRAFT_DOWNLOAD_WINDOWS_URL") ? "available" : "soon",
     ctaLabel: readSiteEnv("VITE_FABLECRAFT_DOWNLOAD_WINDOWS_URL")
       ? "Download for Windows"
@@ -82,16 +95,6 @@ export const siteDownloads: SiteDownloadOption[] = [
       "Planned once the public release pipeline is ready. Keep an eye on release notes for availability.",
     platform: "Windows",
     url: readSiteEnv("VITE_FABLECRAFT_DOWNLOAD_WINDOWS_URL"),
-  },
-  {
-    availability: readSiteEnv("VITE_FABLECRAFT_DOWNLOAD_LINUX_URL") ? "available" : "soon",
-    ctaLabel: readSiteEnv("VITE_FABLECRAFT_DOWNLOAD_LINUX_URL")
-      ? "Download for Linux"
-      : "Linux build soon",
-    description:
-      "Planned after the first public desktop release path is settled and documented.",
-    platform: "Linux",
-    url: readSiteEnv("VITE_FABLECRAFT_DOWNLOAD_LINUX_URL"),
   },
 ];
 

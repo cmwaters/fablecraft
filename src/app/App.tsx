@@ -3,6 +3,7 @@ import { promptForNewDocument, promptForOpenDocument } from "./documentActions";
 import { exportCurrentLevelToFile, importMarkdownDocument } from "./importExportActions";
 import { CommandPalette, type CommandPaletteItem } from "../components/CommandPalette";
 import { DocumentWorkspace } from "../components/DocumentWorkspace";
+import { FeedbackDialog, type FeedbackDialogMode } from "../components/FeedbackDialog";
 import { HelpSheet } from "../components/HelpSheet";
 import { SearchOverlay } from "../components/SearchOverlay";
 import { SettingsDialog } from "../components/SettingsDialog";
@@ -69,6 +70,8 @@ export function App() {
     useState<LocalIntegrationStatuses>(defaultIntegrationStatuses);
   const [isSettingsOpen, setSettingsOpen] = useState(false);
   const [helpSheetMode, setHelpSheetMode] = useState<HelpSheetMode | null>(null);
+  const [feedbackDialogMode, setFeedbackDialogMode] = useState<FeedbackDialogMode | null>(null);
+  const [showBetaBar, setShowBetaBar] = useState(true);
   const [recentDocumentPaths, setRecentDocumentPaths] = useState<string[]>([]);
   const activeDocument = useAppStore((state) => state.activeDocument);
   const mode = useAppStore((state) => state.mode);
@@ -152,6 +155,18 @@ export function App() {
   function closeAuxiliaryOverlays() {
     setSettingsOpen(false);
     setHelpSheetMode(null);
+    setFeedbackDialogMode(null);
+  }
+
+  function openFeedbackDialog(feedbackMode: FeedbackDialogMode) {
+    if (screen !== "workspace") {
+      return;
+    }
+
+    closeAuxiliaryOverlays();
+    setOverlayReturnMode(mode === "editing" ? "editing" : "navigation");
+    setMode("navigation");
+    setFeedbackDialogMode(feedbackMode);
   }
 
   function openCommandPalette() {
@@ -191,10 +206,6 @@ export function App() {
   }
 
   function openSettingsDialog() {
-    if (screen !== "workspace") {
-      return;
-    }
-
     closeAuxiliaryOverlays();
     setOverlayReturnMode(mode === "editing" ? "editing" : "navigation");
     setMode("navigation");
@@ -203,6 +214,16 @@ export function App() {
 
   useEffect(() => {
     function handleGlobalKeyDown(event: KeyboardEvent) {
+      if (
+        event.key === "Escape" &&
+        (isSettingsOpen || helpSheetMode || feedbackDialogMode)
+      ) {
+        event.preventDefault();
+        closeAuxiliaryOverlays();
+        restoreOverlayMode();
+        return;
+      }
+
       if (screen !== "workspace") {
         return;
       }
@@ -219,14 +240,6 @@ export function App() {
         return;
       }
 
-      if (
-        event.key === "Escape" &&
-        (isSettingsOpen || helpSheetMode)
-      ) {
-        event.preventDefault();
-        closeAuxiliaryOverlays();
-        restoreOverlayMode();
-      }
     }
 
     window.addEventListener("keydown", handleGlobalKeyDown, true);
@@ -235,6 +248,7 @@ export function App() {
       window.removeEventListener("keydown", handleGlobalKeyDown, true);
     };
   }, [
+    feedbackDialogMode,
     helpSheetMode,
     isSettingsOpen,
     mode,
@@ -484,6 +498,16 @@ export function App() {
       return;
     }
 
+    if (action === "help-report-bug") {
+      openFeedbackDialog("bug");
+      return;
+    }
+
+    if (action === "help-request-feature") {
+      openFeedbackDialog("feature");
+      return;
+    }
+
     if (action === "enable-codex") {
       void handleEnableCodex();
       return;
@@ -608,6 +632,18 @@ export function App() {
         openHelpSheet("shortcuts");
       },
     },
+    {
+      id: "report-bug",
+      keywords: ["bug", "problem", "issue", "broken", "wrong", "error"],
+      label: "Report a Bug",
+      run: () => runPaletteAction(() => openFeedbackDialog("bug")),
+    },
+    {
+      id: "request-feature",
+      keywords: ["feature", "suggestion", "idea", "enhancement", "wish", "request"],
+      label: "Request a Feature",
+      run: () => runPaletteAction(() => openFeedbackDialog("feature")),
+    },
   ];
 
   if (activeSnapshot) {
@@ -654,7 +690,7 @@ export function App() {
           <DocumentWorkspace
             document={activeDocument}
             suspendKeyboard={Boolean(
-              isSettingsOpen || helpSheetMode,
+              isSettingsOpen || helpSheetMode || feedbackDialogMode,
             )}
           />
         )}
@@ -699,9 +735,47 @@ export function App() {
         />
       )}
 
+      {feedbackDialogMode && (
+        <FeedbackDialog
+          mode={feedbackDialogMode}
+          onClose={() => {
+            setFeedbackDialogMode(null);
+            restoreOverlayMode();
+          }}
+        />
+      )}
+
       {notice && (
-        <div className="pointer-events-none fixed bottom-6 left-1/2 z-50 w-[min(90vw,720px)] -translate-x-1/2 bg-[var(--fc-color-surface)] px-5 py-3 text-sm text-[var(--fc-color-text)] shadow-[var(--fc-shadow-elevated)]">
+        <div className="pointer-events-none fixed bottom-14 left-1/2 z-50 w-[min(90vw,720px)] -translate-x-1/2 bg-[var(--fc-color-surface)] px-5 py-3 text-sm text-[var(--fc-color-text)] shadow-[var(--fc-shadow-elevated)]">
           {notice.message}
+        </div>
+      )}
+
+      {showBetaBar && (
+        <div className="fixed bottom-0 inset-x-0 z-30 flex items-center bg-black px-4 py-3 text-sm text-white/70">
+          <div className="flex flex-1 items-center justify-center gap-1">
+            <span>This is a beta version of Fablecraft.</span>
+            <button
+              className="text-white underline underline-offset-2 hover:text-white/80"
+              onClick={() => setFeedbackDialogMode("bug")}
+            >
+              Report a problem
+            </button>
+            <span>·</span>
+            <button
+              className="text-white underline underline-offset-2 hover:text-white/80"
+              onClick={() => setFeedbackDialogMode("feature")}
+            >
+              Request a feature.
+            </button>
+          </div>
+          <button
+            aria-label="Dismiss"
+            className="text-white/50 hover:text-white"
+            onClick={() => setShowBetaBar(false)}
+          >
+            ✕
+          </button>
         </div>
       )}
 

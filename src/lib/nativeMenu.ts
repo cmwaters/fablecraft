@@ -12,6 +12,8 @@ export type NativeMenuAction =
   | "export-markdown"
   | "help-getting-started"
   | "help-commands"
+  | "help-report-bug"
+  | "help-request-feature"
   | "help-shortcuts"
   | "import-markdown"
   | "merge-below"

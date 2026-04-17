@@ -1,0 +1,208 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos-arm64:
+    runs-on: macos-14
+
+    env:
+      RELEASE_ASSET_NAME: Fablecraft-macos-arm64.dmg
+      UPDATE_ASSET_NAME: Fablecraft-macos-arm64.app.tar.gz
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Import Apple Developer Certificate
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          echo -n "$APPLE_CERTIFICATE" | base64 --decode -o $CERTIFICATE_PATH
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security import $CERTIFICATE_PATH -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+      - name: Build macOS bundles (DMG + app archive for updater)
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: npm run tauri build -- --bundles dmg,app
+
+      - name: Clean up keychain
+        if: always()
+        run: security delete-keychain $RUNNER_TEMP/app-signing.keychain-db
+
+      - name: Stage release assets
+        run: |
+          mkdir -p release-assets
+
+          mv src-tauri/target/release/bundle/dmg/*.dmg "release-assets/${RELEASE_ASSET_NAME}"
+
+          APP_TAR=$(ls src-tauri/target/release/bundle/macos/*.app.tar.gz)
+          SIG_FILE="${APP_TAR}.sig"
+          cp "$APP_TAR" "release-assets/${UPDATE_ASSET_NAME}"
+          cp "$SIG_FILE" "release-assets/${UPDATE_ASSET_NAME}.sig"
+
+          # Save sig for manifest job
+          mkdir -p manifest-data
+          cp "$SIG_FILE" manifest-data/darwin-aarch64.sig
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-assets/${{ env.RELEASE_ASSET_NAME }}
+            release-assets/${{ env.UPDATE_ASSET_NAME }}
+            release-assets/${{ env.UPDATE_ASSET_NAME }}.sig
+
+      - name: Upload signature for manifest job
+        uses: actions/upload-artifact@v4
+        with:
+          name: darwin-sig
+          path: manifest-data/darwin-aarch64.sig
+
+  build-linux-x86_64:
+    runs-on: ubuntu-22.04
+
+    env:
+      RELEASE_ASSET_NAME: Fablecraft-linux-x86_64.AppImage
+      UPDATE_ASSET_NAME: Fablecraft-linux-x86_64.AppImage.tar.gz
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Build Linux bundles (AppImage + deb)
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: npm run tauri build -- --bundles appimage,deb
+
+      - name: Stage release assets
+        run: |
+          mkdir -p release-assets manifest-data
+
+          APPIMAGE=$(ls src-tauri/target/release/bundle/appimage/*.AppImage | grep -v '\.tar\.gz')
+          APPIMAGE_TAR="${APPIMAGE}.tar.gz"
+          SIG_FILE="${APPIMAGE_TAR}.sig"
+
+          cp "$APPIMAGE" "release-assets/${RELEASE_ASSET_NAME}"
+          cp "$APPIMAGE_TAR" "release-assets/${UPDATE_ASSET_NAME}"
+          cp "$SIG_FILE" "release-assets/${UPDATE_ASSET_NAME}.sig"
+
+          # Stage deb
+          cp src-tauri/target/release/bundle/deb/*.deb release-assets/
+
+          # Save sig for manifest job
+          cp "$SIG_FILE" manifest-data/linux-x86_64.sig
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-assets/${{ env.RELEASE_ASSET_NAME }}
+            release-assets/${{ env.UPDATE_ASSET_NAME }}
+            release-assets/${{ env.UPDATE_ASSET_NAME }}.sig
+            release-assets/*.deb
+
+      - name: Upload signature for manifest job
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-sig
+          path: manifest-data/linux-x86_64.sig
+
+  publish-manifest:
+    needs: [build-macos-arm64, build-linux-x86_64]
+    runs-on: ubuntu-latest
+
+    env:
+      DARWIN_UPDATE_ASSET: Fablecraft-macos-arm64.app.tar.gz
+      LINUX_UPDATE_ASSET: Fablecraft-linux-x86_64.AppImage.tar.gz
+
+    steps:
+      - name: Download signatures
+        uses: actions/download-artifact@v4
+        with:
+          path: sigs
+
+      - name: Generate merged latest.json
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          REPO="https://github.com/fablecraft-org/fablecraft"
+          DARWIN_SIG=$(cat sigs/darwin-sig/darwin-aarch64.sig)
+          LINUX_SIG=$(cat sigs/linux-sig/linux-x86_64.sig)
+
+          cat > latest.json << EOF
+          {
+            "version": "${VERSION}",
+            "notes": "See the release page for details.",
+            "pub_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "platforms": {
+              "darwin-aarch64": {
+                "url": "${REPO}/releases/download/${GITHUB_REF_NAME}/${DARWIN_UPDATE_ASSET}",
+                "signature": "${DARWIN_SIG}"
+              },
+              "linux-x86_64": {
+                "url": "${REPO}/releases/download/${GITHUB_REF_NAME}/${LINUX_UPDATE_ASSET}",
+                "signature": "${LINUX_SIG}"
+              }
+            }
+          }
+          EOF
+
+      - name: Publish latest.json
+        uses: softprops/action-gh-release@v2
+        with:
+          files: latest.json
+          generate_release_notes: true

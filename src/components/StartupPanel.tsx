@@ -285,7 +285,7 @@ export function StartupPanel({
           fablecraft
         </h1>
         <div className="h-px w-full bg-[color:rgba(23,20,18,0.12)]" />
-        <p className="max-w-[34ch] whitespace-pre-line font-[var(--fc-font-ui)] text-sm font-normal tracking-normal text-[var(--fc-color-muted)]">
+        <p className="max-w-[34ch] whitespace-pre-line font-[var(--fc-font-ui)] text-base font-normal tracking-normal text-[var(--fc-color-muted)]">
           {eyebrow}
         </p>
       </div>

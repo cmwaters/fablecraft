@@ -33,6 +33,8 @@ const WINDOW_RELOAD: &str = "window.reload";
 const HELP_SHORTCUTS: &str = "help.shortcuts";
 const HELP_COMMANDS: &str = "help.commands";
 const HELP_GETTING_STARTED: &str = "help.getting_started";
+const HELP_REPORT_BUG: &str = "help.report_bug";
+const HELP_REQUEST_FEATURE: &str = "help.request_feature";
 
 #[derive(Clone, Serialize)]
 struct MenuActionPayload<'a> {
@@ -110,6 +112,9 @@ pub fn build_native_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R
     let commands = MenuItemBuilder::with_id(HELP_COMMANDS, "Commands").build(app)?;
     let getting_started =
         MenuItemBuilder::with_id(HELP_GETTING_STARTED, "Getting Started").build(app)?;
+    let report_bug = MenuItemBuilder::with_id(HELP_REPORT_BUG, "Report a Bug").build(app)?;
+    let request_feature =
+        MenuItemBuilder::with_id(HELP_REQUEST_FEATURE, "Request a Feature").build(app)?;
 
     let app_menu = SubmenuBuilder::new(app, "Fablecraft")
         .about_with_text("About Fablecraft", None)
@@ -173,6 +178,9 @@ pub fn build_native_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R
         .item(&getting_started)
         .item(&shortcuts)
         .item(&commands)
+        .separator()
+        .item(&report_bug)
+        .item(&request_feature)
         .build()?;
 
     MenuBuilder::new(app)
@@ -218,6 +226,8 @@ pub fn handle_native_menu_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent
         HELP_GETTING_STARTED => emit_action(app, "help-getting-started"),
         HELP_SHORTCUTS => emit_action(app, "help-shortcuts"),
         HELP_COMMANDS => emit_action(app, "help-commands"),
+        HELP_REPORT_BUG => emit_action(app, "help-report-bug"),
+        HELP_REQUEST_FEATURE => emit_action(app, "help-request-feature"),
         _ => {}
     }
 }
