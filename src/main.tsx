@@ -15,9 +15,7 @@ document.title =
     ? "Fablecraft"
     : "Fablecraft — The Writers Tool for Structured Thought";
 
-if (runtime === "desktop") {
-  applyUiTokens(loadStoredUiPreferences());
-}
+applyUiTokens(runtime === "desktop" ? loadStoredUiPreferences() : undefined);
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>

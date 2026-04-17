@@ -158,7 +158,6 @@ export function StartupPanel({
       {
         key: "import-markdown",
         label: "Import Markdown",
-        muted: true,
         onSelect: () => void handleImport(),
       },
     );
@@ -167,7 +166,6 @@ export function StartupPanel({
       rows.push({
         key: "getting-started",
         label: "Getting Started",
-        muted: true,
         onSelect: onOpenGettingStarted,
       });
     }
@@ -219,12 +217,18 @@ export function StartupPanel({
       return;
     }
 
-    const frame = window.requestAnimationFrame(() => {
+    const tryFocus = () => {
       activeRow.focus();
-    });
+    };
+
+    // Also listen for window focus in case the OS hasn't focused the window yet
+    // (common on initial app launch in Tauri/desktop environments)
+    window.addEventListener("focus", tryFocus, { once: true });
+    const frame = window.requestAnimationFrame(tryFocus);
 
     return () => {
       window.cancelAnimationFrame(frame);
+      window.removeEventListener("focus", tryFocus);
     };
   }, [rows, selectedIndex]);
 
@@ -259,7 +263,7 @@ export function StartupPanel({
       return;
     }
 
-    if (event.key === "Escape" && view === "recent") {
+    if ((event.key === "Escape" || event.key === "Backspace") && view === "recent") {
       event.preventDefault();
       closeRecentView();
       return;
@@ -272,7 +276,7 @@ export function StartupPanel({
   }
 
   const eyebrow =
-    view === "recent" ? "Previously Visited .fable Files" : "Structured Thought,\nLocally Crafted.";
+    view === "recent" ? "Previously Visited .fable Files" : "The Writers Tool for Structured Thought.";
 
   return (
     <section className="w-full max-w-[var(--fc-card-width)] bg-[var(--fc-color-surface)] p-10 shadow-[var(--fc-shadow-card)]">
@@ -281,7 +285,7 @@ export function StartupPanel({
           fablecraft
         </h1>
         <div className="h-px w-full bg-[color:rgba(23,20,18,0.12)]" />
-        <p className="max-w-[34ch] whitespace-pre-line font-[var(--fc-font-ui)] text-sm font-semibold uppercase tracking-[0.12em] text-[color:rgba(23,20,18,0.5)]">
+        <p className="max-w-[34ch] whitespace-pre-line font-[var(--fc-font-ui)] text-sm font-normal tracking-normal text-[var(--fc-color-muted)]">
           {eyebrow}
         </p>
       </div>

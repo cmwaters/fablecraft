@@ -11,8 +11,6 @@
   --fc-site-radius: 26px;
   --fc-site-section-pad-x: clamp(1.5rem, 4vw, 3rem);
   --fc-site-section-pad-y: clamp(2.75rem, 7vw, 7rem);
-  /* Pulls demo screenshot flush to shell interior (pad math + Tailwind img max-width + subpixel). */
-  --fc-demo-extra-bleed: 10px;
   min-height: 100vh;
   padding: clamp(1rem, 2vw, 2rem);
   background: var(--fc-site-bg);
@@ -31,10 +29,6 @@
   overflow: hidden;
 }
 
-.fc-site-shell::after {
-  display: none;
-}
-
 .fc-site-nav,
 .fc-site-footer {
   display: flex;
@@ -45,6 +39,16 @@
   font-size: 0.68rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
+}
+
+a.fc-site-footer {
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 160ms ease;
+}
+
+a.fc-site-footer:hover {
+  opacity: 0.88;
 }
 
 .fc-site-nav {
@@ -67,7 +71,7 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: clamp(2rem, 5vw, 6rem);
-  min-height: min(86vh, 940px);
+  min-height: min(80vh, 860px);
   align-items: end;
   padding-top: clamp(5rem, 10vw, 9rem);
 }
@@ -96,9 +100,13 @@
 }
 
 .fc-hero-slogan {
-  margin-top: 0.65rem;
-  font-size: clamp(2rem, 3.8vw, 3.2rem);
-  line-height: 1.04;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: clamp(1rem, 1.6vw, 1.25rem);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: var(--fc-site-ink-soft);
+  line-height: 1.4;
 }
 
 .fc-hero-rule {
@@ -108,23 +116,10 @@
   background: var(--fc-site-line);
 }
 
-.fc-hero-summary,
-.fc-site-footer p {
-  margin: 0;
-  color: var(--fc-site-ink-soft);
-  line-height: 1.55;
-}
-
-.fc-hero-summary {
-  max-width: 27rem;
-  font-size: 1rem;
-}
-
 .fc-site-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
-  margin-top: 3rem;
 }
 
 .fc-site-action {
@@ -171,7 +166,7 @@
 .fc-section-heading {
   display: grid;
   gap: 0.75rem;
-  margin-bottom: 1.3rem;
+  margin-bottom: clamp(1.5rem, 3vw, 2.5rem);
 }
 
 .fc-section-heading h2 {
@@ -179,42 +174,68 @@
   line-height: 1.04;
 }
 
-.fc-demo-section,
+/* Live demo section */
+
+.fc-live-demo-section {
+  border-top: 1px solid var(--fc-site-line);
+  padding: 0;
+}
+
 .fc-site-footer {
   border-top: 1px solid var(--fc-site-line);
 }
 
-.fc-demo-section {
-  padding-bottom: 0;
+.fc-demo-shell {
+  position: relative;
+  height: 80vh;
+  overflow: hidden;
+  /* Creates a containing block so position:fixed children are scoped to the demo */
+  transform: translateZ(0);
 }
 
-.fc-demo-figure {
-  margin: 0;
-  margin-right: calc(
-    -1 * (var(--fc-site-section-pad-x) + var(--fc-demo-extra-bleed))
-  );
-  width: calc(
-    100% + var(--fc-site-section-pad-x) + var(--fc-demo-extra-bleed)
-  );
-  line-height: 0;
-}
-
-.fc-demo-shot {
-  display: block;
-  width: 100%;
-  max-width: none;
-  height: auto;
-  vertical-align: middle;
+.fc-demo-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 0.875rem;
+  color: var(--fc-site-ink-soft);
 }
 
 .fc-site-footer {
-  font-size: 0.8rem;
-  letter-spacing: 0.14em;
+  background: #0e0c0b;
+  border-top: none;
+  padding: 0.6rem clamp(1.5rem, 3vw, 3rem);
 }
 
-.fc-site-footer p {
-  color: var(--fc-site-ink);
-  letter-spacing: 0.02em;
+.fc-site-footer-wordmark {
+  margin: 0;
+  font-weight: 500;
+  font-size: clamp(0.9rem, 1.5vw, 1.2rem);
+  line-height: 0.86;
+  letter-spacing: -0.075em;
+  text-transform: none;
+  color: #fff7f1;
+}
+
+.fc-site-footer-cta {
+  text-transform: none;
+  letter-spacing: normal;
+  min-height: 2.4rem;
+  padding: 0.5rem 1.2rem;
+  font-size: 0.88rem;
+  border-color: rgba(255, 247, 241, 0.3);
+  color: #fff7f1;
+}
+
+.fc-site-footer-cta.fc-site-action-primary {
+  background: var(--fc-site-ink);
+  border-color: var(--fc-site-ink);
+  color: #f7f5f0;
+}
+
+a.fc-site-footer:hover .fc-site-footer-cta.fc-site-action-primary {
+  background: #2a2520;
 }
 
 @media (max-width: 1040px) {

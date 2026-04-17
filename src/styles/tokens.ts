@@ -3,11 +3,13 @@ export type UiFont = "serif" | "sans";
 export type UiTextSize = "comfortable" | "large";
 export type UiLineHeight = "compact" | "relaxed";
 export type UiCardWidth = "standard" | "wide";
+export type UiScrollPan = "enabled" | "disabled";
 
 export interface UiPreferences {
   cardWidth: UiCardWidth;
   font: UiFont;
   lineHeight: UiLineHeight;
+  scrollPan: UiScrollPan;
   textSize: UiTextSize;
   theme: UiTheme;
 }
@@ -84,6 +86,7 @@ const defaultUiPreferences: UiPreferences = {
   cardWidth: "standard",
   font: "sans",
   lineHeight: "compact",
+  scrollPan: "enabled",
   textSize: "comfortable",
   theme: "light",
 };
@@ -147,6 +150,11 @@ export function normalizeUiPreferences(
       value?.lineHeight,
       ["compact", "relaxed"],
       defaultUiPreferences.lineHeight,
+    ),
+    scrollPan: normalizeEnumValue(
+      value?.scrollPan,
+      ["enabled", "disabled"],
+      defaultUiPreferences.scrollPan,
     ),
     textSize: normalizeEnumValue(
       value?.textSize,

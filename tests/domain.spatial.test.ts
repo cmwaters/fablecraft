@@ -110,7 +110,7 @@ describe("document spatial helpers", () => {
       cardHeight: 104,
       cardWidth: 468,
       spacing: 24,
-    });
+    }).cards;
 
     expect(positioned.find((card) => card.cardId === "card-root")?.y).toBe(0);
     expect(positioned.find((card) => card.cardId === "card-a-1")?.y).toBe(0);
@@ -132,7 +132,7 @@ describe("document spatial helpers", () => {
       cardHeight: 104,
       cardWidth: 468,
       spacing: 24,
-    });
+    }).cards;
 
     expect(positioned.find((card) => card.cardId === "card-a")?.y).toBe(-206);
     expect(positioned.find((card) => card.cardId === "card-c")?.y).toBe(206);
@@ -168,7 +168,7 @@ describe("document spatial helpers", () => {
       cardHeight: 84,
       cardWidth: 468,
       spacing: 24,
-    });
+    }).cards;
     const b = positioned.find((card) => card.cardId === "card-b")!;
     const b1 = positioned.find((card) => card.cardId === "card-b-1")!;
     const b2 = positioned.find((card) => card.cardId === "card-b-2")!;
@@ -213,7 +213,7 @@ describe("document spatial helpers", () => {
       cardHeight: 84,
       cardWidth: 468,
       spacing: 24,
-    });
+    }).cards;
 
     expect(positioned.find((card) => card.cardId === "card-a-1")?.y).toBe(0);
     expect(positioned.find((card) => card.cardId === "card-a-2")?.y).toBe(108);
@@ -267,7 +267,7 @@ describe("document spatial helpers", () => {
       },
       cardWidth: 468,
       spacing: 24,
-    });
+    }).cards;
 
     expect(positioned.find((card) => card.cardId === "card-a-1")?.y).toBeLessThan(
       positioned.find((card) => card.cardId === "card-b-1")?.y ?? 0,
@@ -311,7 +311,7 @@ describe("document spatial helpers", () => {
       cardHeight: 84,
       cardWidth: 468,
       spacing: 24,
-    });
+    }).cards;
     const a = positioned.find((card) => card.cardId === "card-a")!;
     const b = positioned.find((card) => card.cardId === "card-b")!;
     const a2 = positioned.find((card) => card.cardId === "card-a-2")!;
@@ -380,7 +380,7 @@ describe("document spatial helpers", () => {
       },
       cardWidth: 468,
       spacing: 24,
-    });
+    }).cards;
 
     expect(positioned.find((card) => card.cardId === "card-a-2")?.y).toBe(0);
   });
@@ -398,13 +398,13 @@ describe("document spatial helpers", () => {
       cardHeights,
       cardWidth: 468,
       spacing: 24,
-    });
+    }).cards;
     const withBCardActive = stageLayout(snapshot.cards, "card-b", {
       cardHeight: 84,
       cardHeights,
       cardWidth: 468,
       spacing: 24,
-    });
+    }).cards;
 
     expect(withACardActive.find((card) => card.cardId === "card-a")?.height).toBe(168);
     expect(withBCardActive.find((card) => card.cardId === "card-a")?.height).toBe(168);
@@ -455,8 +455,73 @@ describe("document spatial helpers", () => {
       cardHeight: 84,
       cardWidth: 468,
       spacing: 24,
-    });
+    }).cards;
 
     expect(positioned.find((card) => card.cardId === "card-a")?.y).toBe(0);
+  });
+
+  it("reserves an empty child gap when the active card has no children", () => {
+    const snapshot = makeDocumentSnapshot();
+    snapshot.cards.push(
+      {
+        documentId: "doc-1",
+        id: "card-a-1",
+        orderIndex: 0,
+        parentId: "card-a",
+        type: "card",
+      },
+      {
+        documentId: "doc-1",
+        id: "card-c",
+        orderIndex: 2,
+        parentId: "card-root",
+        type: "card",
+      },
+      {
+        documentId: "doc-1",
+        id: "card-c-1",
+        orderIndex: 0,
+        parentId: "card-c",
+        type: "card",
+      },
+    );
+
+    const positioned = stageLayout(snapshot.cards, "card-b", {
+      cardHeight: 84,
+      cardWidth: 468,
+      spacing: 24,
+    });
+
+    expect(positioned.emptyChildGap).toEqual({
+      height: 84,
+      x: 492,
+      y: 0,
+    });
+    expect(positioned.cards.find((card) => card.cardId === "card-a-1")?.y).toBeLessThanOrEqual(
+      -108,
+    );
+    expect(positioned.cards.find((card) => card.cardId === "card-c-1")?.y).toBeGreaterThanOrEqual(
+      108,
+    );
+  });
+
+  it("sizes the empty child gap to match the selected card footprint", () => {
+    const snapshot = makeDocumentSnapshot();
+    snapshot.cards.push({
+      documentId: "doc-1",
+      id: "card-a-1",
+      orderIndex: 0,
+      parentId: "card-a",
+      type: "card",
+    });
+
+    const positioned = stageLayout(snapshot.cards, "card-b", {
+      activeCardHeight: 240,
+      cardHeight: 84,
+      cardWidth: 468,
+      spacing: 24,
+    });
+
+    expect(positioned.emptyChildGap?.height).toBe(240);
   });
 });

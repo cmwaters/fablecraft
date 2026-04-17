@@ -31,6 +31,7 @@ import type { DocumentSnapshot } from "../domain/document/types";
 import type { DocumentSummary } from "../types/document";
 
 interface DocumentWorkspaceProps {
+  disableScrollPan?: boolean;
   document: DocumentSummary;
   suspendKeyboard?: boolean;
 }
@@ -55,6 +56,7 @@ function fallbackCardIdAfterDelete(snapshot: DocumentSnapshot, cardId: string) {
 }
 
 export function DocumentWorkspace({
+  disableScrollPan = false,
   document,
   suspendKeyboard = false,
 }: DocumentWorkspaceProps) {
@@ -167,18 +169,23 @@ export function DocumentWorkspace({
     !selectedCard || !isFirstRootCard || !isSelectedCardEmpty;
   const activePlaceholder =
     isFirstRootCard ? "Your story starts here" : "";
-  const positionedCards =
+  const stageLayoutResult =
     activeSnapshot && activeCardId
       ? stageLayout(activeSnapshot.cards, activeCardId, {
           cardHeight: uiMetrics.cardHeight,
           cardHeights: layerCardHeights,
           cardWidth: uiMetrics.cardWidth,
           spacing: uiMetrics.spacing,
-        }).map((position) => ({
+        })
+      : { cards: [], emptyChildGap: null };
+  const positionedCards =
+    activeSnapshot && contentLayerId
+      ? stageLayoutResult.cards.map((position) => ({
           ...position,
           contentJson: cardContent(activeSnapshot, position.cardId, contentLayerId),
         }))
       : [];
+  const emptyChildGap = stageLayoutResult.emptyChildGap;
   const stagePanLimit = positionedCards.reduce(
     (limits, card) => ({
       x: Math.max(limits.x, Math.abs(card.x) + uiMetrics.cardWidth),
@@ -186,6 +193,10 @@ export function DocumentWorkspace({
     }),
     { x: uiMetrics.cardWidth, y: uiMetrics.cardHeight },
   );
+  if (emptyChildGap) {
+    stagePanLimit.x = Math.max(stagePanLimit.x, Math.abs(emptyChildGap.x) + uiMetrics.cardWidth);
+    stagePanLimit.y = Math.max(stagePanLimit.y, Math.abs(emptyChildGap.y) + emptyChildGap.height);
+  }
   const activeHorizontalPadding = 33;
   const activeTopPadding = 40;
   const activeBottomPadding = 23;
@@ -379,7 +390,12 @@ export function DocumentWorkspace({
       return;
     }
 
-    const observer = new ResizeObserver((entries) => {
+    const initialHeight = cardElement.getBoundingClientRect().height;
+    if (initialHeight > 0) {
+      updateCardHeight(activeCardId, initialHeight, true);
+    }
+
+    const observer = new ResizeObserver(() => {
       const nextHeight = cardElement.getBoundingClientRect().height;
 
       if (nextHeight && nextHeight > 0) {
@@ -428,6 +444,10 @@ export function DocumentWorkspace({
   }
 
   function handleStageWheel(event: ReactWheelEvent<HTMLDivElement>) {
+    if (disableScrollPan || uiPreferences.scrollPan === "disabled") {
+      return;
+    }
+
     if (Math.abs(event.deltaX) < 0.1 && Math.abs(event.deltaY) < 0.1) {
       return;
     }
@@ -635,6 +655,30 @@ export function DocumentWorkspace({
         className="relative h-full w-full overflow-hidden"
         onWheel={handleStageWheel}
       >
+        {emptyChildGap ? (
+          <button
+            aria-label="Create child card"
+            className="absolute w-[var(--fc-card-width)] cursor-pointer appearance-none border-0 bg-transparent p-0 transition duration-[var(--fc-animation-ms)] ease-[var(--fc-animation-easing)]"
+            data-testid="empty-child-gap"
+            disabled={!canCreateStructure}
+            onClick={() => {
+              if (!canCreateStructure) {
+                return;
+              }
+
+              createRelativeCard("child");
+            }}
+            style={{
+              left: `calc(50% + ${emptyChildGap.x + stageOffset.x}px)`,
+              minHeight: `${emptyChildGap.height}px`,
+              opacity: "1",
+              top: `calc(50% + ${emptyChildGap.y + stageOffset.y}px)`,
+              transform: "translate(-50%, -50%)",
+              zIndex: 0,
+            }}
+            type="button"
+          />
+        ) : null}
         {positionedCards.map((card) =>
                 card.isActive &&
                 selectedCard &&

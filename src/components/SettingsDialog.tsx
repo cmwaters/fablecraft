@@ -175,11 +175,12 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const setCardWidth = useSettingsStore((state) => state.setCardWidth);
   const setFont = useSettingsStore((state) => state.setFont);
   const setLineHeight = useSettingsStore((state) => state.setLineHeight);
+  const setScrollPan = useSettingsStore((state) => state.setScrollPan);
   const setTextSize = useSettingsStore((state) => state.setTextSize);
   const setTheme = useSettingsStore((state) => state.setTheme);
 
   function focusRow(index: number) {
-    const nextIndex = (index + 5) % 5;
+    const nextIndex = (index + 6) % 6;
     rowRefs.current[nextIndex]?.focus();
   }
 
@@ -261,7 +262,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
           id="card-width"
           label="Card Width"
           onChange={setCardWidth}
-          onFocusNext={() => focusRow(0)}
+          onFocusNext={() => focusRow(5)}
           onFocusPrevious={() => focusRow(3)}
           options={[
             { label: "Standard", value: "standard" },
@@ -271,6 +272,21 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
             rowRefs.current[4] = element;
           }}
           value={preferences.cardWidth}
+        />
+        <SettingGroup
+          id="scroll-pan"
+          label="Trackpad Pan"
+          onChange={setScrollPan}
+          onFocusNext={() => focusRow(0)}
+          onFocusPrevious={() => focusRow(4)}
+          options={[
+            { label: "Enabled", value: "enabled" },
+            { label: "Disabled", value: "disabled" },
+          ]}
+          rowRef={(element) => {
+            rowRefs.current[5] = element;
+          }}
+          value={preferences.scrollPan}
         />
       </div>
 

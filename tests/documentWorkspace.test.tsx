@@ -630,4 +630,72 @@ describe("DocumentWorkspace", () => {
       root.unmount();
     });
   });
+
+  it("renders an empty child gap for a selected card without children and uses it to create a child", async () => {
+    let snapshot = makeDocumentSnapshot();
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    snapshot = replaceCardContent(snapshot, {
+      cardId: "card-b",
+      contentJson: contentJsonForPlainText("Scene"),
+      layerId: "layer-base",
+    });
+    snapshot = {
+      ...snapshot,
+      cards: snapshot.cards.concat({
+        documentId: "doc-1",
+        id: "card-a-1",
+        orderIndex: 0,
+        parentId: "card-a",
+        type: "card",
+      }),
+      contents: snapshot.contents.concat({
+        cardId: "card-a-1",
+        contentJson: contentJsonForPlainText("Beat"),
+        layerId: "layer-base",
+      }),
+    };
+
+    useDocumentStore.getState().hydrateSnapshot(snapshot);
+    useAppStore.setState({
+      activeDocument: snapshot.summary,
+      mode: "navigation",
+      notice: null,
+      screen: "workspace",
+    });
+    useInteractionStore.setState({
+      activeCardId: "card-b",
+    });
+    loadCurrentDocumentSnapshot.mockResolvedValue(snapshot);
+
+    await act(async () => {
+      root.render(<DocumentWorkspace document={snapshot.summary} />);
+    });
+
+    const gap = container.querySelector(
+      '[data-testid="empty-child-gap"]',
+    ) as HTMLButtonElement | null;
+
+    expect(gap).not.toBeNull();
+    expect(gap?.style.minHeight).toBeTruthy();
+
+    await act(async () => {
+      gap?.click();
+    });
+
+    const nextSnapshot = useDocumentStore.getState().snapshot;
+    const cardBChildren = nextSnapshot?.cards
+      .filter((card) => card.parentId === "card-b")
+      .sort((left, right) => left.orderIndex - right.orderIndex);
+
+    expect(cardBChildren).toHaveLength(1);
+    expect(useInteractionStore.getState().activeCardId).toBe(cardBChildren?.[0]?.id);
+    expect(useAppStore.getState().mode).toBe("editing");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
 });

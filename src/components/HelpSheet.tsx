@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { OverlayShell } from "./OverlayShell";
 
 type HelpSheetMode = "commands" | "getting-started" | "shortcuts";
@@ -53,6 +54,17 @@ const gettingStartedRows = [
 ];
 
 export function HelpSheet({ mode, onClose }: HelpSheetProps) {
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape" || event.key === "Backspace") {
+        event.preventDefault();
+        onClose();
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   const title =
     mode === "shortcuts"
       ? "Shortcuts"

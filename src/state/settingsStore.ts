@@ -7,6 +7,7 @@ import {
   type UiFont,
   type UiLineHeight,
   type UiPreferences,
+  type UiScrollPan,
   type UiTextSize,
   type UiTheme,
 } from "../styles/tokens";
@@ -19,6 +20,7 @@ interface SettingsState {
   setCardWidth: (cardWidth: UiCardWidth) => void;
   setFont: (font: UiFont) => void;
   setLineHeight: (lineHeight: UiLineHeight) => void;
+  setScrollPan: (scrollPan: UiScrollPan) => void;
   setTextSize: (textSize: UiTextSize) => void;
   setTheme: (theme: UiTheme) => void;
 }
@@ -84,6 +86,13 @@ export const useSettingsStore = create<SettingsState>((set) => ({
       preferences: commitPreferences({
         ...state.preferences,
         lineHeight,
+      }),
+    })),
+  setScrollPan: (scrollPan) =>
+    set((state) => ({
+      preferences: commitPreferences({
+        ...state.preferences,
+        scrollPan,
       }),
     })),
   setTextSize: (textSize) =>

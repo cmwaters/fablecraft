@@ -254,6 +254,8 @@ animation: ~140ms ease-in-out
 - immediate parent aligns with the active card
 - the first immediate child aligns to the active card centerline, and later children stack below it even when that child column also contains other subtree groups
 - the active child-group anchor must preserve the top-to-bottom order of neighboring sibling subtrees in that column
+- when the active card has no children, the child column still reserves a centered empty slot with the active card's measured footprint before sibling child groups above and below are packed
+- the workspace renders that reserved slot as an invisible click target rather than a visible placeholder, and may use it to create the first child when card creation is allowed
 - no nested scroll
 - no scrollbars
 - wheel / trackpad panning moves the stage

@@ -23,6 +23,17 @@ export interface StageCardLayout {
   y: number;
 }
 
+export interface StageEmptyChildGapLayout {
+  height: number;
+  x: number;
+  y: number;
+}
+
+export interface StageLayoutResult {
+  cards: StageCardLayout[];
+  emptyChildGap: StageEmptyChildGapLayout | null;
+}
+
 function sortedChildren(cards: CardRecord[], parentId: string | null) {
   return cards
     .filter((card) => card.parentId === parentId)
@@ -287,13 +298,16 @@ export function stageLayout(
   cards: CardRecord[],
   activeCardId: string,
   options: StageLayoutOptions,
-) {
+): StageLayoutResult {
   const positions = treeLayout(cards);
   const activePosition = positions.find((position) => position.cardId === activeCardId);
   const activeCard = cards.find((card) => card.id === activeCardId);
 
   if (!activePosition || !activeCard) {
-    return [];
+    return {
+      cards: [],
+      emptyChildGap: null,
+    };
   }
 
   const columnWidth = options.cardWidth + options.spacing;
@@ -487,6 +501,8 @@ export function stageLayout(
   const activeChildren = sortedChildren(cards, activeCardId).filter(
     (child) => positionsById.get(child.id)?.column === activePosition.column + 1,
   );
+  const emptyChildGapHeight = heightForCardId(activeCardId);
+  let emptyChildGap: StageEmptyChildGapLayout | null = null;
 
   if (activeChildren.length > 0 && activeChildColumnCards.length > 0) {
     const activeChildIds = new Set(activeChildren.map((child) => child.id));
@@ -560,6 +576,71 @@ export function stageLayout(
         yByCard,
       );
     }
+  } else {
+    const firstBelowActiveIndex = activeChildColumnCards.findIndex((card) => {
+      const parentPosition = positionsById.get(
+        cards.find((candidate) => candidate.id === card.cardId)?.parentId ?? "",
+      );
+
+      return (parentPosition?.row ?? Number.POSITIVE_INFINITY) > activePosition.row;
+    });
+    const gapInsertIndex =
+      firstBelowActiveIndex === -1 ? activeChildColumnCards.length : firstBelowActiveIndex;
+
+    if (activePosition.column + 1 <= maxColumn) {
+      const nextCenters = new Map<string, number>();
+
+      for (let index = gapInsertIndex - 1; index >= 0; index -= 1) {
+        const currentCardId = activeChildColumnCards[index]!.cardId;
+        const nextCardId =
+          index === gapInsertIndex - 1
+            ? null
+            : (activeChildColumnCards[index + 1]?.cardId ?? null);
+        const currentHeight = heightForCardId(currentCardId);
+        const nextHeight = nextCardId
+          ? heightForCardId(nextCardId)
+          : emptyChildGapHeight;
+        const nextCenter = nextCardId ? (nextCenters.get(nextCardId) ?? 0) : 0;
+
+        nextCenters.set(
+          currentCardId,
+          nextCenter - nextHeight / 2 - options.spacing - currentHeight / 2,
+        );
+      }
+
+      for (let index = gapInsertIndex; index < activeChildColumnCards.length; index += 1) {
+        const currentCardId = activeChildColumnCards[index]!.cardId;
+        const previousCardId =
+          index === gapInsertIndex
+            ? null
+            : (activeChildColumnCards[index - 1]?.cardId ?? null);
+        const currentHeight = heightForCardId(currentCardId);
+        const previousHeight = previousCardId
+          ? heightForCardId(previousCardId)
+          : emptyChildGapHeight;
+        const previousCenter = previousCardId
+          ? (nextCenters.get(previousCardId) ?? 0)
+          : 0;
+
+        nextCenters.set(
+          currentCardId,
+          previousCenter + previousHeight / 2 + options.spacing + currentHeight / 2,
+        );
+      }
+
+      applyColumnCentersAndShiftDescendants(
+        cards,
+        activeChildColumnCards,
+        nextCenters,
+        yByCard,
+      );
+    }
+
+    emptyChildGap = {
+      height: emptyChildGapHeight,
+      x: columnWidth,
+      y: 0,
+    };
   }
 
   const siblingIds = new Set(
@@ -571,18 +652,21 @@ export function stageLayout(
     cards.filter((card) => card.parentId === activeCardId).map((card) => card.id),
   );
 
-  return positions.map((position) => ({
-    cardId: position.cardId,
-    height: heightForCardId(position.cardId),
-    isActive: position.cardId === activeCardId,
-    isNeighborhood:
-      position.cardId === activeCardId ||
-      position.cardId === activeCard.parentId ||
-      siblingIds.has(position.cardId) ||
-      childIds.has(position.cardId),
-    x: (position.column - activePosition.column) * columnWidth,
-    y: yByCard.get(position.cardId) ?? 0,
-  }));
+  return {
+    cards: positions.map((position) => ({
+      cardId: position.cardId,
+      height: heightForCardId(position.cardId),
+      isActive: position.cardId === activeCardId,
+      isNeighborhood:
+        position.cardId === activeCardId ||
+        position.cardId === activeCard.parentId ||
+        siblingIds.has(position.cardId) ||
+        childIds.has(position.cardId),
+      x: (position.column - activePosition.column) * columnWidth,
+      y: yByCard.get(position.cardId) ?? 0,
+    })),
+    emptyChildGap,
+  };
 }
 
 function verticalNeighbor(

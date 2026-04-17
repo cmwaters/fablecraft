@@ -176,6 +176,8 @@ Up/down follows the packed spatial column, even across different parent groups. 
 - immediate parent aligns vertically with the active card
 - the first immediate child is vertically centered on the active card, and later children stack below it even when other child groups share that column
 - anchoring the active child group must not reorder neighboring sibling subtrees in that same child column
+- when the active card has no children, the child column still reserves a full empty slot centered on the active card so neighboring sibling subtrees cannot visually read as its children
+- that empty child slot matches the selected card footprint but stays visually invisible against the workspace background while remaining clickable for first-child creation
 - no helper copy, mode labels, or structural labels outside cards
 
 ### Spacing
