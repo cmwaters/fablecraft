@@ -32,7 +32,7 @@
     "updater": {
       "pubkey": "PLACEHOLDER_RUN_tauri_signer_generate",
       "endpoints": [
-        "https://github.com/cmwaters/fablecraft/releases/latest/download/latest.json"
+        "https://github.com/fablecraft-org/fablecraft/releases/latest/download/latest.json"
       ]
     }
   }

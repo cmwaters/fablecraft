@@ -78,7 +78,7 @@ jobs:
           # Generate latest.json update manifest
           VERSION="${GITHUB_REF_NAME#v}"
           SIG=$(cat "$SIG_FILE")
-          REPO="https://github.com/cmwaters/fablecraft"
+          REPO="https://github.com/fablecraft-org/fablecraft"
           cat > release-assets/latest.json << EOF
           {
             "version": "${VERSION}",
