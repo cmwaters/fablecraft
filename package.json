@@ -16,6 +16,7 @@
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/plugin-dialog": "^2.0.0",
+    "@tauri-apps/plugin-updater": "^2.0.0",
     "@tiptap/extension-placeholder": "^3.22.0",
     "@tiptap/react": "^3.22.0",
     "@tiptap/starter-kit": "^3.22.0",

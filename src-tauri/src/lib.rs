@@ -24,6 +24,7 @@ pub fn run() {
         .manage(AppState::default())
         .on_menu_event(native_menu::handle_native_menu_event)
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             create_document,
             enable_claude_desktop_integration,

@@ -6,7 +6,9 @@
   "permissions": [
     "core:default",
     "dialog:allow-open",
-    "dialog:allow-save"
+    "dialog:allow-save",
+    "updater:allow-check",
+    "updater:allow-download-and-install"
   ]
 }
 
