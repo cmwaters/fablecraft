@@ -331,6 +331,53 @@ describe("useExternalDocumentReload", () => {
     });
   });
 
+  it("swallows clock lookup failures without touching the store or notice", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const initialSnapshot = withDocumentClock();
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    useDocumentStore.getState().hydrateSnapshot(initialSnapshot);
+    useAppStore.setState({
+      activeDocument: initialSnapshot.summary,
+      mode: "navigation",
+      notice: null,
+      screen: "workspace",
+    });
+    loadCurrentDocumentClock.mockRejectedValue({
+      code: "document_missing",
+      message: "Document file was deleted while the editor was open.",
+    });
+
+    await act(async () => {
+      root.render(<TestHarness />);
+    });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1200);
+    });
+
+    expect(loadCurrentDocumentClock).toHaveBeenCalledTimes(1);
+    expect(loadCurrentDocumentSnapshot).not.toHaveBeenCalled();
+    expect(useAppStore.getState().notice).toBeNull();
+    expect(useDocumentStore.getState().snapshot?.summary.documentId).toBe(
+      initialSnapshot.summary.documentId,
+    );
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1200);
+    });
+
+    expect(loadCurrentDocumentClock).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      root.unmount();
+    });
+
+    consoleError.mockRestore();
+  });
+
   it("skips the full snapshot reload when the document clock is unchanged", async () => {
     const initialSnapshot = withDocumentClock(makeDocumentSnapshot(), 20, 20);
     const container = document.createElement("div");

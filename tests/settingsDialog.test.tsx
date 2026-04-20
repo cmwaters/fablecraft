@@ -38,7 +38,7 @@ describe("SettingsDialog", () => {
     });
 
     expect(container.querySelectorAll("select")).toHaveLength(0);
-    expect(container.querySelectorAll('[data-testid^="setting-row-"]')).toHaveLength(5);
+    expect(container.querySelectorAll('[data-testid^="setting-row-"]')).toHaveLength(6);
     expect(container.textContent).toContain("Text Size");
     expect(container.textContent).toContain("Light");
     expect(container.textContent).toContain("Dark");

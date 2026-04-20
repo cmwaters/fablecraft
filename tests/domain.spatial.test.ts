@@ -524,4 +524,26 @@ describe("document spatial helpers", () => {
 
     expect(positioned.emptyChildGap?.height).toBe(240);
   });
+
+  it("stops walking ancestors when a parent reference points at a missing card", () => {
+    const snapshot = makeDocumentSnapshot();
+    snapshot.cards.push({
+      documentId: "doc-1",
+      id: "orphaned",
+      orderIndex: 0,
+      parentId: "card-does-not-exist",
+      type: "card",
+    });
+
+    const ancestors = ancestorsOfCard(snapshot.cards, "orphaned");
+
+    expect(ancestors).toEqual([]);
+  });
+
+  it("returns no siblings for an unknown card id", () => {
+    const snapshot = makeDocumentSnapshot();
+
+    expect(siblingsOfCard(snapshot.cards, "card-does-not-exist")).toEqual([]);
+    expect(childrenOfCard(snapshot.cards, "card-does-not-exist")).toEqual([]);
+  });
 });

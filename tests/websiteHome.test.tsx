@@ -52,6 +52,11 @@ describe("WebsiteHome", () => {
     vi.stubEnv("VITE_FABLECRAFT_GITHUB_REPO", "desktop");
     vi.stubEnv("VITE_FABLECRAFT_DOWNLOAD_MAC_ASSET_NAME", "Fablecraft-macos-arm64.dmg");
 
+    Object.defineProperty(navigator, "userAgent", {
+      configurable: true,
+      value: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15",
+    });
+
     const { WebsiteHome } = await import("../src/components/WebsiteHome");
     const container = document.createElement("div");
     document.body.appendChild(container);
@@ -63,22 +68,16 @@ describe("WebsiteHome", () => {
 
     expect(container.textContent).toContain("The Writers Tool for Structured Thought.");
     expect(container.textContent).toContain("Download for macOS");
-    expect(container.textContent).toContain("Organize your ideas");
-    expect(container.textContent).toContain("Back to top");
+    expect(container.textContent).toContain("Try it out!");
 
     const downloadLink = Array.from(container.querySelectorAll("a")).find(
-      (element) => element.textContent === "Download for macOS",
+      (element) => element.textContent?.trim() === "Download for macOS",
     );
     expect(downloadLink?.getAttribute("href")).toBe(
       "https://github.com/fablecraft/desktop/releases/latest/download/Fablecraft-macos-arm64.dmg",
     );
 
-    const demoImg = container.querySelector(
-      '[data-testid="site-product-screenshot"]',
-    ) as HTMLImageElement | null;
-    expect(demoImg).not.toBeNull();
-    expect(demoImg?.getAttribute("src")).toBe("/screenshot.png");
-    expect(demoImg?.getAttribute("loading")).toBe("lazy");
+    expect(container.querySelector('[id="demo"]')).not.toBeNull();
 
     act(() => {
       root.unmount();
@@ -96,7 +95,7 @@ describe("WebsiteHome", () => {
     });
 
     const mutedDownload = Array.from(container.querySelectorAll("span")).find(
-      (element) => element.textContent === "Download for macOS",
+      (element) => element.textContent === "macOS — coming soon",
     );
     expect(mutedDownload).not.toBeUndefined();
     expect(

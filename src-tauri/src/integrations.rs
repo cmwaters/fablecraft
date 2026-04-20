@@ -439,4 +439,88 @@ url = "https://mcp.linear.app/mcp"
                 .to_path_buf()
         ));
     }
+
+    #[test]
+    fn claude_entry_is_absent_when_config_has_different_command() {
+        let contents = r#"{
+  "mcpServers": {
+    "fablecraft": {
+      "command": "/some/other/binary",
+      "args": []
+    }
+  }
+}"#;
+
+        assert!(!claude_entry_present(Some(contents)).expect("status should parse"));
+    }
+
+    #[test]
+    fn claude_entry_is_absent_when_config_is_missing() {
+        assert!(!claude_entry_present(None).expect("missing config should return false"));
+    }
+
+    #[test]
+    fn claude_entry_rejects_malformed_json_with_invalid_input() {
+        let error = claude_entry_present(Some("{ not valid }"))
+            .expect_err("malformed config should surface an error");
+
+        assert_eq!(error.to_payload().code, "claude_config_parse_failed");
+    }
+
+    #[test]
+    fn codex_entry_is_absent_when_section_references_other_binary() {
+        let contents = r#"
+[mcp_servers.fablecraft]
+command = "/usr/local/bin/other-mcp"
+args = []
+"#;
+
+        assert!(!codex_entry_present(Some(contents)).expect("status should parse"));
+    }
+
+    #[test]
+    fn codex_entry_preserves_existing_fablecraft_command_after_update() {
+        let contents = r#"
+[mcp_servers.fablecraft]
+command = "/old/path/fablecraft-mcp"
+args = []
+
+[mcp_servers.linear]
+url = "https://mcp.linear.app/mcp"
+"#;
+
+        let updated = update_codex_config_contents(
+            Some(contents),
+            Path::new("/new/path/fablecraft-mcp"),
+        )
+        .expect("config should serialize");
+
+        assert!(updated.contains("[mcp_servers.linear]"));
+        assert!(updated.contains("command = \"/new/path/fablecraft-mcp\""));
+        assert!(!updated.contains("/old/path/fablecraft-mcp"));
+    }
+
+    #[test]
+    fn update_claude_config_rejects_non_object_root() {
+        let contents = "[\"not\", \"an\", \"object\"]";
+
+        let error = update_claude_config_contents(
+            Some(contents),
+            Path::new("/Applications/Fablecraft.app/Contents/MacOS/fablecraft-mcp"),
+        )
+        .expect_err("non-object roots should be rejected");
+
+        assert_eq!(error.to_payload().code, "claude_config_invalid");
+    }
+
+    #[test]
+    fn codex_config_escapes_quotes_in_paths() {
+        let updated = update_codex_config_contents(
+            None,
+            Path::new("/some/path/with\"quote/fablecraft-mcp"),
+        )
+        .expect("config should serialize");
+
+        assert!(updated.contains("command = \"/some/path/with\\\"quote/fablecraft-mcp\""));
+    }
 }

@@ -26,4 +26,42 @@ describe("document search", () => {
 
     expect(searchDocument(snapshot, "   ")).toEqual([]);
   });
+
+  it("treats regex metacharacters as literal substrings", () => {
+    let snapshot = makeDocumentSnapshot();
+    snapshot = replaceCardContent(snapshot, {
+      cardId: "card-a",
+      contentJson: contentJsonForPlainText("Before (parens) after."),
+      layerId: "layer-base",
+    });
+    snapshot = replaceCardContent(snapshot, {
+      cardId: "card-b",
+      contentJson: contentJsonForPlainText("Wild*card* and .dot pattern"),
+      layerId: "layer-base",
+    });
+
+    const parenResults = searchDocument(snapshot, "(parens)");
+    const starResults = searchDocument(snapshot, "*card*");
+    const dotResults = searchDocument(snapshot, ".dot");
+
+    expect(parenResults.map((result) => result.cardId)).toEqual(["card-a"]);
+    expect(starResults.map((result) => result.cardId)).toEqual(["card-b"]);
+    expect(dotResults.map((result) => result.cardId)).toEqual(["card-b"]);
+  });
+
+  it("matches case-insensitively across diacritics and emoji", () => {
+    let snapshot = makeDocumentSnapshot();
+    snapshot = replaceCardContent(snapshot, {
+      cardId: "card-a",
+      contentJson: contentJsonForPlainText("Café résumé 🔥"),
+      layerId: "layer-base",
+    });
+
+    expect(searchDocument(snapshot, "CAFÉ").map((result) => result.cardId)).toEqual([
+      "card-a",
+    ]);
+    expect(searchDocument(snapshot, "🔥").map((result) => result.cardId)).toEqual([
+      "card-a",
+    ]);
+  });
 });

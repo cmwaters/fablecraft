@@ -48,5 +48,16 @@ describe("document layer operations", () => {
       ["Theme", 1, "red"],
     ]);
   });
+
+  it("refuses to create a layer once seven already exist", () => {
+    let snapshot = makeDocumentSnapshot();
+
+    for (const [index, name] of ["Plot", "Theme", "Setting", "Voice", "Pacing", "Revision"].entries()) {
+      snapshot = createLayer(snapshot, `layer-${index}`, name);
+    }
+
+    expect(snapshot.layers).toHaveLength(7);
+    expect(() => createLayer(snapshot, "layer-overflow", "Too Many")).toThrow(/seven layers/i);
+  });
 });
 

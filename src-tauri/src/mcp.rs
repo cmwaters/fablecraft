@@ -1433,4 +1433,146 @@ mod tests {
 
         fs::remove_file(path).expect("temp file should be removable");
     }
+
+    #[test]
+    fn unknown_tool_names_return_mcp_tool_missing() {
+        let path = temp_document_path("unknown-tool");
+        DocumentRepository::create(path.clone()).expect("document should create");
+
+        let error = invoke_mcp_tool_inner(
+            path.clone(),
+            McpToolRequest {
+                arguments_json: None,
+                card_id: None,
+                layer_id: None,
+                scope: "document".to_string(),
+                tool_name: "fablecraft_do_the_thing".to_string(),
+            },
+        )
+        .expect_err("unknown tool should fail");
+
+        assert_eq!(error.to_payload().code, "mcp_tool_missing");
+
+        fs::remove_file(path).expect("temp file should be removable");
+    }
+
+    #[test]
+    fn legacy_dotted_tool_names_are_normalized_to_underscored_variants() {
+        let path = temp_document_path("dotted-tool");
+        DocumentRepository::create(path.clone()).expect("document should create");
+
+        let response = invoke_mcp_tool_inner(
+            path.clone(),
+            McpToolRequest {
+                arguments_json: None,
+                card_id: None,
+                layer_id: None,
+                scope: "document".to_string(),
+                tool_name: "fablecraft.get_document".to_string(),
+            },
+        )
+        .expect("dotted alias should resolve to the underscore variant");
+
+        assert_eq!(response.tool_name, "fablecraft.get_document");
+        assert!(response.result_json.contains("documentId"));
+
+        fs::remove_file(path).expect("temp file should be removable");
+    }
+
+    #[test]
+    fn mutation_tools_reject_arguments_with_mismatched_types() {
+        let path = temp_document_path("schema-mismatch");
+        DocumentRepository::create(path.clone()).expect("document should create");
+        let snapshot = DocumentRepository::load(path.clone()).expect("snapshot should load");
+        let root_card = snapshot
+            .cards
+            .iter()
+            .find(|card| card.parent_id.is_none())
+            .expect("root card should exist")
+            .clone();
+        let base_layer = snapshot
+            .layers
+            .iter()
+            .find(|layer| layer.is_base)
+            .expect("base layer should exist")
+            .clone();
+
+        let error = invoke_mcp_tool_inner(
+            path.clone(),
+            McpToolRequest {
+                arguments_json: Some(json!({ "text": 123 }).to_string()),
+                card_id: Some(root_card.id),
+                layer_id: Some(base_layer.id),
+                scope: "card".to_string(),
+                tool_name: TOOL_SET_CARD_TEXT.to_string(),
+            },
+        )
+        .expect_err("integer payload should fail string schema");
+
+        assert_eq!(error.to_payload().code, "mcp_invalid_arguments");
+
+        fs::remove_file(path).expect("temp file should be removable");
+    }
+
+    #[test]
+    fn mutation_tools_reject_unparseable_json_arguments() {
+        let path = temp_document_path("bad-json");
+        DocumentRepository::create(path.clone()).expect("document should create");
+        let snapshot = DocumentRepository::load(path.clone()).expect("snapshot should load");
+        let root_card = snapshot
+            .cards
+            .iter()
+            .find(|card| card.parent_id.is_none())
+            .expect("root card should exist")
+            .clone();
+        let base_layer = snapshot
+            .layers
+            .iter()
+            .find(|layer| layer.is_base)
+            .expect("base layer should exist")
+            .clone();
+
+        let error = invoke_mcp_tool_inner(
+            path.clone(),
+            McpToolRequest {
+                arguments_json: Some("{not json".to_string()),
+                card_id: Some(root_card.id),
+                layer_id: Some(base_layer.id),
+                scope: "card".to_string(),
+                tool_name: TOOL_SET_CARD_TEXT.to_string(),
+            },
+        )
+        .expect_err("unparseable json should fail");
+
+        assert_eq!(error.to_payload().code, "mcp_invalid_arguments");
+
+        fs::remove_file(path).expect("temp file should be removable");
+    }
+
+    #[test]
+    fn oversized_arguments_are_rejected_before_tool_dispatch() {
+        let path = temp_document_path("oversized-arguments");
+        DocumentRepository::create(path.clone()).expect("document should create");
+
+        let huge_arguments = format!(
+            "{{\"text\":\"{}\"}}",
+            "a".repeat(MAX_MCP_ARGUMENT_BYTES + 1),
+        );
+
+        let error = invoke_mcp_tool_inner(
+            path.clone(),
+            McpToolRequest {
+                arguments_json: Some(huge_arguments),
+                card_id: None,
+                layer_id: None,
+                scope: "card".to_string(),
+                tool_name: TOOL_SET_CARD_TEXT.to_string(),
+            },
+        )
+        .expect_err("oversized arguments should be rejected");
+
+        assert_eq!(error.to_payload().code, "mcp_arguments_too_large");
+
+        fs::remove_file(path).expect("temp file should be removable");
+    }
 }

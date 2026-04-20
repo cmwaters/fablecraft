@@ -78,6 +78,49 @@ describe("document store", () => {
     ).toContain("Updated beat");
   });
 
+  it("clears dirty local edits when an external snapshot arrives mid-edit", () => {
+    const initialSnapshot = makeDocumentSnapshot();
+    useDocumentStore.getState().hydrateSnapshot(initialSnapshot);
+
+    useDocumentStore.getState().updateSnapshot((snapshot) =>
+      replaceCardContent(snapshot, {
+        cardId: "card-a",
+        contentJson: markdownToContentJson("Local unsaved change"),
+        layerId: "layer-base",
+      }),
+    );
+
+    expect(useDocumentStore.getState().dirty).toBe(true);
+    expect(useDocumentStore.getState().saveState).toBe("idle");
+
+    const externalSnapshot = replaceCardContent(initialSnapshot, {
+      cardId: "card-b",
+      contentJson: markdownToContentJson("Remote update to card-b"),
+      layerId: "layer-base",
+    });
+
+    useDocumentStore.getState().commitExternalSnapshot(externalSnapshot);
+
+    const state = useDocumentStore.getState();
+
+    expect(state.dirty).toBe(false);
+    expect(state.saveState).toBe("saved");
+    expect(
+      state.snapshot?.contents.find((content) => content.cardId === "card-a")?.contentJson,
+    ).not.toContain("Local unsaved change");
+    expect(
+      state.snapshot?.contents.find((content) => content.cardId === "card-b")?.contentJson,
+    ).toContain("Remote update to card-b");
+
+    useDocumentStore.getState().undoNavigation();
+
+    expect(
+      useDocumentStore
+        .getState()
+        .snapshot?.contents.find((content) => content.cardId === "card-a")?.contentJson,
+    ).toContain("Local unsaved change");
+  });
+
   it("undos and redos editing history through snapshot updates", () => {
     const initialSnapshot = makeDocumentSnapshot();
     useDocumentStore.getState().hydrateSnapshot(initialSnapshot);
