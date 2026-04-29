@@ -56,7 +56,12 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: npm run tauri build -- --bundles dmg,app
+        run: |
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" ]; then
+            unset TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+          fi
+
+          npm run tauri build -- --bundles dmg,app
 
       - name: Clean up keychain
         if: always()
@@ -91,84 +96,12 @@ jobs:
           name: darwin-sig
           path: manifest-data/darwin-aarch64.sig
 
-  build-linux-x86_64:
-    runs-on: ubuntu-22.04
-
-    env:
-      RELEASE_ASSET_NAME: Fablecraft-linux-x86_64.AppImage
-      UPDATE_ASSET_NAME: Fablecraft-linux-x86_64.AppImage.tar.gz
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Install frontend dependencies
-        run: npm ci
-
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install Linux system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            libappindicator3-dev \
-            librsvg2-dev \
-            patchelf
-
-      - name: Build Linux bundles (AppImage + deb)
-        env:
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: npm run tauri build -- --bundles appimage,deb
-
-      - name: Stage release assets
-        run: |
-          mkdir -p release-assets manifest-data
-
-          APPIMAGE=$(ls src-tauri/target/release/bundle/appimage/*.AppImage | grep -v '\.tar\.gz')
-          APPIMAGE_TAR="${APPIMAGE}.tar.gz"
-          SIG_FILE="${APPIMAGE_TAR}.sig"
-
-          cp "$APPIMAGE" "release-assets/${RELEASE_ASSET_NAME}"
-          cp "$APPIMAGE_TAR" "release-assets/${UPDATE_ASSET_NAME}"
-          cp "$SIG_FILE" "release-assets/${UPDATE_ASSET_NAME}.sig"
-
-          # Stage deb
-          cp src-tauri/target/release/bundle/deb/*.deb release-assets/
-
-          # Save sig for manifest job
-          cp "$SIG_FILE" manifest-data/linux-x86_64.sig
-
-      - name: Upload release assets
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            release-assets/${{ env.RELEASE_ASSET_NAME }}
-            release-assets/${{ env.UPDATE_ASSET_NAME }}
-            release-assets/${{ env.UPDATE_ASSET_NAME }}.sig
-            release-assets/*.deb
-
-      - name: Upload signature for manifest job
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-sig
-          path: manifest-data/linux-x86_64.sig
-
   publish-manifest:
-    needs: [build-macos-arm64, build-linux-x86_64]
+    needs: [build-macos-arm64]
     runs-on: ubuntu-latest
 
     env:
       DARWIN_UPDATE_ASSET: Fablecraft-macos-arm64.app.tar.gz
-      LINUX_UPDATE_ASSET: Fablecraft-linux-x86_64.AppImage.tar.gz
 
     steps:
       - name: Download signatures
@@ -181,7 +114,6 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           REPO="https://github.com/fablecraft-org/fablecraft"
           DARWIN_SIG=$(cat sigs/darwin-sig/darwin-aarch64.sig)
-          LINUX_SIG=$(cat sigs/linux-sig/linux-x86_64.sig)
 
           cat > latest.json << EOF
           {
@@ -192,10 +124,6 @@ jobs:
               "darwin-aarch64": {
                 "url": "${REPO}/releases/download/${GITHUB_REF_NAME}/${DARWIN_UPDATE_ASSET}",
                 "signature": "${DARWIN_SIG}"
-              },
-              "linux-x86_64": {
-                "url": "${REPO}/releases/download/${GITHUB_REF_NAME}/${LINUX_UPDATE_ASSET}",
-                "signature": "${LINUX_SIG}"
               }
             }
           }

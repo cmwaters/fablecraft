@@ -203,7 +203,7 @@ animation: ~140ms ease-in-out
 - include hero, a scroll-first product screenshot served from `public/screenshot.png`, and footer; the hero download control uses `siteDownloads` and builds the macOS URL from GitHub release env metadata when present, otherwise a muted non-link label
 - keep release metadata environment-configurable for Vercel deployment (`siteContent` retains Windows/Linux env URLs for future hero or off-site use)
 - keep browser layouts scrollable without breaking the desktop app's fixed-height workspace shell
-- add a GitHub Actions release workflow that runs on `v*` tags, builds an arm64 macOS `.dmg`, signs/notarizes the app with Developer ID credentials, emits Tauri updater artifacts with the committed updater public key, renames the public DMG to `Fablecraft-macos-arm64.dmg`, and uploads the release assets plus `latest.json` to the GitHub Release
+- add a GitHub Actions release workflow that runs on `v*` tags, builds an arm64 macOS `.dmg`, signs/notarizes the app with Developer ID credentials, emits Tauri updater artifacts with the committed updater public key, renames the public DMG to `Fablecraft-macos-arm64.dmg`, and uploads the macOS release assets plus `latest.json` to the GitHub Release
 
 ---
 
@@ -318,7 +318,7 @@ animation: ~140ms ease-in-out
 - the Tauri startup window background must match the light paper surface so the transparent title bar does not flash white
 - when `VITE_FABLECRAFT_GITHUB_OWNER`, `VITE_FABLECRAFT_GITHUB_REPO`, and `VITE_FABLECRAFT_DOWNLOAD_MAC_ASSET_NAME` are set, the hero primary action is a working download link to `https://github.com/<owner>/<repo>/releases/latest/download/<asset>`; when unset, the same label renders disabled (muted)
 - the canonical public macOS asset is `Fablecraft-macos-arm64.dmg`, uploaded by the tagged GitHub release workflow
-- Tauri updater artifacts are generated with `bundle.createUpdaterArtifacts = "v1Compatible"` so the current release workflow can publish the `.app.tar.gz` macOS updater archive and Linux `.AppImage.tar.gz` archive from the same manifest format
+- Tauri updater artifacts are generated with `bundle.createUpdaterArtifacts = true`; the current tagged release workflow publishes the notarized macOS DMG, the `.app.tar.gz` updater archive, its signature, and a macOS-only `latest.json` manifest
 - `.env.example` documents the required website env vars for Vercel or other static hosting
 - maintainers publish a new website-backed macOS download by pushing a `v*` tag that matches the desktop version and letting the GitHub Actions workflow attach the renamed DMG asset to the release
 - Tauri desktop behavior remains unchanged when the app runs in desktop mode
