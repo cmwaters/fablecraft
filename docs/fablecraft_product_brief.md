@@ -459,7 +459,7 @@ Core jobs:
 
 Initial site structure (current):
 
-- hero section with the core slogan and a download CTA (disabled label when the GitHub release config is absent)
+- hero section with the core slogan and a download CTA (disabled label when the GitHub release config is absent); the live macOS download CTA is marked with a compact `BETA` label
 - product screenshot section immediately below the hero (`public/screenshot.png`), then the footer
 
 Rules:
@@ -472,6 +472,7 @@ Rules:
 - future sync and AI connector features require a separate explicit scope definition before implementation
 - the website should stay sparse: generous spacing, minimal copy, and only the information required to download, understand, update, or contact the product
 - the website should feel hero-led and architectural rather than section-heavy or dashboard-like
+- the hero and live editor demo should each occupy roughly 85% of the viewport height on desktop-sized layouts
 
 ---
 

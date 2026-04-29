@@ -55,12 +55,15 @@ export function WebsiteHome() {
 
                 {showMac && (
                   macDownload?.url ? (
-                    <a
-                      className="fc-site-action fc-site-action-primary"
-                      href={macDownload.url}
-                    >
-                      Download for macOS
-                    </a>
+                    <>
+                      <a
+                        className="fc-site-action fc-site-action-primary"
+                        href={macDownload.url}
+                      >
+                        Download for macOS
+                      </a>
+                      <span className="fc-site-beta-label">BETA</span>
+                    </>
                   ) : (
                     <span aria-disabled className="fc-site-action fc-site-action-muted">
                       macOS — coming soon

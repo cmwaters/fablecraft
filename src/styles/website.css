@@ -71,7 +71,7 @@ a.fc-site-footer:hover {
   display: grid;
   grid-template-columns: 1fr;
   gap: clamp(2rem, 5vw, 6rem);
-  min-height: min(80vh, 860px);
+  min-height: min(85vh, 860px);
   align-items: end;
   padding-top: clamp(5rem, 10vw, 9rem);
 }
@@ -163,6 +163,20 @@ a.fc-site-footer:hover {
   cursor: not-allowed;
 }
 
+.fc-site-beta-label {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--fc-site-line-strong);
+  border-radius: 999px;
+  color: var(--fc-site-ink-soft);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+}
+
 .fc-section-heading {
   display: grid;
   gap: 0.75rem;
@@ -187,7 +201,7 @@ a.fc-site-footer:hover {
 
 .fc-demo-shell {
   position: relative;
-  height: 80vh;
+  height: 85vh;
   overflow: hidden;
   /* Creates a containing block so position:fixed children are scoped to the demo */
   transform: translateZ(0);

@@ -316,7 +316,8 @@ animation: ~140ms ease-in-out
 - the website uses a minimal editorial layout distinct from the desktop editor UI
 - the website and desktop app share the same soft pink-white paper and dark-ink visual language
 - the Tauri startup window background must match the light paper surface so the transparent title bar does not flash white
-- when `VITE_FABLECRAFT_GITHUB_OWNER`, `VITE_FABLECRAFT_GITHUB_REPO`, and `VITE_FABLECRAFT_DOWNLOAD_MAC_ASSET_NAME` are set, the hero primary action is a working download link to `https://github.com/<owner>/<repo>/releases/latest/download/<asset>`; when unset, the same label renders disabled (muted)
+- when `VITE_FABLECRAFT_GITHUB_OWNER`, `VITE_FABLECRAFT_GITHUB_REPO`, and `VITE_FABLECRAFT_DOWNLOAD_MAC_ASSET_NAME` are set, the hero primary action is a working download link to `https://github.com/<owner>/<repo>/releases/latest/download/<asset>` with a compact `BETA` label; when unset, the same label renders disabled (muted)
+- the website hero uses `min-height: min(85vh, 860px)`, and the live demo shell uses `height: 85vh`
 - the canonical public macOS asset is `Fablecraft-macos-arm64.dmg`, uploaded by the tagged GitHub release workflow
 - Tauri updater artifacts are generated with `bundle.createUpdaterArtifacts = true`; the current tagged release workflow publishes the notarized macOS DMG, the `.app.tar.gz` updater archive, its signature, and a macOS-only `latest.json` manifest
 - `.env.example` documents the required website env vars for Vercel or other static hosting
