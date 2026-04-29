@@ -4,6 +4,10 @@ dist-ssr
 coverage
 .DS_Store
 *.log
+.env.local
+*.p12
+*.certSigningRequest
+*.base64.txt
 src-tauri/target
 src-tauri/gen
 

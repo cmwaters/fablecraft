@@ -85,6 +85,10 @@ describe("WebsiteHome", () => {
   });
 
   it("renders a muted macOS download label when GitHub release config is missing", async () => {
+    vi.stubEnv("VITE_FABLECRAFT_GITHUB_OWNER", "");
+    vi.stubEnv("VITE_FABLECRAFT_GITHUB_REPO", "");
+    vi.stubEnv("VITE_FABLECRAFT_DOWNLOAD_MAC_ASSET_NAME", "");
+
     const { WebsiteHome } = await import("../src/components/WebsiteHome");
     const container = document.createElement("div");
     document.body.appendChild(container);

@@ -1,6 +1,6 @@
 [package]
 name = "fablecraft"
-version = "0.1.0"
+version = "0.1.1"
 description = "Fablecraft desktop application"
 authors = ["Codex"]
 edition = "2021"
