@@ -170,8 +170,6 @@ a.fc-site-footer:hover {
   justify-content: center;
   min-height: 2rem;
   padding: 0.35rem 0.7rem;
-  border: 1px solid var(--fc-site-line-strong);
-  border-radius: 999px;
   color: var(--fc-site-ink-soft);
   font-size: 0.68rem;
   letter-spacing: 0.16em;
@@ -236,20 +234,11 @@ a.fc-site-footer:hover {
   text-transform: none;
   letter-spacing: normal;
   min-height: 2.4rem;
-  padding: 0.5rem 1.2rem;
-  font-size: 0.88rem;
-  border-color: rgba(255, 247, 241, 0.3);
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: #fff7f1;
-}
-
-.fc-site-footer-cta.fc-site-action-primary {
-  background: var(--fc-site-ink);
-  border-color: var(--fc-site-ink);
-  color: #f7f5f0;
-}
-
-a.fc-site-footer:hover .fc-site-footer-cta.fc-site-action-primary {
-  background: #2a2520;
+  font-size: 0.88rem;
 }
 
 @media (max-width: 1040px) {
