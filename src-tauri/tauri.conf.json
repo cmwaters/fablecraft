@@ -33,7 +33,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "RWRGDpKxBBRamrHlttRUs8DJUBrimqQ9wfSfWsFcnHI12RA+aRnbDn/m",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJDRTIyRDA3NzNBODlFQQpSV1RxaVRwMzBDTE9DN1JocXdqYlArM1VKUmkvRDNXcGN1aU9QQXg2Y3lnWXpuekR0QzFpa1JCSQo=",
       "endpoints": [
         "https://github.com/fablecraft-org/fablecraft/releases/latest/download/latest.json"
       ]
