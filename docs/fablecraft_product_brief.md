@@ -453,14 +453,14 @@ Core jobs:
 
 - communicate what Fablecraft is and who it is for
 - drive desktop downloads from `https://fablecraft.xyz` (hero CTA links to the latest GitHub macOS DMG via a stable `releases/latest/download/...` URL when release config is set)
-- explain the spatial tree and local-first writing model through a single product screenshot
+- introduce the spatial tree through a live browser demo seeded from the repository tutorial `.fable` document
 - prepare a future authenticated surface for sync and AI connector management
 - deeper distribution and support surfaces (release notes, multi-platform download grid, feedback forms) may return or move to external pages as the product matures
 
 Initial site structure (current):
 
 - hero section with the core slogan and a download CTA (disabled label when the GitHub release config is absent); the live macOS download CTA is marked with a compact `BETA` label
-- product screenshot section immediately below the hero (`public/screenshot.png`), then the footer
+- live demo section immediately below the hero, then the footer
 
 Rules:
 

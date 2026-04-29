@@ -19,6 +19,7 @@ This brief translates it into **buildable engineering instructions**.
 - Vite
 - browser builds render the public website
 - Tauri builds render the desktop editor
+- `npm run tutorial:sync` regenerates the website tutorial snapshot from `src/site/tutorial.fable`
 
 ### State
 - Zustand
@@ -89,7 +90,8 @@ This brief translates it into **buildable engineering instructions**.
 
 ### Website Layer
 - runtime split between browser and Tauri
-- public landing page (hero, product screenshot, footer) and marketing content
+- public landing page (hero, live tutorial demo, footer) and marketing content
+- `src/site/tutorial.fable` is the editable source document for the website demo; `src/site/tutorialSnapshot.ts` is generated from it and consumed by `DemoApp`
 - hero download link when `VITE_FABLECRAFT_GITHUB_OWNER`, `VITE_FABLECRAFT_GITHUB_REPO`, and `VITE_FABLECRAFT_DOWNLOAD_MAC_ASSET_NAME` are configured; `siteContent` retains Windows/Linux env slots for future multi-platform or off-page distribution
 - future authenticated surface for sync and AI connector management
 - sparse editorial layout with generous whitespace and minimal copy
@@ -200,7 +202,7 @@ animation: ~140ms ease-in-out
 - add a browser-only companion website inside the same frontend repo
 - detect runtime at startup so browser builds render the website and Tauri builds keep the editor
 - implement a minimal sophisticated landing page for `https://fablecraft.xyz`
-- include hero, a scroll-first product screenshot served from `public/screenshot.png`, and footer; the hero download control uses `siteDownloads` and builds the macOS URL from GitHub release env metadata when present, otherwise a muted non-link label
+- include hero, a scroll-first live demo seeded from `src/site/tutorial.fable` via the generated `src/site/tutorialSnapshot.ts`, and footer; the hero download control uses `siteDownloads` and builds the macOS URL from GitHub release env metadata when present, otherwise a muted non-link label
 - keep release metadata environment-configurable for Vercel deployment (`siteContent` retains Windows/Linux env URLs for future hero or off-site use)
 - keep browser layouts scrollable without breaking the desktop app's fixed-height workspace shell
 - add a GitHub Actions release workflow that runs on `v*` tags, builds an arm64 macOS `.dmg`, signs/notarizes the app with Developer ID credentials, emits Tauri updater artifacts with the committed updater public key, renames the public DMG to `Fablecraft-macos-arm64.dmg`, and uploads the macOS release assets plus `latest.json` to the GitHub Release
@@ -312,7 +314,7 @@ animation: ~140ms ease-in-out
 ### Website
 - browser builds render the public landing page instead of the desktop startup chooser
 - the hero presents `The Writers Tool for Structured Thought`
-- the first section after the hero shows the product workspace screenshot (`/screenshot.png` from `public/`), and no further main sections appear before the footer
+- the first section after the hero shows the live demo workspace seeded from `src/site/tutorial.fable`, and no further main sections appear before the footer
 - the website uses a minimal editorial layout distinct from the desktop editor UI
 - the website and desktop app share the same soft pink-white paper and dark-ink visual language
 - the Tauri startup window background must match the light paper surface so the transparent title bar does not flash white

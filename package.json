@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:build:macos-dmg": "tauri build --bundles dmg",
+    "tutorial:sync": "node scripts/syncWebsiteTutorial.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },
