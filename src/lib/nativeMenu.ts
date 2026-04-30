@@ -2,6 +2,7 @@ export const NATIVE_MENU_ACTION_EVENT = "fablecraft://menu-action";
 export const FRONTEND_MENU_ACTION_EVENT = "fablecraft:menu-action";
 
 export type NativeMenuAction =
+  | "check-for-updates"
   | "command-palette"
   | "create-above"
   | "create-below"

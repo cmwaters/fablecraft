@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { promptForNewDocument, promptForOpenDocument } from "./documentActions";
 import { exportCurrentLevelToFile, importMarkdownDocument } from "./importExportActions";
+import { AppUpdateDialog } from "../components/AppUpdateDialog";
 import { CommandPalette, type CommandPaletteItem } from "../components/CommandPalette";
 import { DocumentWorkspace } from "../components/DocumentWorkspace";
 import { FeedbackDialog, type FeedbackDialogMode } from "../components/FeedbackDialog";
@@ -29,6 +30,12 @@ import {
   loadLocalIntegrationStatuses,
   type LocalIntegrationStatuses,
 } from "../storage/integrations";
+import {
+  checkForAppUpdate,
+  installAppUpdate,
+  type AppUpdate,
+  type AppUpdateProgress,
+} from "../storage/appUpdater";
 import { useAppStore, type AppMode } from "../state/appStore";
 import { useDocumentStore } from "../state/documentStore";
 import { useInteractionStore } from "../state/interactionStore";
@@ -36,6 +43,7 @@ import { useSettingsStore } from "../state/settingsStore";
 
 type OverlayReturnMode = Exclude<AppMode, "command" | "search">;
 type HelpSheetMode = "commands" | "getting-started" | "shortcuts";
+type AppUpdateDialogStatus = "available" | "downloading" | "installing" | "error";
 
 function noticeMessage(error: unknown, fallback: string) {
   if (error && typeof error === "object" && "message" in error) {
@@ -72,10 +80,17 @@ export function App() {
   const [isSettingsOpen, setSettingsOpen] = useState(false);
   const [helpSheetMode, setHelpSheetMode] = useState<HelpSheetMode | null>(null);
   const [feedbackDialogMode, setFeedbackDialogMode] = useState<FeedbackDialogMode | null>(null);
+  const [appUpdateDialogStatus, setAppUpdateDialogStatus] =
+    useState<AppUpdateDialogStatus | null>(null);
+  const [appUpdate, setAppUpdate] = useState<AppUpdate | null>(null);
+  const [appUpdateErrorMessage, setAppUpdateErrorMessage] = useState<string | null>(null);
+  const [appUpdateProgress, setAppUpdateProgress] = useState<AppUpdateProgress | null>(null);
   const [showBetaBar, setShowBetaBar] = useState(true);
   const [recentDocumentPaths, setRecentDocumentPaths] = useState<string[]>([]);
   const nativeMenuActionHandlerRef = useRef<(action: NativeMenuAction) => void>(() => {});
   const openDocumentPromptInFlightRef = useRef(false);
+  const updateCheckInFlightRef = useRef(false);
+  const startupUpdateCheckStartedRef = useRef(false);
   const activeDocument = useAppStore((state) => state.activeDocument);
   const mode = useAppStore((state) => state.mode);
   const notice = useAppStore((state) => state.notice);
@@ -161,6 +176,18 @@ export function App() {
     setFeedbackDialogMode(null);
   }
 
+  function closeAppUpdateDialog() {
+    if (appUpdateDialogStatus === "downloading" || appUpdateDialogStatus === "installing") {
+      return;
+    }
+
+    void appUpdate?.update.close();
+    setAppUpdate(null);
+    setAppUpdateDialogStatus(null);
+    setAppUpdateErrorMessage(null);
+    setAppUpdateProgress(null);
+  }
+
   function openFeedbackDialog(feedbackMode: FeedbackDialogMode) {
     if (screen !== "workspace") {
       return;
@@ -226,15 +253,118 @@ export function App() {
     }
   }
 
+  async function handleCheckForUpdates(options: { manual: boolean }) {
+    if (
+      updateCheckInFlightRef.current ||
+      appUpdateDialogStatus === "downloading" ||
+      appUpdateDialogStatus === "installing"
+    ) {
+      return;
+    }
+
+    updateCheckInFlightRef.current = true;
+
+    if (options.manual) {
+      setNotice({
+        tone: "info",
+        message: "Checking for updates...",
+      });
+    }
+
+    try {
+      const nextUpdate = await checkForAppUpdate();
+
+      if (!nextUpdate) {
+        if (options.manual) {
+          setNotice({
+            tone: "info",
+            message: "Fablecraft is up to date.",
+          });
+        }
+
+        return;
+      }
+
+      closeAuxiliaryOverlays();
+      setNotice(null);
+      setAppUpdate(nextUpdate);
+      setAppUpdateProgress(null);
+      setAppUpdateErrorMessage(null);
+      setAppUpdateDialogStatus("available");
+    } catch (error) {
+      const message = noticeMessage(error, "Fablecraft could not check for updates.");
+
+      if (options.manual) {
+        setNotice({
+          tone: "error",
+          message,
+        });
+      } else {
+        console.warn(message, error);
+      }
+    } finally {
+      updateCheckInFlightRef.current = false;
+    }
+  }
+
+  async function handleInstallAppUpdate() {
+    if (!appUpdate || appUpdateDialogStatus !== "available") {
+      return;
+    }
+
+    setAppUpdateDialogStatus("downloading");
+    setAppUpdateErrorMessage(null);
+    setAppUpdateProgress({
+      contentLength: null,
+      downloaded: 0,
+      percent: null,
+    });
+
+    try {
+      await forceSaveCurrentDocument();
+      await installAppUpdate(appUpdate, (progress) => {
+        setAppUpdateProgress(progress);
+
+        if (progress.percent === 100) {
+          setAppUpdateDialogStatus("installing");
+        }
+      });
+    } catch (error) {
+      setAppUpdateErrorMessage(
+        noticeMessage(error, "Fablecraft could not install the update."),
+      );
+      setAppUpdateDialogStatus("error");
+    }
+  }
+
+  useEffect(() => {
+    if (startupUpdateCheckStartedRef.current) {
+      return;
+    }
+
+    startupUpdateCheckStartedRef.current = true;
+    const timeoutId = window.setTimeout(() => {
+      void handleCheckForUpdates({ manual: false });
+    }, 1500);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, []);
+
   useEffect(() => {
     function handleGlobalKeyDown(event: KeyboardEvent) {
       if (
         event.key === "Escape" &&
-        (isSettingsOpen || helpSheetMode || feedbackDialogMode)
+        (isSettingsOpen || helpSheetMode || feedbackDialogMode || appUpdateDialogStatus)
       ) {
         event.preventDefault();
-        closeAuxiliaryOverlays();
-        restoreOverlayMode();
+        if (appUpdateDialogStatus) {
+          closeAppUpdateDialog();
+        } else {
+          closeAuxiliaryOverlays();
+          restoreOverlayMode();
+        }
         return;
       }
 
@@ -269,6 +399,7 @@ export function App() {
     };
   }, [
     feedbackDialogMode,
+    appUpdateDialogStatus,
     helpSheetMode,
     isSettingsOpen,
     mode,
@@ -496,6 +627,11 @@ export function App() {
       return;
     }
 
+    if (action === "check-for-updates") {
+      void handleCheckForUpdates({ manual: true });
+      return;
+    }
+
     if (action === "export-markdown") {
       void exportLevelFromMenu("markdown");
       return;
@@ -608,6 +744,12 @@ export function App() {
       },
     },
     {
+      id: "check-for-updates",
+      keywords: ["update", "upgrade", "release", "version"],
+      label: "Check for Updates",
+      run: () => runPaletteAction(() => handleCheckForUpdates({ manual: true })),
+    },
+    {
       id: "enable-codex",
       keywords: ["mcp", "integration", "codex"],
       label: `${integrationStatuses.codex.enabled ? "✓ " : ""}Enable Codex`,
@@ -715,7 +857,7 @@ export function App() {
           <DocumentWorkspace
             document={activeDocument}
             suspendKeyboard={Boolean(
-              isSettingsOpen || helpSheetMode || feedbackDialogMode,
+              isSettingsOpen || helpSheetMode || feedbackDialogMode || appUpdateDialogStatus,
             )}
           />
         )}
@@ -767,6 +909,17 @@ export function App() {
             setFeedbackDialogMode(null);
             restoreOverlayMode();
           }}
+        />
+      )}
+
+      {appUpdateDialogStatus && (
+        <AppUpdateDialog
+          errorMessage={appUpdateErrorMessage}
+          onClose={closeAppUpdateDialog}
+          onInstall={() => void handleInstallAppUpdate()}
+          progress={appUpdateProgress}
+          status={appUpdateDialogStatus}
+          update={appUpdate}
         />
       )}
 

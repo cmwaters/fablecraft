@@ -20,6 +20,7 @@ This brief translates it into **buildable engineering instructions**.
 - browser builds render the public website
 - Tauri builds render the desktop editor
 - `npm run tutorial:sync` regenerates the website tutorial snapshot from `src/site/tutorial.fable`
+- Tauri updater calls live behind a desktop-only frontend service
 
 ### State
 - Zustand
@@ -51,6 +52,12 @@ This brief translates it into **buildable engineering instructions**.
 - the macOS release download must be derived from environment-configured GitHub metadata (`siteContent`) so the website can point at `releases/latest/download/...` without browser-side API calls
 - optional future feedback endpoints can reuse the same environment-driven pattern when site forms return
 - the website must still render gracefully when those hosted endpoints are not configured
+
+### Desktop Updates
+- `@tauri-apps/plugin-updater` checks the signed GitHub `latest.json` manifest configured in `src-tauri/tauri.conf.json`
+- `@tauri-apps/plugin-process` / `tauri-plugin-process` provides relaunch after installation
+- `src/storage/appUpdater.ts` wraps update check, download progress, install, and relaunch behavior
+- background startup checks are quiet unless an update exists; manual checks surface success and error notices
 
 ---
 
@@ -96,6 +103,12 @@ This brief translates it into **buildable engineering instructions**.
 - future authenticated surface for sync and AI connector management
 - sparse editorial layout with generous whitespace and minimal copy
 - hero-led composition with a very light header and line-based section dividers where sections exist
+
+### Update Layer
+- desktop-only updater service in `src/storage/appUpdater.ts`
+- startup check is scheduled after the desktop shell mounts and guarded against React StrictMode double invocation
+- manual check actions are exposed through the native Fablecraft menu and command palette
+- install flow force-saves the current document, downloads and installs the signed update, then relaunches the app
 
 ---
 
@@ -204,6 +217,7 @@ animation: ~140ms ease-in-out
 - keep release metadata environment-configurable for Vercel deployment (`siteContent` retains Windows/Linux env URLs for future hero or off-site use)
 - keep browser layouts scrollable without breaking the desktop app's fixed-height workspace shell
 - add a GitHub Actions release workflow that runs on `v*` tags, builds an arm64 macOS `.dmg`, signs/notarizes the app with Developer ID credentials, emits Tauri updater artifacts with the committed updater public key, renames the public DMG to `Fablecraft-macos-arm64.dmg`, and uploads the macOS release assets plus `latest.json` to the GitHub Release
+- add in-app update checks that use the Tauri updater manifest, prompt before installing, force-save before install, and relaunch through the process plugin
 
 ---
 
@@ -291,9 +305,11 @@ animation: ~140ms ease-in-out
 - native Undo / Redo target the active editor in editing mode and the navigation history stack in navigation mode
 - native Card actions reuse the same structural operations as keyboard shortcuts
 - native Tools includes Enable Codex and Enable Claude Desktop alongside palette and search
+- native Fablecraft menu includes Check for Updates
 - native Window includes Reload, Minimize, and Toggle Full Screen only
 - the palette shows at most five filtered results and stays input-focused until dismissed
 - Show Command List, Settings, Enable Codex, and Enable Claude Desktop are the leading default commands
+- the command palette exposes Check for Updates
 - the help sheet lists both Show Command List and Show Shortcuts
 - the help sheet includes the merge shortcuts and merge command labels
 - the command palette exposes Merge with Above and Merge Below when the active card has sibling targets
@@ -302,6 +318,14 @@ animation: ~140ms ease-in-out
 - settings labels clearly distinguish theme, text size, line height, and card width
 - settings overlays stay within the viewport and scroll internally when content is tall
 - settings update token-backed UI immediately and persist locally
+
+### Desktop Updates
+- startup update checks prompt only when a signed update is available
+- manual Check for Updates reports available, up-to-date, and failure states
+- Install and Restart force-saves the current document before downloading and installing
+- updater download progress appears in the in-app update prompt when content length is available
+- app relaunches after a successful update install
+- browser builds never invoke updater or process plugin behavior
 
 ### MCP
 - `get_open_documents` returns all document paths currently advertised by running app instances
@@ -328,9 +352,10 @@ animation: ~140ms ease-in-out
 - the website hero uses `min-height: min(85vh, 860px)`, and the live demo shell uses `height: 85vh`
 - the canonical public macOS asset is `Fablecraft-macos-arm64.dmg`, uploaded by the tagged GitHub release workflow
 - Tauri updater artifacts are generated with `bundle.createUpdaterArtifacts = true`; the current tagged release workflow publishes the notarized macOS DMG, the `.app.tar.gz` updater archive, its signature, and a macOS-only `latest.json` manifest
+- the desktop app checks the same signed updater manifest shortly after startup and through manual Check for Updates actions
 - `.env.example` documents the required website env vars for Vercel or other static hosting
 - maintainers publish a new website-backed macOS download by pushing a `v*` tag that matches the desktop version and letting the GitHub Actions workflow attach the renamed DMG asset to the release
-- Tauri desktop behavior remains unchanged when the app runs in desktop mode
+- website runtime detection must not invoke desktop updater behavior in browser builds
 
 ---
 

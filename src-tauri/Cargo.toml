@@ -1,6 +1,6 @@
 [package]
 name = "fablecraft"
-version = "0.1.4"
+version = "0.1.5"
 description = "Fablecraft desktop application"
 authors = ["Codex"]
 edition = "2021"
@@ -21,6 +21,7 @@ serde_json = "1.0.133"
 serde_with = "=3.11.0"
 tauri = { version = "=2.10.3", features = [] }
 tauri-plugin-dialog = "=2.6.0"
+tauri-plugin-process = "2"
 tauri-plugin-updater = "2"
 time = "=0.3.36"
 thiserror = "=2.0.9"

@@ -27,6 +27,7 @@ The product is:
 - local-first
 - opens and edits `.fable` documents
 - usable without any account
+- checks for signed desktop updates from the published release channel and prompts before installing
 
 #### Public Website
 
@@ -41,6 +42,7 @@ Rules:
 - the website complements the desktop app; it does not replace it
 - stage two does not introduce a browser-based editor
 - local writing must remain usable without a network connection
+- update checks may require network access, but failed checks must not block local writing
 - future sync and hosted AI connectors are staged follow-on capabilities, not part of the current local-only MVP behavior
 
 ---
@@ -486,7 +488,19 @@ Rules:
 
 ---
 
-## 17. Non-Goals
+## 17. Desktop Updates
+
+- the desktop app checks the configured signed Tauri update manifest shortly after startup
+- available updates are presented in a minimal in-app prompt with `Install and Restart` and `Later`
+- the app menu and command palette include `Check for Updates`
+- manual checks report when Fablecraft is already up to date or when the check fails
+- installing an update saves the current document before downloading, installing, and restarting the app
+- failed background checks stay quiet; failed manual checks or installs show concise user-facing errors
+- update delivery does not change the local-first writing model, require an account, or introduce sync
+
+---
+
+## 18. Non-Goals
 
 - no sidebar
 - no graph view
@@ -501,7 +515,7 @@ Rules:
 
 ---
 
-## 18. Summary
+## 19. Summary
 
 Fablecraft is a:
 

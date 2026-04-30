@@ -10,6 +10,7 @@ use tauri::{
 pub const MENU_ACTION_EVENT: &str = "fablecraft://menu-action";
 
 const APP_SETTINGS: &str = "app.settings";
+const APP_CHECK_FOR_UPDATES: &str = "app.check_for_updates";
 const FILE_NEW_DOCUMENT: &str = "file.new_document";
 const FILE_OPEN_DOCUMENT: &str = "file.open_document";
 const FILE_SAVE: &str = "file.save";
@@ -46,6 +47,8 @@ pub fn build_native_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R
     let settings = MenuItemBuilder::with_id(APP_SETTINGS, "Settings")
         .accelerator("CmdOrCtrl+,")
         .build(app)?;
+    let check_for_updates =
+        MenuItemBuilder::with_id(APP_CHECK_FOR_UPDATES, "Check for Updates...").build(app)?;
 
     let new_document = MenuItemBuilder::with_id(FILE_NEW_DOCUMENT, "New Document")
         .accelerator("CmdOrCtrl+N")
@@ -121,6 +124,8 @@ pub fn build_native_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R
 
     let app_menu = SubmenuBuilder::new(app, "Fablecraft")
         .about_with_text("About Fablecraft", None)
+        .separator()
+        .item(&check_for_updates)
         .separator()
         .item(&settings)
         .separator()
@@ -212,6 +217,7 @@ pub fn handle_native_menu_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent
         FILE_SAVE => emit_action(app, "save"),
         FILE_IMPORT_MARKDOWN => emit_action(app, "import-markdown"),
         FILE_EXPORT_MARKDOWN => emit_action(app, "export-markdown"),
+        APP_CHECK_FOR_UPDATES => emit_action(app, "check-for-updates"),
         APP_SETTINGS => emit_action(app, "settings"),
         EDIT_UNDO => emit_action(app, "undo"),
         EDIT_REDO => emit_action(app, "redo"),
