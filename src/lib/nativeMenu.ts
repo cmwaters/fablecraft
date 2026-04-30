@@ -21,6 +21,7 @@ export type NativeMenuAction =
   | "new-document"
   | "open-document"
   | "redo"
+  | "save"
   | "search"
   | "settings"
   | "shift-down"

@@ -132,14 +132,6 @@ export function mergeCardContentJson(
   );
 }
 
-export function primaryLayerId(snapshot: DocumentSnapshot) {
-  return (
-    snapshot.layers.find((layer) => layer.isBase)?.id ??
-    snapshot.layers[0]?.id ??
-    null
-  );
-}
-
 export function trimTrailingEmptyParagraphs(contentJson: string) {
   const document = parseContent(contentJson);
 
@@ -172,16 +164,10 @@ export function trimTrailingEmptyParagraphs(contentJson: string) {
 export function cardContent(
   snapshot: DocumentSnapshot,
   cardId: string,
-  layerId: string | null = primaryLayerId(snapshot),
 ) {
-  if (!layerId) {
-    return EMPTY_EDITOR_DOCUMENT_JSON;
-  }
-
   return (
-    snapshot.contents.find(
-      (content) => content.cardId === cardId && content.layerId === layerId,
-    )?.contentJson ?? EMPTY_EDITOR_DOCUMENT_JSON
+    snapshot.contents.find((content) => content.cardId === cardId)?.contentJson ??
+    EMPTY_EDITOR_DOCUMENT_JSON
   );
 }
 
@@ -190,8 +176,7 @@ export function replaceCardContent(
   nextRecord: CardContentRecord,
 ) {
   const existingIndex = snapshot.contents.findIndex(
-    (content) =>
-      content.cardId === nextRecord.cardId && content.layerId === nextRecord.layerId,
+    (content) => content.cardId === nextRecord.cardId,
   );
 
   const nextContents =

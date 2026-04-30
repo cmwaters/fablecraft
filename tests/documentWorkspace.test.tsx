@@ -2,7 +2,11 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DocumentWorkspace } from "../src/components/DocumentWorkspace";
-import { contentJsonForPlainText, replaceCardContent } from "../src/domain/document/content";
+import {
+  contentJsonForPlainText,
+  isContentEffectivelyEmpty,
+  replaceCardContent,
+} from "../src/domain/document/content";
 import { useAppStore } from "../src/state/appStore";
 import { useDocumentStore } from "../src/state/documentStore";
 import { useInteractionStore } from "../src/state/interactionStore";
@@ -27,28 +31,47 @@ vi.mock("../src/components/CardEditor", () => ({
     focusPlacement,
     isEditing,
     onDeleteEmpty,
+    onNavigateAbove,
+    onNavigateChild,
+    placeholder,
     pendingTextInput,
   }: {
     focusPlacement?: string | null;
     isEditing: boolean;
     onDeleteEmpty?: () => void;
+    onNavigateAbove?: (placement?: "start" | "end") => boolean;
+    onNavigateChild?: (placement?: "start" | "end") => boolean;
+    placeholder?: string;
     pendingTextInput?: string | null;
   }) => (
     <div>
       <div
         data-editing={String(isEditing)}
         data-focus-placement={focusPlacement ?? ""}
+        data-placeholder={placeholder ?? ""}
         data-pending-text-input={pendingTextInput ?? ""}
         data-testid="card-editor"
       />
       <button data-testid="card-editor-delete-empty" onClick={() => onDeleteEmpty?.()} type="button" />
+      <button data-testid="card-editor-navigate-above" onClick={() => onNavigateAbove?.()} type="button" />
+      <button data-testid="card-editor-navigate-child-end" onClick={() => onNavigateChild?.("end")} type="button" />
     </div>
   ),
 }));
 
 vi.mock("../src/components/TreeCardButton", () => ({
-  TreeCardButton: ({ cardLabel }: { cardLabel?: string }) => (
-    <div data-card-label={cardLabel ?? ""} data-testid="tree-card" />
+  TreeCardButton: ({
+    cardLabel,
+    placeholder,
+  }: {
+    cardLabel?: string;
+    placeholder?: string;
+  }) => (
+    <div
+      data-card-label={cardLabel ?? ""}
+      data-placeholder={placeholder ?? ""}
+      data-testid="tree-card"
+    />
   ),
 }));
 
@@ -305,12 +328,10 @@ describe("DocumentWorkspace", () => {
         {
           cardId: "card-root",
           contentJson: contentJsonForPlainText("Hello World"),
-          layerId: "layer-base",
         },
         {
           cardId: "card-root-2",
           contentJson: '{"type":"doc","content":[{"type":"paragraph"}]}',
-          layerId: "layer-base",
         },
       ],
     };
@@ -351,17 +372,394 @@ describe("DocumentWorkspace", () => {
     });
   });
 
+  it("deletes an empty root-level card when Escape leaves editing", async () => {
+    const snapshot = {
+      ...makeDocumentSnapshot(),
+      cards: [
+        {
+          documentId: "doc-1",
+          id: "card-root",
+          orderIndex: 0,
+          parentId: null,
+          type: "card" as const,
+        },
+        {
+          documentId: "doc-1",
+          id: "card-root-2",
+          orderIndex: 1,
+          parentId: null,
+          type: "card" as const,
+        },
+      ],
+      contents: [
+        {
+          cardId: "card-root",
+          contentJson: contentJsonForPlainText("Hello World"),
+        },
+        {
+          cardId: "card-root-2",
+          contentJson: '{"type":"doc","content":[{"type":"paragraph"}]}',
+        },
+      ],
+    };
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    useDocumentStore.getState().hydrateSnapshot(snapshot);
+    useAppStore.setState({
+      activeDocument: snapshot.summary,
+      mode: "editing",
+      notice: null,
+      screen: "workspace",
+    });
+    useInteractionStore.setState({
+      activeCardId: "card-root-2",
+    });
+    loadCurrentDocumentSnapshot.mockResolvedValue(snapshot);
+
+    await act(async () => {
+      root.render(<DocumentWorkspace document={snapshot.summary} />);
+    });
+
+    await act(async () => {
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          bubbles: true,
+          key: "Escape",
+        }),
+      );
+    });
+
+    const nextSnapshot = useDocumentStore.getState().snapshot;
+
+    expect(nextSnapshot?.cards.map((card) => card.id)).toEqual(["card-root"]);
+    expect(useInteractionStore.getState().activeCardId).toBe("card-root");
+    expect(useAppStore.getState().mode).toBe("navigation");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("returns to the parent after Backspace deletes an empty child card", async () => {
+    const snapshot = {
+      ...makeDocumentSnapshot(),
+      contents: [
+        {
+          cardId: "card-root",
+          contentJson: contentJsonForPlainText("Parent"),
+        },
+        {
+          cardId: "card-a",
+          contentJson: contentJsonForPlainText("Existing child"),
+        },
+        {
+          cardId: "card-b",
+          contentJson: '{"type":"doc","content":[{"type":"paragraph"}]}',
+        },
+      ],
+    };
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    useDocumentStore.getState().hydrateSnapshot(snapshot);
+    useAppStore.setState({
+      activeDocument: snapshot.summary,
+      mode: "editing",
+      notice: null,
+      screen: "workspace",
+    });
+    useInteractionStore.setState({
+      activeCardId: "card-b",
+    });
+    loadCurrentDocumentSnapshot.mockResolvedValue(snapshot);
+
+    await act(async () => {
+      root.render(<DocumentWorkspace document={snapshot.summary} />);
+    });
+
+    const deleteButton = container.querySelector(
+      '[data-testid="card-editor-delete-empty"]',
+    ) as HTMLButtonElement | null;
+
+    await act(async () => {
+      deleteButton?.click();
+    });
+
+    const nextSnapshot = useDocumentStore.getState().snapshot;
+
+    expect(nextSnapshot?.cards.map((card) => card.id)).toEqual([
+      "card-root",
+      "card-a",
+    ]);
+    expect(useInteractionStore.getState().activeCardId).toBe("card-root");
+    expect(useAppStore.getState().mode).toBe("editing");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("returns to the parent after Escape deletes an empty child card", async () => {
+    const snapshot = {
+      ...makeDocumentSnapshot(),
+      contents: [
+        {
+          cardId: "card-root",
+          contentJson: contentJsonForPlainText("Parent"),
+        },
+        {
+          cardId: "card-a",
+          contentJson: contentJsonForPlainText("Existing child"),
+        },
+        {
+          cardId: "card-b",
+          contentJson: '{"type":"doc","content":[{"type":"paragraph"}]}',
+        },
+      ],
+    };
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    useDocumentStore.getState().hydrateSnapshot(snapshot);
+    useAppStore.setState({
+      activeDocument: snapshot.summary,
+      mode: "editing",
+      notice: null,
+      screen: "workspace",
+    });
+    useInteractionStore.setState({
+      activeCardId: "card-b",
+    });
+    loadCurrentDocumentSnapshot.mockResolvedValue(snapshot);
+
+    await act(async () => {
+      root.render(<DocumentWorkspace document={snapshot.summary} />);
+    });
+
+    await act(async () => {
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          bubbles: true,
+          key: "Escape",
+        }),
+      );
+    });
+
+    const nextSnapshot = useDocumentStore.getState().snapshot;
+
+    expect(nextSnapshot?.cards.map((card) => card.id)).toEqual([
+      "card-root",
+      "card-a",
+    ]);
+    expect(useInteractionStore.getState().activeCardId).toBe("card-root");
+    expect(useAppStore.getState().mode).toBe("navigation");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("deletes an empty root-level card before ArrowUp moves editing to the previous root card", async () => {
+    const snapshot = {
+      ...makeDocumentSnapshot(),
+      cards: [
+        {
+          documentId: "doc-1",
+          id: "card-root",
+          orderIndex: 0,
+          parentId: null,
+          type: "card" as const,
+        },
+        {
+          documentId: "doc-1",
+          id: "card-root-2",
+          orderIndex: 1,
+          parentId: null,
+          type: "card" as const,
+        },
+      ],
+      contents: [
+        {
+          cardId: "card-root",
+          contentJson: contentJsonForPlainText("Hello World"),
+        },
+        {
+          cardId: "card-root-2",
+          contentJson: '{"type":"doc","content":[{"type":"paragraph"}]}',
+        },
+      ],
+    };
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    useDocumentStore.getState().hydrateSnapshot(snapshot);
+    useAppStore.setState({
+      activeDocument: snapshot.summary,
+      mode: "editing",
+      notice: null,
+      screen: "workspace",
+    });
+    useInteractionStore.setState({
+      activeCardId: "card-root-2",
+    });
+    loadCurrentDocumentSnapshot.mockResolvedValue(snapshot);
+
+    await act(async () => {
+      root.render(<DocumentWorkspace document={snapshot.summary} />);
+    });
+
+    const navigateAboveButton = container.querySelector(
+      '[data-testid="card-editor-navigate-above"]',
+    ) as HTMLButtonElement | null;
+
+    await act(async () => {
+      navigateAboveButton?.click();
+    });
+
+    const nextSnapshot = useDocumentStore.getState().snapshot;
+
+    expect(nextSnapshot?.cards.map((card) => card.id)).toEqual(["card-root"]);
+    expect(useInteractionStore.getState().activeCardId).toBe("card-root");
+    expect(useAppStore.getState().mode).toBe("editing");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("keeps edit mode and places focus at the end after Tab+ArrowRight navigates to a child", async () => {
+    const snapshot = {
+      ...makeDocumentSnapshot(),
+      contents: [
+        {
+          cardId: "card-root",
+          contentJson: contentJsonForPlainText("Root"),
+        },
+        {
+          cardId: "card-a",
+          contentJson: contentJsonForPlainText("Child"),
+        },
+        {
+          cardId: "card-b",
+          contentJson: contentJsonForPlainText("Sibling"),
+        },
+      ],
+    };
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    useDocumentStore.getState().hydrateSnapshot(snapshot);
+    useAppStore.setState({
+      activeDocument: snapshot.summary,
+      mode: "editing",
+      notice: null,
+      screen: "workspace",
+    });
+    useInteractionStore.setState({
+      activeCardId: "card-root",
+    });
+    loadCurrentDocumentSnapshot.mockResolvedValue(snapshot);
+
+    await act(async () => {
+      root.render(<DocumentWorkspace document={snapshot.summary} />);
+    });
+
+    const navigateChildEndButton = container.querySelector(
+      '[data-testid="card-editor-navigate-child-end"]',
+    ) as HTMLButtonElement | null;
+
+    await act(async () => {
+      navigateChildEndButton?.click();
+    });
+
+    const editor = container.querySelector(
+      '[data-testid="card-editor"]',
+    ) as HTMLElement | null;
+
+    expect(useInteractionStore.getState().activeCardId).toBe("card-a");
+    expect(useAppStore.getState().mode).toBe("editing");
+    expect(editor?.dataset.focusPlacement).toBe("end");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("keeps the final remaining card and empties it when deleting in navigation mode", async () => {
+    const snapshot = {
+      ...makeDocumentSnapshot(),
+      cards: [
+        {
+          documentId: "doc-1",
+          id: "card-root",
+          orderIndex: 0,
+          parentId: null,
+          type: "card" as const,
+        },
+      ],
+      contents: [
+        {
+          cardId: "card-root",
+          contentJson: contentJsonForPlainText("Only card"),
+        },
+      ],
+    };
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    useDocumentStore.getState().hydrateSnapshot(snapshot);
+    useAppStore.setState({
+      activeDocument: snapshot.summary,
+      mode: "navigation",
+      notice: null,
+      screen: "workspace",
+    });
+    useInteractionStore.setState({
+      activeCardId: "card-root",
+    });
+    loadCurrentDocumentSnapshot.mockResolvedValue(snapshot);
+
+    await act(async () => {
+      root.render(<DocumentWorkspace document={snapshot.summary} />);
+    });
+
+    await act(async () => {
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          bubbles: true,
+          key: "Backspace",
+        }),
+      );
+    });
+
+    const nextSnapshot = useDocumentStore.getState().snapshot;
+
+    expect(nextSnapshot?.cards.map((card) => card.id)).toEqual(["card-root"]);
+    expect(
+      isContentEffectivelyEmpty(nextSnapshot?.contents[0]?.contentJson ?? ""),
+    ).toBe(true);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("uses Shift+Down to move a nested card into the next parent group in the same column", async () => {
     let snapshot = makeDocumentSnapshot();
     snapshot = replaceCardContent(snapshot, {
       cardId: "card-a",
       contentJson: contentJsonForPlainText("Act one"),
-      layerId: "layer-base",
     });
     snapshot = replaceCardContent(snapshot, {
       cardId: "card-b",
       contentJson: contentJsonForPlainText("Act two"),
-      layerId: "layer-base",
     });
     snapshot = {
       ...snapshot,
@@ -385,12 +783,10 @@ describe("DocumentWorkspace", () => {
         {
           cardId: "card-a-1",
           contentJson: contentJsonForPlainText("Beat one"),
-          layerId: "layer-base",
         },
         {
           cardId: "card-b-1",
           contentJson: contentJsonForPlainText("Beat two"),
-          layerId: "layer-base",
         },
       ),
     };
@@ -576,6 +972,45 @@ describe("DocumentWorkspace", () => {
     });
   });
 
+  it("shows an italic empty-card placeholder only after leaving editing empty", async () => {
+    const snapshot = makeDocumentSnapshot();
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    useDocumentStore.getState().hydrateSnapshot(snapshot);
+    useAppStore.setState({
+      activeDocument: snapshot.summary,
+      mode: "editing",
+      notice: null,
+      screen: "workspace",
+    });
+    useInteractionStore.setState({
+      activeCardId: "card-a",
+    });
+    loadCurrentDocumentSnapshot.mockResolvedValue(snapshot);
+
+    await act(async () => {
+      root.render(<DocumentWorkspace document={snapshot.summary} />);
+    });
+
+    let editor = container.querySelector('[data-testid="card-editor"]');
+
+    expect(editor?.getAttribute("data-placeholder")).toBe("");
+
+    await act(async () => {
+      useAppStore.setState({ mode: "navigation" });
+    });
+
+    editor = container.querySelector('[data-testid="card-editor"]');
+
+    expect(editor?.getAttribute("data-placeholder")).toBe("empty card");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it("uses Cmd+ArrowDown to create a sibling below and focus it in edit mode", async () => {
     let snapshot = makeDocumentSnapshot();
     const container = document.createElement("div");
@@ -585,7 +1020,6 @@ describe("DocumentWorkspace", () => {
     snapshot = replaceCardContent(snapshot, {
       cardId: "card-a",
       contentJson: contentJsonForPlainText("Scene"),
-      layerId: "layer-base",
     });
 
     useDocumentStore.getState().hydrateSnapshot(snapshot);
@@ -625,6 +1059,7 @@ describe("DocumentWorkspace", () => {
     expect(rootChildren?.[1]?.id).toBe(newCardId);
     expect(useAppStore.getState().mode).toBe("editing");
     expect(editor?.getAttribute("data-focus-placement")).toBe("end");
+    expect(editor?.getAttribute("data-placeholder")).toBe("");
 
     await act(async () => {
       root.unmount();
@@ -640,7 +1075,6 @@ describe("DocumentWorkspace", () => {
     snapshot = replaceCardContent(snapshot, {
       cardId: "card-b",
       contentJson: contentJsonForPlainText("Scene"),
-      layerId: "layer-base",
     });
     snapshot = {
       ...snapshot,
@@ -654,7 +1088,6 @@ describe("DocumentWorkspace", () => {
       contents: snapshot.contents.concat({
         cardId: "card-a-1",
         contentJson: contentJsonForPlainText("Beat"),
-        layerId: "layer-base",
       }),
     };
 

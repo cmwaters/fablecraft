@@ -94,7 +94,6 @@ describe("useExternalDocumentReload", () => {
         {
           cardId: "card-root",
           contentJson: "{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"External update\"}]}]}",
-          layerId: "layer-base",
         },
       ],
       revisions: [

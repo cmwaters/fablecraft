@@ -1,4 +1,4 @@
-import { createLayer } from "../src/domain/document/layers";
+import { contentJsonForPlainText, replaceCardContent } from "../src/domain/document/content";
 import {
   createDocumentHistoryState,
   recordDocumentHistory,
@@ -10,7 +10,10 @@ import { makeDocumentSnapshot } from "./documentSnapshotFactory";
 describe("document history", () => {
   it("records mode-specific history entries", () => {
     const initialSnapshot = makeDocumentSnapshot();
-    const nextSnapshot = createLayer(initialSnapshot, "layer-red", "Plot");
+    const nextSnapshot = replaceCardContent(initialSnapshot, {
+      cardId: "card-a",
+      contentJson: contentJsonForPlainText("Navigation edit"),
+    });
 
     const history = recordDocumentHistory(
       createDocumentHistoryState(initialSnapshot),
@@ -20,13 +23,19 @@ describe("document history", () => {
 
     expect(history.past.navigation).toHaveLength(1);
     expect(history.past.editing).toHaveLength(0);
-    expect(history.present.layers).toHaveLength(2);
+    expect(history.present.contents.find((content) => content.cardId === "card-a")?.contentJson).toContain("Navigation edit");
   });
 
   it("undos within the active mode without touching the other stack", () => {
     const initialSnapshot = makeDocumentSnapshot();
-    const afterNavigation = createLayer(initialSnapshot, "layer-red", "Plot");
-    const afterEditing = createLayer(afterNavigation, "layer-blue", "Theme");
+    const afterNavigation = replaceCardContent(initialSnapshot, {
+      cardId: "card-a",
+      contentJson: contentJsonForPlainText("Navigation edit"),
+    });
+    const afterEditing = replaceCardContent(afterNavigation, {
+      cardId: "card-b",
+      contentJson: contentJsonForPlainText("Editing edit"),
+    });
 
     const historyAfterNavigation = recordDocumentHistory(
       createDocumentHistoryState(initialSnapshot),
@@ -40,15 +49,21 @@ describe("document history", () => {
     );
     const undoneHistory = undoDocumentHistory(historyAfterEditing, "editing");
 
-    expect(undoneHistory.present.layers).toHaveLength(2);
+    expect(undoneHistory.present.contents.find((content) => content.cardId === "card-b")?.contentJson).not.toContain("Editing edit");
     expect(undoneHistory.future.editing).toHaveLength(1);
     expect(undoneHistory.past.navigation).toHaveLength(1);
   });
 
   it("redos within the active mode after an undo", () => {
     const initialSnapshot = makeDocumentSnapshot();
-    const afterNavigation = createLayer(initialSnapshot, "layer-red", "Plot");
-    const afterEditing = createLayer(afterNavigation, "layer-blue", "Theme");
+    const afterNavigation = replaceCardContent(initialSnapshot, {
+      cardId: "card-a",
+      contentJson: contentJsonForPlainText("Navigation edit"),
+    });
+    const afterEditing = replaceCardContent(afterNavigation, {
+      cardId: "card-b",
+      contentJson: contentJsonForPlainText("Editing edit"),
+    });
 
     const historyAfterNavigation = recordDocumentHistory(
       createDocumentHistoryState(initialSnapshot),
@@ -63,7 +78,7 @@ describe("document history", () => {
     const undoneHistory = undoDocumentHistory(historyAfterEditing, "editing");
     const redoneHistory = redoDocumentHistory(undoneHistory, "editing");
 
-    expect(redoneHistory.present.layers).toHaveLength(3);
+    expect(redoneHistory.present.contents.find((content) => content.cardId === "card-b")?.contentJson).toContain("Editing edit");
     expect(redoneHistory.future.editing).toHaveLength(0);
     expect(redoneHistory.past.editing).toHaveLength(1);
   });

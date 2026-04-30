@@ -26,7 +26,7 @@ interface DocumentState {
   hydrateSnapshot: (snapshot: DocumentSnapshot) => void;
   lastSavedAtMs: number | null;
   markSaveError: (message: string) => void;
-  markSaved: (result: SaveDocumentResult) => void;
+  markSaved: (result: SaveDocumentResult, documentId?: string) => void;
   markSaving: () => void;
   navigationFuture: DocumentSnapshot[];
   navigationPast: DocumentSnapshot[];
@@ -148,33 +148,43 @@ export const useDocumentStore = create<DocumentState>((set) => ({
       errorMessage: message,
       saveState: "error",
     }),
-  markSaved: (result) =>
-    set((state) => ({
-      dirty: false,
-      errorMessage: null,
-      lastSavedAtMs: result.savedAtMs,
-      saveState: "saved",
-      snapshot: state.snapshot
-        ? {
-            ...state.snapshot,
-            revisions: [
-              {
-                createdAtMs: result.savedAtMs,
-                id: result.revisionId,
-                snapshot: serializeDocumentSnapshot(state.snapshot),
+  markSaved: (result, documentId) =>
+    set((state) => {
+      if (
+        documentId &&
+        state.snapshot &&
+        state.snapshot.summary.documentId !== documentId
+      ) {
+        return state;
+      }
+
+      return {
+        dirty: false,
+        errorMessage: null,
+        lastSavedAtMs: result.savedAtMs,
+        saveState: "saved",
+        snapshot: state.snapshot
+          ? {
+              ...state.snapshot,
+              revisions: [
+                {
+                  createdAtMs: result.savedAtMs,
+                  id: result.revisionId,
+                  snapshot: serializeDocumentSnapshot(state.snapshot),
+                },
+                ...state.snapshot.revisions.filter(
+                  (revision) => revision.id !== result.revisionId,
+                ),
+              ].slice(0, 20),
+              summary: {
+                ...state.snapshot.summary,
+                fileModifiedAtMs: result.savedAtMs,
+                updatedAtMs: result.savedAtMs,
               },
-              ...state.snapshot.revisions.filter(
-                (revision) => revision.id !== result.revisionId,
-              ),
-            ].slice(0, 20),
-            summary: {
-              ...state.snapshot.summary,
-              fileModifiedAtMs: result.savedAtMs,
-              updatedAtMs: result.savedAtMs,
-            },
-          }
-        : null,
-    })),
+            }
+          : null,
+      };
+    }),
   markSaving: () =>
     set({
       saveState: "saving",

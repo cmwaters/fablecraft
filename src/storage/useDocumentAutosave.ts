@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { toEditableDocumentSnapshot } from "../domain/document/serialization";
-import { saveCurrentDocumentSnapshot } from "./documentSnapshots";
+import { saveDocumentSnapshotAtPath } from "./documentSnapshots";
 import { useDocumentStore } from "../state/documentStore";
 
 export function useDocumentAutosave() {
@@ -18,10 +18,11 @@ export function useDocumentAutosave() {
     const timeoutId = window.setTimeout(async () => {
       try {
         markSaving();
-        const result = await saveCurrentDocumentSnapshot(
+        const result = await saveDocumentSnapshotAtPath(
+          snapshot.summary.path,
           toEditableDocumentSnapshot(snapshot),
         );
-        markSaved(result);
+        markSaved(result, snapshot.summary.documentId);
       } catch (error) {
         markSaveError(
           error instanceof Error ? error.message : "Autosave failed unexpectedly.",

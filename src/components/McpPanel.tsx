@@ -6,7 +6,6 @@ import type { McpToolDefinition, McpToolScope } from "../types/mcp";
 
 interface McpPanelProps {
   activeCardId: string | null;
-  activeLayerId: string | null;
   onApplySnapshot: (snapshot: DocumentSnapshot) => void;
   onClose: () => void;
 }
@@ -17,7 +16,6 @@ function defaultArguments(tool: McpToolDefinition | null) {
 
 export function McpPanel({
   activeCardId,
-  activeLayerId,
   onApplySnapshot,
   onClose,
 }: McpPanelProps) {
@@ -93,16 +91,6 @@ export function McpPanel({
       return;
     }
 
-    if (selectedTool.scope !== "document" && !activeCardId) {
-      setErrorMessage("Choose an active card before running a scoped MCP tool.");
-      return;
-    }
-
-    if (!activeLayerId) {
-      setErrorMessage("Choose an active layer before running MCP tools.");
-      return;
-    }
-
     setRunning(true);
     setErrorMessage(null);
 
@@ -110,7 +98,6 @@ export function McpPanel({
       const response = await invokeMcpTool({
         argumentsJson,
         cardId: activeCardId,
-        layerId: activeLayerId,
         scope,
         toolName: selectedTool.name,
       });
@@ -179,7 +166,7 @@ export function McpPanel({
           </div>
 
           <p className="text-sm text-[var(--fc-color-muted)]">
-            Active tools run against the selected layer.
+            Tools use the same argument payload as external MCP clients.
           </p>
         </div>
 

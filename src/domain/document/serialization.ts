@@ -1,4 +1,4 @@
-import type { CardContentRecord, CardRecord, DocumentSnapshot, EditableDocumentSnapshot, LayerRecord, RevisionRecord } from "./types";
+import type { CardContentRecord, CardRecord, DocumentSnapshot, EditableDocumentSnapshot, RevisionRecord } from "./types";
 
 function compareNullableStrings(left: string | null, right: string | null) {
   if (left === right) {
@@ -14,10 +14,6 @@ function compareNullableStrings(left: string | null, right: string | null) {
   }
 
   return left.localeCompare(right);
-}
-
-function normalizeLayers(layers: LayerRecord[]) {
-  return [...layers].sort((left, right) => left.layerIndex - right.layerIndex || left.id.localeCompare(right.id));
 }
 
 function normalizeCards(cards: CardRecord[]) {
@@ -37,13 +33,7 @@ function normalizeCards(cards: CardRecord[]) {
 }
 
 function normalizeContents(contents: CardContentRecord[]) {
-  return [...contents].sort((left, right) => {
-    if (left.layerId !== right.layerId) {
-      return left.layerId.localeCompare(right.layerId);
-    }
-
-    return left.cardId.localeCompare(right.cardId);
-  });
+  return [...contents].sort((left, right) => left.cardId.localeCompare(right.cardId));
 }
 
 function normalizeRevisions(revisions: RevisionRecord[]) {
@@ -57,7 +47,6 @@ export function normalizeEditableDocumentSnapshot(
     cards: normalizeCards(snapshot.cards),
     contents: normalizeContents(snapshot.contents),
     documentId: snapshot.documentId,
-    layers: normalizeLayers(snapshot.layers),
   };
 }
 
@@ -65,7 +54,6 @@ export function normalizeDocumentSnapshot(snapshot: DocumentSnapshot): DocumentS
   return {
     cards: normalizeCards(snapshot.cards),
     contents: normalizeContents(snapshot.contents),
-    layers: normalizeLayers(snapshot.layers),
     revisions: normalizeRevisions(snapshot.revisions),
     summary: snapshot.summary,
   };
@@ -87,7 +75,6 @@ export function toEditableDocumentSnapshot(
     cards: snapshot.cards,
     contents: snapshot.contents,
     documentId: snapshot.summary.documentId,
-    layers: snapshot.layers,
   });
 }
 
@@ -107,7 +94,6 @@ export function serializeComparableDocumentSnapshot(snapshot: DocumentSnapshot) 
   return JSON.stringify({
     cards: normalizedSnapshot.cards,
     contents: normalizedSnapshot.contents,
-    layers: normalizedSnapshot.layers,
     summary: comparableDocumentSummary(normalizedSnapshot),
   });
 }

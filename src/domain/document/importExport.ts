@@ -534,7 +534,6 @@ export function contentJsonToHtml(contentJson: string) {
 
 export function exportLevel(
   snapshot: DocumentSnapshot,
-  layerId: string,
   depth: number,
   format: ExportFormat,
 ) {
@@ -542,7 +541,7 @@ export function exportLevel(
   const cardsAtDepth = treeOrderedCardsAtDepth(snapshot, depthByCardId, depth)
     .map((cardId) => ({
       cardId,
-      contentJson: cardContent(snapshot, cardId, layerId),
+      contentJson: cardContent(snapshot, cardId),
     }))
     .filter((card) => !isContentEffectivelyEmpty(card.contentJson));
 
@@ -565,11 +564,10 @@ export function exportLevel(
 
 export function exportCurrentLevel(
   snapshot: DocumentSnapshot,
-  layerId: string,
   activeCardId: string,
   format: ExportFormat,
 ) {
   const depthByCardId = cardDepths(snapshot);
   const depth = depthByCardId.get(activeCardId) ?? 0;
-  return exportLevel(snapshot, layerId, depth, format);
+  return exportLevel(snapshot, depth, format);
 }

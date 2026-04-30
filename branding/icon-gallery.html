@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Fablecraft — icon explorations</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <style>
+    :root {
+      --ink: #171412;
+      --app: #fdf6ef;
+      --surface: #fdf6ef;
+      --muted: #756c64;
+    }
+    html, body {
+      margin: 0;
+      background: var(--app);
+      color: var(--ink);
+      font-family: ui-serif, 'Iowan Old Style', 'Source Serif Pro', Georgia, serif;
+    }
+    header {
+      padding: 64px 48px 24px;
+      max-width: 1100px;
+    }
+    header h1 {
+      font-size: 32px;
+      margin: 0 0 8px;
+      letter-spacing: -0.01em;
+    }
+    header p {
+      font-size: 16px;
+      color: var(--muted);
+      margin: 0;
+      max-width: 60ch;
+      line-height: 1.55;
+    }
+    main {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 32px;
+      padding: 24px 48px 64px;
+      max-width: 1100px;
+    }
+    .card {
+      margin: 0;
+      border: 1px solid rgba(23,20,18,0.12);
+      background: #fffaf6;
+    }
+    .frame {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .frame.light { background: var(--app); }
+    .frame.dark  { background: #171412; border-top: 1px solid rgba(23,20,18,0.12); }
+    .frame.dark img { filter: invert(1); }
+    .frame img { width: 180px; height: 180px; }
+    figcaption { padding: 16px 20px 20px; }
+    figcaption h3 { font-size: 16px; margin: 0 0 4px; letter-spacing: 0.01em; }
+    figcaption p { font-size: 14px; color: var(--muted); margin: 0; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Fablecraft — icon explorations</h1>
+    <p>Six takes on a minimal, tree-forward mark. Colours taken from the desktop
+       app's tokens — ink <code>#171412</code> on off-white <code>#fdf6ef</code>.
+       Each mark is shown on both the app surface and on its inverted dark variant.</p>
+  </header>
+  <main>
+      <figure class="card">
+        <div class="frame light"><img src="icons/01-heritage.svg" alt="A. Heritage"/></div>
+        <div class="frame dark"><img src="icons/01-heritage.svg" alt="A. Heritage on dark"/></div>
+        <figcaption>
+          <h3>A. Heritage</h3>
+          <p>Full homage — tree, seven stars, crown. Closest to the Minas Tirith reference.</p>
+        </figcaption>
+      </figure>
+      <figure class="card">
+        <div class="frame light"><img src="icons/02-pure.svg" alt="B. Pure Mark (roots)"/></div>
+        <div class="frame dark"><img src="icons/02-pure.svg" alt="B. Pure Mark (roots) on dark"/></div>
+        <figcaption>
+          <h3>B. Pure Mark (roots)</h3>
+          <p>Symmetric tree with roots. Scales tightly to favicon sizes.</p>
+        </figcaption>
+      </figure>
+      <figure class="card">
+        <div class="frame light"><img src="icons/03-book.svg" alt="C. Book & Tree"/></div>
+        <div class="frame dark"><img src="icons/03-book.svg" alt="C. Book & Tree on dark"/></div>
+        <figcaption>
+          <h3>C. Book & Tree</h3>
+          <p>Tree rises from an open book. Makes the 'writing a fable' meaning unambiguous.</p>
+        </figcaption>
+      </figure>
+      <figure class="card">
+        <div class="frame light"><img src="icons/04-quill.svg" alt="D. Quill Tree"/></div>
+        <div class="frame dark"><img src="icons/04-quill.svg" alt="D. Quill Tree on dark"/></div>
+        <figcaption>
+          <h3>D. Quill Tree</h3>
+          <p>Trunk fused with a quill. Writing as the generative act of the tree.</p>
+        </figcaption>
+      </figure>
+      <figure class="card">
+        <div class="frame light"><img src="icons/05-nodes.svg" alt="E. Hierarchy"/></div>
+        <div class="frame dark"><img src="icons/05-nodes.svg" alt="E. Hierarchy on dark"/></div>
+        <figcaption>
+          <h3>E. Hierarchy</h3>
+          <p>Every branch joint is a node. Speaks to 'hierarchical editor for structured thought.'</p>
+        </figcaption>
+      </figure>
+      <figure class="card">
+        <div class="frame light"><img src="icons/06-linework.svg" alt="F. Linework"/></div>
+        <div class="frame dark"><img src="icons/06-linework.svg" alt="F. Linework on dark"/></div>
+        <figcaption>
+          <h3>F. Linework</h3>
+          <p>Thin-stroke variant. Works as an outline icon in dense chrome.</p>
+        </figcaption>
+      </figure>
+      <figure class="card">
+        <div class="frame light"><img src="icons/pure-roots.svg" alt="Pure — roots"/></div>
+        <div class="frame dark"><img src="icons/pure-roots.svg" alt="Pure — roots on dark"/></div>
+        <figcaption>
+          <h3>Pure — roots</h3>
+          <p>Symmetric silhouette, roots floating below the trunk.</p>
+        </figcaption>
+      </figure>
+      <figure class="card">
+        <div class="frame light"><img src="icons/pure-ground.svg" alt="Pure — ground"/></div>
+        <div class="frame dark"><img src="icons/pure-ground.svg" alt="Pure — ground on dark"/></div>
+        <figcaption>
+          <h3>Pure — ground</h3>
+          <p>Symmetric silhouette rooted on a ground line. No visible roots.</p>
+        </figcaption>
+      </figure>
+      <figure class="card">
+        <div class="frame light"><img src="icons/pure-ground-roots.svg" alt="Pure — ground + roots"/></div>
+        <div class="frame dark"><img src="icons/pure-ground-roots.svg" alt="Pure — ground + roots on dark"/></div>
+        <figcaption>
+          <h3>Pure — ground + roots</h3>
+          <p>Symmetric silhouette with a ground line and roots descending into the earth.</p>
+        </figcaption>
+      </figure>
+      <figure class="card">
+        <div class="frame light"><img src="icons/pure-whimsy.svg" alt="Pure — whimsy"/></div>
+        <div class="frame dark"><img src="icons/pure-whimsy.svg" alt="Pure — whimsy on dark"/></div>
+        <figcaption>
+          <h3>Pure — whimsy</h3>
+          <p>Single trunk running the full height with curved branches springing from it. Flared base, no roots, no ground.</p>
+        </figcaption>
+      </figure></main>
+</body>
+</html>

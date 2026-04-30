@@ -1,7 +1,6 @@
 export interface DocumentSummary {
   documentId: string;
   fileModifiedAtMs?: number;
-  layerCount: number;
   name: string;
   openedAtMs: number;
   path: string;

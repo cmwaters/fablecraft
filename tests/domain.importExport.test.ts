@@ -47,25 +47,21 @@ describe("document import/export", () => {
     snapshot = replaceCardContent(snapshot, {
       cardId: "card-a",
       contentJson: markdownToContentJson("Act 1"),
-      layerId: "layer-base",
     });
     snapshot = replaceCardContent(snapshot, {
       cardId: "card-b",
       contentJson: markdownToContentJson("Act 2"),
-      layerId: "layer-base",
     });
     snapshot = replaceCardContent(snapshot, {
       cardId: "card-a-1",
       contentJson: markdownToContentJson("## Act 1"),
-      layerId: "layer-base",
     });
     snapshot = replaceCardContent(snapshot, {
       cardId: "card-b-1",
       contentJson: markdownToContentJson("- Ending beat"),
-      layerId: "layer-base",
     });
 
-    expect(exportCurrentLevel(snapshot, "layer-base", "card-b", "markdown")).toEqual({
+    expect(exportCurrentLevel(snapshot, "card-b", "markdown")).toEqual({
       cardCount: 2,
       content: "Act 1\n\n---\n\nAct 2",
       depth: 1,

@@ -13,7 +13,6 @@ export interface McpToolDefinition {
 export interface McpToolRequest {
   argumentsJson?: string | null;
   cardId?: string | null;
-  layerId?: string | null;
   scope: McpToolScope;
   toolName: string;
 }

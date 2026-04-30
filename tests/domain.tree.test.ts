@@ -16,7 +16,7 @@ describe("document tree operations", () => {
     expect(
       nextSnapshot.contents.find(
         (content) =>
-          content.cardId === "card-c" && content.layerId === "layer-base",
+          content.cardId === "card-c",
       )?.contentJson,
     ).toBe(EMPTY_EDITOR_DOCUMENT_JSON);
   });
@@ -32,7 +32,7 @@ describe("document tree operations", () => {
     expect(children.map((card) => card.id)).toEqual(["card-a", "card-c", "card-b"]);
   });
 
-  it("creates a child card with base-layer content", () => {
+  it("creates a child card with card content", () => {
     const snapshot = makeDocumentSnapshot();
 
     const nextSnapshot = createChildCard(snapshot, "card-a", "card-a-1");
@@ -41,7 +41,7 @@ describe("document tree operations", () => {
     expect(
       nextSnapshot.contents.some(
         (content) =>
-          content.cardId === "card-a-1" && content.layerId === "layer-base",
+          content.cardId === "card-a-1",
       ),
     ).toBe(true);
   });
@@ -68,6 +68,37 @@ describe("document tree operations", () => {
       .sort((left, right) => left.orderIndex - right.orderIndex);
 
     expect(children.map((card) => card.id)).toEqual(["card-b", "card-a"]);
+  });
+
+  it("moves a root card within the root sibling group", () => {
+    const snapshot = makeDocumentSnapshot();
+    const rootSibling = {
+      documentId: "doc-1",
+      id: "card-root-2",
+      orderIndex: 1,
+      parentId: null,
+      type: "card" as const,
+    };
+    const nextSnapshot = moveCardWithinParent(
+      {
+        ...snapshot,
+        cards: snapshot.cards.concat(rootSibling),
+        contents: snapshot.contents.concat({
+          cardId: rootSibling.id,
+          contentJson: EMPTY_EDITOR_DOCUMENT_JSON,
+        }),
+      },
+      "card-root-2",
+      -1,
+    );
+    const roots = nextSnapshot.cards
+      .filter((card) => card.parentId === null)
+      .sort((left, right) => left.orderIndex - right.orderIndex);
+
+    expect(roots.map((card) => [card.id, card.orderIndex])).toEqual([
+      ["card-root-2", 0],
+      ["card-root", 1],
+    ]);
   });
 
   it("moves a card into the previous parent group when moving up across a column boundary", () => {
@@ -171,7 +202,7 @@ describe("document tree operations", () => {
       .filter((card) => card.parentId === "card-b")
       .sort((left, right) => left.orderIndex - right.orderIndex);
     const mergedContent = nextSnapshot.contents.find(
-      (content) => content.cardId === "card-b" && content.layerId === "layer-base",
+      (content) => content.cardId === "card-b",
     )?.contentJson;
 
     expect(rootChildren.map((card) => [card.id, card.orderIndex])).toEqual([["card-b", 0]]);
@@ -204,7 +235,7 @@ describe("document tree operations", () => {
       .filter((card) => card.parentId === "card-root")
       .sort((left, right) => left.orderIndex - right.orderIndex);
     const mergedContent = nextSnapshot.contents.find(
-      (content) => content.cardId === "card-a" && content.layerId === "layer-base",
+      (content) => content.cardId === "card-a",
     )?.contentJson;
 
     expect(rootChildren.map((card) => [card.id, card.orderIndex])).toEqual([["card-a", 0]]);
@@ -227,7 +258,7 @@ describe("document tree operations", () => {
     expect(
       nextSnapshot.contents.find(
         (content) =>
-          content.cardId === "card-parent" && content.layerId === "layer-base",
+          content.cardId === "card-parent",
       )?.contentJson,
     ).toBe(EMPTY_EDITOR_DOCUMENT_JSON);
   });

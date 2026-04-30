@@ -5,15 +5,16 @@ use fablecraft_lib::mcp::{invoke_mcp_tool_for_path, McpToolRequest};
 use serde_json::{json, Map, Value};
 
 const TOOL_GET_DOCUMENT: &str = "fablecraft_get_document";
-const TOOL_LIST_LAYERS: &str = "fablecraft_list_layers";
 const TOOL_GET_CARD: &str = "fablecraft_get_card";
 const TOOL_GET_SUBTREE: &str = "fablecraft_get_subtree";
 const TOOL_SET_CARD_TEXT: &str = "fablecraft_set_card_text";
-const TOOL_RENAME_LAYER: &str = "fablecraft_rename_layer";
 const TOOL_CREATE_CHILD: &str = "fablecraft_create_child";
 const TOOL_CREATE_SIBLING_AFTER: &str = "fablecraft_create_sibling_after";
 const TOOL_WRAP_LEVEL_IN_PARENT: &str = "fablecraft_wrap_level_in_parent";
 const TOOL_DELETE_CARD: &str = "fablecraft_delete_card";
+const TOOL_GET_OPEN_DOCUMENTS: &str = "fablecraft_get_open_documents";
+const TOOL_CREATE_SIBLING_BEFORE: &str = "fablecraft_create_sibling_before";
+const TOOL_MOVE_CARD: &str = "fablecraft_move_card";
 
 fn main() {
     let stdin = io::stdin();
@@ -115,15 +116,23 @@ fn handle_tool_call(id: Value, params: Value) -> Value {
         return jsonrpc_error(id, -32602, "Tool calls require a tool name.".to_string());
     };
     let Some(arguments) = params.get("arguments").and_then(Value::as_object) else {
-        return jsonrpc_error(id, -32602, "Tool calls require an arguments object.".to_string());
+        return jsonrpc_error(
+            id,
+            -32602,
+            "Tool calls require an arguments object.".to_string(),
+        );
     };
 
     let mut arguments = arguments.clone();
-    let document_path = match extract_required_string(&mut arguments, "documentPath") {
-        Ok(path) => PathBuf::from(path),
-        Err(error) => return jsonrpc_error(id, -32602, error),
+    let document_path = if name == TOOL_GET_OPEN_DOCUMENTS {
+        PathBuf::new()
+    } else {
+        match extract_required_string(&mut arguments, "documentPath") {
+            Ok(path) => PathBuf::from(path),
+            Err(error) => return jsonrpc_error(id, -32602, error),
+        }
     };
-    let (scope, card_id, layer_id) = match scoped_request_fields(name, &mut arguments) {
+    let (scope, card_id) = match scoped_request_fields(name, &mut arguments) {
         Ok(values) => values,
         Err(error) => return jsonrpc_error(id, -32602, error),
     };
@@ -131,7 +140,6 @@ fn handle_tool_call(id: Value, params: Value) -> Value {
     let request = McpToolRequest {
         arguments_json: Some(Value::Object(arguments).to_string()),
         card_id,
-        layer_id,
         scope: scope.to_string(),
         tool_name: name.to_string(),
     };
@@ -177,38 +185,33 @@ fn handle_tool_call(id: Value, params: Value) -> Value {
 fn scoped_request_fields(
     name: &str,
     arguments: &mut Map<String, Value>,
-) -> Result<(&'static str, Option<String>, Option<String>), String> {
+) -> Result<(&'static str, Option<String>), String> {
     match name {
-        TOOL_GET_DOCUMENT | TOOL_LIST_LAYERS => Ok(("document", None, None)),
-        TOOL_RENAME_LAYER => Ok((
-            "document",
-            None,
-            Some(extract_required_string(arguments, "layerId")?),
-        )),
+        TOOL_GET_OPEN_DOCUMENTS | TOOL_GET_DOCUMENT => Ok(("document", None)),
         TOOL_GET_CARD | TOOL_SET_CARD_TEXT => Ok((
             "card",
             Some(extract_required_string(arguments, "cardId")?),
-            Some(extract_required_string(arguments, "layerId")?),
         )),
         TOOL_GET_SUBTREE => Ok((
             "subtree",
             Some(extract_required_string(arguments, "cardId")?),
-            Some(extract_required_string(arguments, "layerId")?),
         )),
         TOOL_CREATE_CHILD => Ok((
             "card",
             Some(extract_required_string(arguments, "parentCardId")?),
-            None,
         )),
-        TOOL_CREATE_SIBLING_AFTER => Ok((
+        TOOL_CREATE_SIBLING_BEFORE | TOOL_CREATE_SIBLING_AFTER => Ok((
             "card",
             Some(extract_required_string(arguments, "siblingCardId")?),
-            None,
         )),
-        TOOL_WRAP_LEVEL_IN_PARENT | TOOL_DELETE_CARD => Ok((
+        TOOL_MOVE_CARD => Ok((
             "card",
             Some(extract_required_string(arguments, "cardId")?),
-            None,
+        )),
+        TOOL_WRAP_LEVEL_IN_PARENT => Ok(("card", None)),
+        TOOL_DELETE_CARD => Ok((
+            "card",
+            Some(extract_required_string(arguments, "cardId")?),
         )),
         _ => Err(format!("Tool \"{name}\" is not registered.")),
     }
@@ -228,75 +231,62 @@ fn extract_required_string(
 fn tool_definitions() -> Vec<Value> {
     vec![
         tool(
+            TOOL_GET_OPEN_DOCUMENTS,
+            "List document paths currently advertised by running Fablecraft windows.",
+            object_schema(&[], &[]),
+        ),
+        tool(
             TOOL_GET_DOCUMENT,
             "Read document metadata and discover the root card id for a .fable document.",
             object_schema(
-                &[("documentPath", path_schema("Absolute path to a .fable document."))],
-                &["documentPath"],
-            ),
-        ),
-        tool(
-            TOOL_LIST_LAYERS,
-            "List the layers in a .fable document so you can choose a layer id.",
-            object_schema(
-                &[("documentPath", path_schema("Absolute path to a .fable document."))],
+                &[(
+                    "documentPath",
+                    path_schema("Absolute path to a .fable document."),
+                )],
                 &["documentPath"],
             ),
         ),
         tool(
             TOOL_GET_CARD,
-            "Read one card in a specific layer. Use this after discovering card and layer ids.",
+            "Read one card.",
             object_schema(
                 &[
-                    ("documentPath", path_schema("Absolute path to a .fable document.")),
-                    ("layerId", string_schema("Layer id to read from.")),
+                    (
+                        "documentPath",
+                        path_schema("Absolute path to a .fable document."),
+                    ),
                     ("cardId", string_schema("Card id to read.")),
                 ],
-                &["documentPath", "layerId", "cardId"],
+                &["documentPath", "cardId"],
             ),
         ),
         tool(
             TOOL_GET_SUBTREE,
-            "Read a card and all descendants in tree order for one layer.",
+            "Read a card and all descendants in tree order.",
             object_schema(
                 &[
-                    ("documentPath", path_schema("Absolute path to a .fable document.")),
-                    ("layerId", string_schema("Layer id to read from.")),
+                    (
+                        "documentPath",
+                        path_schema("Absolute path to a .fable document."),
+                    ),
                     ("cardId", string_schema("Root card id for the subtree.")),
                 ],
-                &["documentPath", "layerId", "cardId"],
+                &["documentPath", "cardId"],
             ),
         ),
         tool(
             TOOL_SET_CARD_TEXT,
-            "Replace the selected card's content with plain text in one layer.",
+            "Replace the selected card's content with plain text.",
             object_schema(
                 &[
-                    ("documentPath", path_schema("Absolute path to a .fable document.")),
-                    ("layerId", string_schema("Layer id to write into.")),
+                    (
+                        "documentPath",
+                        path_schema("Absolute path to a .fable document."),
+                    ),
                     ("cardId", string_schema("Card id to update.")),
                     ("text", string_schema("Plain text content for the card.")),
                 ],
-                &["documentPath", "layerId", "cardId", "text"],
-            ),
-        ),
-        tool(
-            TOOL_RENAME_LAYER,
-            "Rename a layer and optionally update its description.",
-            object_schema(
-                &[
-                    ("documentPath", path_schema("Absolute path to a .fable document.")),
-                    ("layerId", string_schema("Layer id to rename.")),
-                    ("name", string_schema("New layer name.")),
-                    (
-                        "description",
-                        json!({
-                            "type": "string",
-                            "description": "Optional layer description."
-                        }),
-                    ),
-                ],
-                &["documentPath", "layerId", "name"],
+                &["documentPath", "cardId", "text"],
             ),
         ),
         tool(
@@ -304,10 +294,27 @@ fn tool_definitions() -> Vec<Value> {
             "Create an empty child card beneath the given parent card.",
             object_schema(
                 &[
-                    ("documentPath", path_schema("Absolute path to a .fable document.")),
+                    (
+                        "documentPath",
+                        path_schema("Absolute path to a .fable document."),
+                    ),
                     ("parentCardId", string_schema("Parent card id.")),
                 ],
                 &["documentPath", "parentCardId"],
+            ),
+        ),
+        tool(
+            TOOL_CREATE_SIBLING_BEFORE,
+            "Create an empty sibling card immediately before the given sibling.",
+            object_schema(
+                &[
+                    (
+                        "documentPath",
+                        path_schema("Absolute path to a .fable document."),
+                    ),
+                    ("siblingCardId", string_schema("Existing sibling card id.")),
+                ],
+                &["documentPath", "siblingCardId"],
             ),
         ),
         tool(
@@ -315,21 +322,62 @@ fn tool_definitions() -> Vec<Value> {
             "Create an empty sibling card immediately after the given sibling.",
             object_schema(
                 &[
-                    ("documentPath", path_schema("Absolute path to a .fable document.")),
+                    (
+                        "documentPath",
+                        path_schema("Absolute path to a .fable document."),
+                    ),
                     ("siblingCardId", string_schema("Existing sibling card id.")),
                 ],
                 &["documentPath", "siblingCardId"],
             ),
         ),
         tool(
-            TOOL_WRAP_LEVEL_IN_PARENT,
-            "Create a new parent above the current sibling level, matching the app's wrap-level behavior.",
+            TOOL_MOVE_CARD,
+            "Move a card before or after another card, reparenting it when needed.",
             object_schema(
                 &[
-                    ("documentPath", path_schema("Absolute path to a .fable document.")),
-                    ("cardId", string_schema("Any card in the level to wrap.")),
+                    (
+                        "documentPath",
+                        path_schema("Absolute path to a .fable document."),
+                    ),
+                    ("cardId", string_schema("Card id to move.")),
+                    (
+                        "beforeCardId",
+                        json!({
+                            "type": "string",
+                            "description": "Optional target card id to move before. Mutually exclusive with afterCardId."
+                        }),
+                    ),
+                    (
+                        "afterCardId",
+                        json!({
+                            "type": "string",
+                            "description": "Optional target card id to move after. Mutually exclusive with beforeCardId."
+                        }),
+                    ),
                 ],
                 &["documentPath", "cardId"],
+            ),
+        ),
+        tool(
+            TOOL_WRAP_LEVEL_IN_PARENT,
+            "Create a new parent around a contiguous list of sibling cards.",
+            object_schema(
+                &[
+                    (
+                        "documentPath",
+                        path_schema("Absolute path to a .fable document."),
+                    ),
+                    (
+                        "cardIds",
+                        json!({
+                            "type": "array",
+                            "description": "Contiguous sibling card ids to wrap in their current order.",
+                            "items": { "type": "string" }
+                        }),
+                    ),
+                ],
+                &["documentPath", "cardIds"],
             ),
         ),
         tool(
@@ -337,7 +385,10 @@ fn tool_definitions() -> Vec<Value> {
             "Delete the card and its subtree. This cannot delete the last root card.",
             object_schema(
                 &[
-                    ("documentPath", path_schema("Absolute path to a .fable document.")),
+                    (
+                        "documentPath",
+                        path_schema("Absolute path to a .fable document."),
+                    ),
                     ("cardId", string_schema("Card id to delete.")),
                 ],
                 &["documentPath", "cardId"],
@@ -430,20 +481,24 @@ mod tests {
             .as_array()
             .expect("tools should be an array");
 
-        assert!(tools
-            .iter()
-            .any(|tool| tool["name"] == TOOL_GET_DOCUMENT));
+        assert!(tools.iter().any(|tool| tool["name"] == TOOL_GET_DOCUMENT));
         assert!(tools.iter().all(|tool| {
             tool["name"]
                 .as_str()
                 .map(|name| {
-                    name.chars()
-                        .all(|character| character.is_ascii_alphanumeric() || character == '_' || character == '-')
+                    name.chars().all(|character| {
+                        character.is_ascii_alphanumeric() || character == '_' || character == '-'
+                    })
                 })
                 .unwrap_or(false)
         }));
+        let get_document = tools
+            .iter()
+            .find(|tool| tool["name"] == TOOL_GET_DOCUMENT)
+            .expect("get document tool should exist");
+
         assert_eq!(
-            tools[0]["inputSchema"]["properties"]["documentPath"]["pattern"],
+            get_document["inputSchema"]["properties"]["documentPath"]["pattern"],
             ".*\\.fable$"
         );
     }
@@ -456,7 +511,6 @@ mod tests {
             McpToolRequest {
                 arguments_json: None,
                 card_id: None,
-                layer_id: None,
                 scope: "document".to_string(),
                 tool_name: TOOL_GET_DOCUMENT.to_string(),
             },

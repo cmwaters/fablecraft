@@ -4,7 +4,7 @@ import {
   promptForMarkdownImportTargetPath,
 } from "./documentActions";
 import { exportCurrentLevel, markdownToContentJson, type ExportFormat } from "../domain/document/importExport";
-import { primaryLayerId, replaceCardContent } from "../domain/document/content";
+import { replaceCardContent } from "../domain/document/content";
 import type { DocumentSnapshot } from "../domain/document/types";
 import { createDocumentAtPath } from "../storage/documents";
 import { loadCurrentDocumentSnapshot, saveCurrentDocumentSnapshot } from "../storage/documentSnapshots";
@@ -16,7 +16,6 @@ function editableSnapshot(snapshot: DocumentSnapshot) {
     cards: snapshot.cards,
     contents: snapshot.contents,
     documentId: snapshot.summary.documentId,
-    layers: snapshot.layers,
   };
 }
 
@@ -41,16 +40,14 @@ export async function importMarkdownDocument(): Promise<DocumentSummary | null> 
   const document = await createDocumentAtPath(targetPath);
   const snapshot = await loadCurrentDocumentSnapshot();
   const nextRootCardId = rootCardId(snapshot);
-  const nextBaseLayerId = primaryLayerId(snapshot);
 
-  if (!nextRootCardId || !nextBaseLayerId) {
-    throw new Error("Imported documents require a root card and base layer.");
+  if (!nextRootCardId) {
+    throw new Error("Imported documents require a root card.");
   }
 
   const nextSnapshot = replaceCardContent(snapshot, {
     cardId: nextRootCardId,
     contentJson: markdownToContentJson(markdown),
-    layerId: nextBaseLayerId,
   });
 
   await saveCurrentDocumentSnapshot(editableSnapshot(nextSnapshot));
@@ -64,13 +61,7 @@ export async function exportCurrentLevelToFile(
   documentName: string,
   format: ExportFormat,
 ) {
-  const layerId = primaryLayerId(snapshot);
-
-  if (!layerId) {
-    throw new Error("Export requires a document content layer.");
-  }
-
-  const exportedLevel = exportCurrentLevel(snapshot, layerId, activeCardId, format);
+  const exportedLevel = exportCurrentLevel(snapshot, activeCardId, format);
   const targetPath = await promptForExportPath(documentName, format);
 
   if (!targetPath) {

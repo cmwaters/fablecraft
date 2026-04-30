@@ -4,7 +4,6 @@ import type { DocumentSummary, FablecraftError } from "../types/document";
 
 const documentSummarySchema = z.object({
   documentId: z.string().min(1),
-  layerCount: z.number().int().nonnegative(),
   name: z.string().min(1),
   openedAtMs: z.number().int().nonnegative(),
   path: z.string().min(1),
@@ -52,4 +51,3 @@ export function createDocumentAtPath(path: string) {
 export function openDocumentAtPath(path: string) {
   return invokeDocumentCommand("open_document", path);
 }
-

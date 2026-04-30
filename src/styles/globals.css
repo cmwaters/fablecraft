@@ -137,6 +137,10 @@ code {
   pointer-events: none;
 }
 
+.fc-editor .is-editor-empty[data-placeholder="empty card"]:first-child::before {
+  font-style: italic;
+}
+
 .fc-no-scrollbar {
   scrollbar-width: none;
 }

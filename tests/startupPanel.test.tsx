@@ -62,7 +62,6 @@ describe("StartupPanel", () => {
 
     promptForNewDocument.mockResolvedValue({
       documentId: "doc-1",
-      layerCount: 1,
       name: "Story",
       openedAtMs: 1,
       path: "/tmp/story.fable",

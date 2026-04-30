@@ -68,12 +68,13 @@ Cards do NOT have titles.
   - `order_index`
 - Children are derived, not stored
 - Paths (e.g. `0.2.1`) are computed
+- The document may contain multiple cards at root depth; root cards are ordered siblings with `parent_id = null`.
 
 ### 2.3 Single-plane Content
 
 - topology and visible writing live in a single plane
-- the desktop editor exposes no layer switching, creation, or deletion
-- older files may still retain an implicit compatibility base layer in storage, but that is not a user-facing concept
+- there is no layer feature in the desktop app, MCP contract, or persisted current schema
+- older layer-backed files are migrated into single-plane card content when opened
 
 ---
 
@@ -82,7 +83,8 @@ Cards do NOT have titles.
 - New cards start empty
 - Empty cards cannot create additional cards
 - If abandoned empty → removed
-- Backspace on an empty non-root card deletes it
+- The only card that must never be removed is the final remaining card in the whole tree; deletion of that card clears its content instead.
+- Backspace on an empty card deletes it when at least one other card exists
 - Cards always render fully (no collapsing)
 
 ---
@@ -127,7 +129,7 @@ Up/down follows the packed spatial column, even across different parent groups. 
 
 ### Movement
 
-- Shift+Up / Down → move within the current column, including across parent groups
+- Shift+Up / Down → move within the current column, including root cards and across parent groups
 - Shift+Left → outdent
 - Shift+Right → make the active card the last child of the sibling above
 - Option+Up / Down → merge with the sibling above or below while keeping the current card
@@ -143,11 +145,13 @@ Up/down follows the packed spatial column, even across different parent groups. 
 - Type → enter edit mode and insert the typed character
 - Enter → edit mode
 - Escape → navigation mode
-- Backspace on empty card → delete card
+- Escape on an empty child card → delete the empty card and return to its parent in navigation mode
+- Backspace on an empty card → delete card
+- Backspace on an empty child card → delete the empty card and return to its parent in editing mode
 - ArrowDown at the end of a card opens the card below in edit mode at the start of that card
 - ArrowUp at the start of a card opens the card above in edit mode at the end of that card
 - ArrowRight at the end of a card opens the first child in edit mode at the start of that card
-- Tab+Arrow keys move between nearby cards without leaving edit mode
+- Tab+Arrow keys move between nearby cards, place the caret at the end of the destination card, and stay in edit mode
 - Double Enter → new card below
 - Tab+Enter → split at line
 - markdown shortcuts render into rich text, including visible headings and lists
@@ -227,8 +231,8 @@ Up/down follows the packed spatial column, even across different parent groups. 
 ## 7. Single-plane Writing
 
 - the desktop editor exposes one visible content plane only
-- there is no layer UI, layer switching, or layer creation flow
-- all card borders use the document theme rather than per-layer colors
+- there is no layer UI, layer switching, layer creation flow, or layer-backed content scope
+- all card borders use the document theme
 
 ---
 
@@ -280,7 +284,6 @@ Help:
 NOT included:
 
 - create/delete/move cards
-- layer controls
 
 ---
 
@@ -301,6 +304,7 @@ Desktop builds expose native menus with the following structure:
 
 - New Document
 - Open Document
+- Save
 - Import Markdown
 - Export Markdown
 
@@ -404,7 +408,8 @@ Keyboard accessible.
 Rules:
 
 - one document open at a time
-- autosave only
+- autosave only; Cmd/Ctrl+S force-flushes pending autosave work without introducing a visible save button
+- opening or creating another document force-flushes dirty changes in the current document before the active document changes
 - when the open `.fable` file changes externally, the workspace refreshes once local edits are no longer dirty
 
 ---
@@ -428,11 +433,15 @@ Export:
 ## 15. AI / MCP
 
 - app exposes structure through a local MCP tool surface
-- read tools: document, card, subtree
+- read tools: open documents, document, card, subtree
 - local Claude-compatible stdio MCP server is available for external tool use
-- mutation tools: set card text, create child, create sibling, wrap level, delete card
+- mutation tools: set card text, create child, create sibling before, create sibling after, move card before/after another card, wrap level from a card-id list, delete card
+- desktop app writes a local open-document session file so external MCP clients can discover active `.fable` paths; the response may include multiple paths for multiple app instances or future tab/window surfaces
+- `get_document` includes structural tree depth counts, for example `[1, 4, 7, 32]` for card counts by depth from root outward
+- `get_card` includes ordered direct child card ids when present
 - external MCP writes should appear in the open document without manually reopening it
-- compatibility metadata for older layer-backed files may still exist internally during the migration to the single-plane model
+- MCP tools do not expose layer ids or layer operations
+- older layer-backed files are migrated into the single-plane schema; layers are not retained as a compatibility feature
 
 Rules:
 
@@ -440,6 +449,7 @@ Rules:
 - one action = one undo
 - structured errors
 - payload limits enforced
+- mutation responses return lightweight status payloads rather than full document snapshots
 
 ---
 
@@ -524,6 +534,8 @@ Editing behavior:
 - Backspacing an empty structural parent that still has children must remove the wrapper and return focus to the child flow, not delete the entire subtree beneath it.
 - Undo and redo should work in both navigation mode and editing mode, using the same document snapshot model rather than splitting behavior between modes.
 - A newly created document should open directly into edit mode on the first card.
-- The empty-card placeholder copy should read `Your story starts here` on the first card only, not on later root-level cards.
-- Backspace should delete an empty root-level card when other root cards still exist; only the final remaining root card is protected.
-- On the first/root card, `Escape` should not leave edit mode while the card is still empty.
+- The editing placeholder copy should read `Your story starts here` on the first card only, not on later root-level cards.
+- Empty non-first cards should render a muted italic `empty card` placeholder after the user leaves editing with no content; the placeholder is visual only and disappears as soon as the user starts typing.
+- Escape or in-editor arrow navigation away from an empty card should remove that abandoned card, including root-level cards, unless it is the final remaining card in the whole tree.
+- Backspace should delete an empty root-level card when other cards still exist; only the final remaining card in the whole tree is protected, and deleting it clears its content.
+- On the final remaining card, `Escape` should not leave edit mode while the card is still empty.

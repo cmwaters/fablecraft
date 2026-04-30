@@ -5,9 +5,10 @@ use tauri::State;
 
 use crate::app_state::{AppState, OpenDocumentContext};
 use crate::error::{AppError, AppErrorPayload};
+use crate::session::record_open_document;
 use crate::storage::{
-    DocumentClock, DocumentRepository, DocumentSnapshot, DocumentSummary,
-    EditableDocumentSnapshot, SaveDocumentResult,
+    DocumentClock, DocumentRepository, DocumentSnapshot, DocumentSummary, EditableDocumentSnapshot,
+    SaveDocumentResult,
 };
 
 #[tauri::command]
@@ -53,6 +54,14 @@ pub fn save_current_document(
 ) -> Result<SaveDocumentResult, AppErrorPayload> {
     let path = current_document_path(&state)?;
     DocumentRepository::save(path, snapshot)
+}
+
+#[tauri::command]
+pub fn save_document(
+    path: String,
+    snapshot: EditableDocumentSnapshot,
+) -> Result<SaveDocumentResult, AppErrorPayload> {
+    DocumentRepository::save(PathBuf::from(path), snapshot)
 }
 
 #[tauri::command]
@@ -114,4 +123,5 @@ fn update_app_state(state: &State<'_, AppState>, summary: &DocumentSummary) {
         document_id: summary.document_id.clone(),
         path: PathBuf::from(summary.path.clone()),
     });
+    let _ = record_open_document(summary);
 }

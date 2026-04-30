@@ -3,16 +3,6 @@ import { z } from "zod";
 import type { DocumentSnapshot, EditableDocumentSnapshot, SaveDocumentResult } from "../domain/document/types";
 import type { DocumentClock, FablecraftError } from "../types/document";
 
-export const layerSchema = z.object({
-  color: z.enum(["neutral", "red", "blue", "yellow", "green", "purple", "orange"]),
-  description: z.string().nullable(),
-  documentId: z.string().min(1),
-  id: z.string().min(1),
-  isBase: z.boolean(),
-  layerIndex: z.number().int().min(0),
-  name: z.string().min(1),
-});
-
 export const cardSchema = z.object({
   documentId: z.string().min(1),
   id: z.string().min(1),
@@ -24,7 +14,6 @@ export const cardSchema = z.object({
 export const contentSchema = z.object({
   cardId: z.string().min(1),
   contentJson: z.string().min(1),
-  layerId: z.string().min(1),
 });
 
 export const revisionSchema = z.object({
@@ -36,7 +25,6 @@ export const revisionSchema = z.object({
 export const documentSummarySchema = z.object({
   documentId: z.string().min(1),
   fileModifiedAtMs: z.number().int().nonnegative().optional(),
-  layerCount: z.number().int().nonnegative(),
   name: z.string().min(1),
   openedAtMs: z.number().int().nonnegative(),
   path: z.string().min(1),
@@ -52,7 +40,6 @@ const documentClockSchema = z.object({
 export const snapshotSchema = z.object({
   cards: z.array(cardSchema),
   contents: z.array(contentSchema),
-  layers: z.array(layerSchema),
   revisions: z.array(revisionSchema),
   summary: documentSummarySchema,
 });
@@ -61,7 +48,6 @@ const editableSnapshotSchema = z.object({
   cards: z.array(cardSchema),
   contents: z.array(contentSchema),
   documentId: z.string().min(1),
-  layers: z.array(layerSchema),
 });
 
 const saveResultSchema = z.object({
@@ -114,6 +100,22 @@ export async function saveCurrentDocumentSnapshot(
   try {
     return saveResultSchema.parse(
       await invoke("save_current_document", {
+        snapshot: editableSnapshotSchema.parse(snapshot),
+      }),
+    );
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
+export async function saveDocumentSnapshotAtPath(
+  path: string,
+  snapshot: EditableDocumentSnapshot,
+): Promise<SaveDocumentResult> {
+  try {
+    return saveResultSchema.parse(
+      await invoke("save_document", {
+        path,
         snapshot: editableSnapshotSchema.parse(snapshot),
       }),
     );

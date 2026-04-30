@@ -9,11 +9,11 @@ import {
 import { useDocumentAutosave } from "../src/storage/useDocumentAutosave";
 import { useDocumentStore } from "../src/state/documentStore";
 
-const saveCurrentDocumentSnapshot = vi.fn();
+const saveDocumentSnapshotAtPath = vi.fn();
 
 vi.mock("../src/storage/documentSnapshots", () => ({
-  saveCurrentDocumentSnapshot: (...args: unknown[]) =>
-    saveCurrentDocumentSnapshot(...args),
+  saveDocumentSnapshotAtPath: (...args: unknown[]) =>
+    saveDocumentSnapshotAtPath(...args),
 }));
 
 function TestHarness() {
@@ -45,7 +45,7 @@ describe("useDocumentAutosave", () => {
       globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
     ).IS_REACT_ACT_ENVIRONMENT = true;
     vi.useFakeTimers();
-    saveCurrentDocumentSnapshot.mockReset();
+    saveDocumentSnapshotAtPath.mockReset();
     resetDocumentStore();
   });
 
@@ -59,7 +59,7 @@ describe("useDocumentAutosave", () => {
   });
 
   it("marks the document saved after a successful autosave cycle", async () => {
-    saveCurrentDocumentSnapshot.mockResolvedValue({
+    saveDocumentSnapshotAtPath.mockResolvedValue({
       revisionId: "rev-success",
       savedAtMs: 1_700,
     });
@@ -78,7 +78,11 @@ describe("useDocumentAutosave", () => {
       await vi.advanceTimersByTimeAsync(450);
     });
 
-    expect(saveCurrentDocumentSnapshot).toHaveBeenCalledTimes(1);
+    expect(saveDocumentSnapshotAtPath).toHaveBeenCalledTimes(1);
+    expect(saveDocumentSnapshotAtPath).toHaveBeenCalledWith(
+      "/tmp/story.fable",
+      expect.objectContaining({ documentId: "doc-1" }),
+    );
     expect(useDocumentStore.getState().saveState).toBe("saved");
     expect(useDocumentStore.getState().dirty).toBe(false);
     expect(useDocumentStore.getState().errorMessage).toBeNull();
@@ -89,8 +93,8 @@ describe("useDocumentAutosave", () => {
   });
 
   it("surfaces the save failure to the store and recovers on the next successful save", async () => {
-    saveCurrentDocumentSnapshot.mockRejectedValueOnce(new Error("offline"));
-    saveCurrentDocumentSnapshot.mockResolvedValue({
+    saveDocumentSnapshotAtPath.mockRejectedValueOnce(new Error("offline"));
+    saveDocumentSnapshotAtPath.mockResolvedValue({
       revisionId: "rev-recover",
       savedAtMs: 2_100,
     });
@@ -118,7 +122,6 @@ describe("useDocumentAutosave", () => {
         replaceCardContent(snapshot, {
           cardId: "card-a",
           contentJson: contentJsonForPlainText("Second attempt"),
-          layerId: "layer-base",
         }),
       );
     });
@@ -127,7 +130,7 @@ describe("useDocumentAutosave", () => {
       await vi.advanceTimersByTimeAsync(450);
     });
 
-    expect(saveCurrentDocumentSnapshot).toHaveBeenCalledTimes(2);
+    expect(saveDocumentSnapshotAtPath).toHaveBeenCalledTimes(2);
     expect(useDocumentStore.getState().saveState).toBe("saved");
     expect(useDocumentStore.getState().errorMessage).toBeNull();
 
@@ -137,7 +140,7 @@ describe("useDocumentAutosave", () => {
   });
 
   it("falls back to a generic message when the thrown value is not an Error", async () => {
-    saveCurrentDocumentSnapshot.mockRejectedValue("string-rejection");
+    saveDocumentSnapshotAtPath.mockRejectedValue("string-rejection");
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -178,7 +181,7 @@ describe("useDocumentAutosave", () => {
       await vi.advanceTimersByTimeAsync(2_000);
     });
 
-    expect(saveCurrentDocumentSnapshot).not.toHaveBeenCalled();
+    expect(saveDocumentSnapshotAtPath).not.toHaveBeenCalled();
 
     await act(async () => {
       root.unmount();

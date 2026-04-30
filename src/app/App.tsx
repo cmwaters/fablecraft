@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { promptForNewDocument, promptForOpenDocument } from "./documentActions";
 import { exportCurrentLevelToFile, importMarkdownDocument } from "./importExportActions";
 import { CommandPalette, type CommandPaletteItem } from "../components/CommandPalette";
@@ -22,6 +22,7 @@ import {
   rememberLastDocumentPath,
 } from "../storage/lastDocument";
 import { openDocumentAtPath } from "../storage/documents";
+import { forceSaveCurrentDocument } from "../storage/forceSave";
 import {
   enableClaudeDesktopIntegration,
   enableCodexIntegration,
@@ -73,6 +74,8 @@ export function App() {
   const [feedbackDialogMode, setFeedbackDialogMode] = useState<FeedbackDialogMode | null>(null);
   const [showBetaBar, setShowBetaBar] = useState(true);
   const [recentDocumentPaths, setRecentDocumentPaths] = useState<string[]>([]);
+  const nativeMenuActionHandlerRef = useRef<(action: NativeMenuAction) => void>(() => {});
+  const openDocumentPromptInFlightRef = useRef(false);
   const activeDocument = useAppStore((state) => state.activeDocument);
   const mode = useAppStore((state) => state.mode);
   const notice = useAppStore((state) => state.notice);
@@ -212,6 +215,17 @@ export function App() {
     setSettingsOpen(true);
   }
 
+  async function handleForceSave() {
+    try {
+      await forceSaveCurrentDocument();
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        message: noticeMessage(error, "Fablecraft could not save that document."),
+      });
+    }
+  }
+
   useEffect(() => {
     function handleGlobalKeyDown(event: KeyboardEvent) {
       if (
@@ -240,6 +254,12 @@ export function App() {
         return;
       }
 
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        void handleForceSave();
+        return;
+      }
+
     }
 
     window.addEventListener("keydown", handleGlobalKeyDown, true);
@@ -260,6 +280,7 @@ export function App() {
 
   async function handleNewDocument() {
     try {
+      await forceSaveCurrentDocument();
       const document = await promptForNewDocument();
 
       if (!document) {
@@ -279,7 +300,14 @@ export function App() {
   }
 
   async function handleOpenDocument() {
+    if (openDocumentPromptInFlightRef.current) {
+      return;
+    }
+
+    openDocumentPromptInFlightRef.current = true;
+
     try {
+      await forceSaveCurrentDocument();
       const document = await promptForOpenDocument();
 
       if (!document) {
@@ -294,6 +322,8 @@ export function App() {
         tone: "error",
         message: noticeMessage(error, "Fablecraft could not open that document."),
       });
+    } finally {
+      openDocumentPromptInFlightRef.current = false;
     }
   }
 
@@ -303,6 +333,7 @@ export function App() {
     }
 
     try {
+      await forceSaveCurrentDocument();
       const document = await openDocumentAtPath(path);
       setRecentDocumentPaths(rememberLastDocumentPath(document.path));
       setDocument(document);
@@ -323,6 +354,7 @@ export function App() {
 
   async function handleImportMarkdown() {
     try {
+      await forceSaveCurrentDocument();
       const document = await importMarkdownDocument();
 
       if (!document) {
@@ -459,6 +491,11 @@ export function App() {
       return;
     }
 
+    if (action === "save") {
+      void handleForceSave();
+      return;
+    }
+
     if (action === "export-markdown") {
       void exportLevelFromMenu("markdown");
       return;
@@ -518,12 +555,16 @@ export function App() {
     }
   }
 
+  nativeMenuActionHandlerRef.current = handleNativeMenuAction;
+
   useEffect(() => {
     let unlisten: (() => void) | null = null;
     let disposed = false;
 
     async function attachNativeMenuListener() {
-      const cleanup = await listenForNativeMenuActions(handleNativeMenuAction);
+      const cleanup = await listenForNativeMenuActions((action) => {
+        nativeMenuActionHandlerRef.current(action);
+      });
 
       if (disposed) {
         cleanup();
@@ -539,23 +580,7 @@ export function App() {
       disposed = true;
       unlisten?.();
     };
-  }, [
-    activeCardId,
-    activeDocument,
-    activeSnapshot,
-    applyNavigationChange,
-    canMergeWithAbove,
-    canMergeWithBelow,
-    mode,
-    openCommandPalette,
-    handleEnableClaudeDesktop,
-    handleEnableCodex,
-    openHelpSheet,
-    openSearchOverlay,
-    openSettingsDialog,
-    screen,
-    selectedCard,
-  ]);
+  }, []);
 
   const commandItems: CommandPaletteItem[] = [
     {

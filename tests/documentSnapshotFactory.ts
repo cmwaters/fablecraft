@@ -30,38 +30,22 @@ export function makeDocumentSnapshot(): DocumentSnapshot {
       {
         cardId: "card-root",
         contentJson: EMPTY_EDITOR_DOCUMENT_JSON,
-        layerId: "layer-base",
       },
       {
         cardId: "card-a",
         contentJson: EMPTY_EDITOR_DOCUMENT_JSON,
-        layerId: "layer-base",
       },
       {
         cardId: "card-b",
         contentJson: EMPTY_EDITOR_DOCUMENT_JSON,
-        layerId: "layer-base",
-      },
-    ],
-    layers: [
-      {
-        color: "neutral",
-        description: null,
-        documentId: "doc-1",
-        id: "layer-base",
-        isBase: true,
-        layerIndex: 0,
-        name: "Base",
       },
     ],
     revisions: [],
     summary: {
       documentId: "doc-1",
-      layerCount: 1,
       name: "Story",
       openedAtMs: 1,
       path: "/tmp/story.fable",
     },
   };
 }
-

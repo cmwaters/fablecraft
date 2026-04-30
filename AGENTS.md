@@ -37,15 +37,7 @@ Do not violate these MVP rules unless the briefs are explicitly updated:
 - No sidebar
 - No card titles
 - No multi-select
-- No collaboration, sync, plugins, graph view, or card linking in MVP
-
-Layer constraints:
-
-- Layers cannot be reordered
-- Base layer can be renamed but cannot be deleted
-- Maximum 7 layers total
-- Deterministic colors only
-- Sparse content is allowed in non-base layers
+- No collaboration, sync, plugins, graph view, card linking, or layers in MVP
 
 UI constraints:
 
@@ -59,12 +51,12 @@ UI constraints:
 As of the current implementation:
 
 - Phase 1 is implemented: scaffold, SQLite setup, `.fable` create/open, startup panel, reopen last document
-- Phase 2 is implemented: cards, layers, card content, transactional snapshot save/load, revisions, autosave pipeline
+- Phase 2 is implemented: cards, single-plane card content, transactional snapshot save/load, revisions, autosave pipeline
 - Phase 3 is implemented: navigation/editing modes, active-card editor, split behavior, creation/reorder/outdent keyboard actions, navigation undo foundation
-- Phases 4 and 5 are implemented in their current MVP form: centered active card, parent/child/sibling spatial workspace, layer switching, layer creation panel, deterministic layer styling
-- Phase 6 is implemented: command palette, search, settings modal, help sheet, and layer details flow
+- Phases 4 and 5 are implemented in their current MVP form: centered active card, parent/child/sibling spatial workspace, and single-plane editing
+- Phase 6 is implemented: command palette, search, settings modal, and help sheet
 - Phase 7 is implemented: Markdown import plus selected-level Markdown / HTML export
-- Phase 8 has a working first pass: local MCP tool registry, in-app MCP runner, Claude-compatible stdio MCP server, read tools, and mutation tools for text, layers, and basic tree structure
+- Phase 8 has a working first pass: local MCP tool registry, in-app MCP runner, Claude-compatible stdio MCP server, read tools, and mutation tools for text and basic tree structure
 
 Still pending:
 
@@ -78,7 +70,7 @@ Known intentional TODO:
 
 - `src/app`: app shell
 - `src/components`: React UI components
-- `src/domain/document`: tree, layer, navigation, split, serialization, and spatial domain logic
+- `src/domain/document`: tree, navigation, split, serialization, and spatial domain logic
 - `src/state`: Zustand stores for app, interaction, and document state
 - `src/storage`: frontend Tauri invocation layer and autosave wiring
 - `src/styles`: global CSS and centralized UI tokens
@@ -114,7 +106,6 @@ At minimum, run the relevant subset and prefer full verification when touching c
 Add or update tests when changing:
 
 - tree operations
-- layer rules
 - undo behavior
 - serialization or snapshot persistence
 - navigation behavior across uneven trees

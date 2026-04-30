@@ -108,14 +108,8 @@ This brief translates it into **buildable engineering instructions**.
 - order_index
 - type
 
-### layers
-- retained only as compatibility storage for older documents
-- the desktop editor always works against the implicit base layer
-
 ### card_content
 - card_id
-- layer_id
-- note: `layer_id` remains in storage for backward compatibility, but the desktop editor operates as a single-plane writer
 - content_json
 
 ### revisions
@@ -160,14 +154,15 @@ animation: ~140ms ease-in-out
 - sideways tree
 
 ### Phase 5 — Simplification
-- remove visible layers from the desktop UX
+- remove layers from the desktop UX and document model
 - treat the document as a single visible content plane
-- keep the implicit base layer only as a storage compatibility detail
+- migrate older layer-backed files into single-plane card content
 
 ### Phase 6 — Command + Search
 - command palette
 - search
 - native File / Edit desktop menu wired into the same app actions
+- native menu actions are handled by one stable frontend listener; document-open dialogs must ignore duplicate invocations while a picker is already pending
 - settings modal via command palette
 - settings uses row-based inline controls rather than native select controls
 - theme options are simplified to Light and Dark
@@ -191,12 +186,15 @@ animation: ~140ms ease-in-out
 - local Tauri-backed tool registry exposed through invoke commands
 - Claude-compatible local stdio MCP binary: `fablecraft-mcp`
 - Cargo `default-run` remains `fablecraft` so `npm run tauri dev` launches the desktop app binary instead of the MCP binary
-- read tools: `fablecraft_get_document`, `fablecraft_get_card`, `fablecraft_get_subtree`
-- mutation tools: `fablecraft_set_card_text`, `fablecraft_create_child`, `fablecraft_create_sibling_after`, `fablecraft_wrap_level_in_parent`, `fablecraft_delete_card`
+- read tools: `fablecraft_get_open_documents`, `fablecraft_get_document`, `fablecraft_get_card`, `fablecraft_get_subtree`
+- mutation tools: `fablecraft_set_card_text`, `fablecraft_create_child`, `fablecraft_create_sibling_before`, `fablecraft_create_sibling_after`, `fablecraft_move_card`, `fablecraft_wrap_level_in_parent`, `fablecraft_delete_card`
+- desktop open/create writes a small process-keyed session file in the OS temp directory so external MCP clients can discover active `.fable` document paths without talking to the running Tauri process
+- local developer MCP invocation accepts the same `documentPath` and id-bearing argument payloads as the external stdio server; legacy active-card request fields remain supported only as a compatibility fallback
+- MCP mutation responses are lightweight status payloads and do not include a full persisted `DocumentSnapshot`
+- `get_document` returns `treeDepthCounts`; `get_card` returns ordered direct `childCardIds`
 - structured payload limits on tool args and responses
 - the workspace polls a lightweight document clock before loading a full `.fable` snapshot, and commits external changes when there are no unsaved local edits
 - MCP remains available as an external integration surface rather than an in-app command palette action
-- layer-oriented MCP compatibility surfaces may remain temporarily during migration, but they are no longer part of the desktop UX contract
 
 ### Phase 9 — Website
 - add a browser-only companion website inside the same frontend repo
@@ -217,7 +215,7 @@ animation: ~140ms ease-in-out
 - left/right change depth only
 - typing any printable character enters edit mode and forwards that character into the editor
 - Cmd/Ctrl+ArrowUp / Down / Right / Left create siblings, children, and wrapped parents
-- Shift+Up / Down moves within the packed column and may reparent a card when crossing into a neighboring parent group
+- Shift+Up / Down moves within the packed column, can reorder root cards, and may reparent a card when crossing into a neighboring parent group
 - Shift+Right indents the active card under the sibling above as its last child
 - Option+Up / Down merges the active card with the sibling above or below while preserving the active card id
 - no invalid moves
@@ -229,7 +227,7 @@ animation: ~140ms ease-in-out
 - ArrowDown at the end of a card moves into the card below in edit mode at the start of that card
 - ArrowUp at the start of a card moves into the card above in edit mode at the end of that card
 - ArrowRight at the end of a card moves into the first child in edit mode at the start of that card
-- Tab+Arrow navigates nearby cards without leaving edit mode
+- Tab+Arrow navigates nearby cards, places the caret at the end of the destination card, and stays in edit mode
 - Option+Up / Down in edit mode merges with the sibling above or below without leaving edit mode
 - markdown shortcuts render correctly, including visible list and heading styling
 - preview mode preserves heading and list structure after a card is deselected
@@ -263,12 +261,16 @@ animation: ~140ms ease-in-out
 - wheel / trackpad panning moves the stage
 
 ### Single-plane model
-- the desktop editor exposes no visible layer UI
+- the desktop editor exposes no layer UI or layer model
 - content search and editing work against one visible document plane
-- any retained storage-layer compatibility is invisible to the user
+- older layer-backed SQLite files are migrated by the v2 schema migration into one content row per card
 
 ### Storage
 - autosave works
+- Cmd/Ctrl+S force-flushes dirty changes through the same snapshot persistence path
+- opening or creating another document force-flushes dirty changes before the current document path changes
+- frontend saves target the snapshot's explicit document path so delayed saves cannot drift to a newly opened document
+- persistence validation allows multiple root-depth cards, requires at least one root-depth card, and enforces contiguous sibling order per parent including the root group
 - reopen restores state
 - import/export file reads and writes succeed through Tauri commands
 
@@ -302,11 +304,15 @@ animation: ~140ms ease-in-out
 - settings update token-backed UI immediately and persist locally
 
 ### MCP
-- `get_card` and `get_subtree` return structured JSON for the active document plane
-- `set_card_text` persists through the repository and refreshes the open snapshot
+- `get_open_documents` returns all document paths currently advertised by running app instances
+- `get_document` returns structured JSON for the active document plane, including `treeDepthCounts`
+- `get_card` returns structured JSON for the active document plane, including ordered direct `childCardIds`
+- `get_subtree` returns structured JSON for the active document plane
+- `set_card_text` persists through the repository and returns a lightweight status result
 - the Claude-compatible stdio binary accepts explicit `.fable` paths so Claude Desktop can call it directly
 - local integration enablement searches both bundled app locations and nearby `target/release` / `src-tauri/target/release` development binaries
-- structural tree mutation is exposed through create child, create sibling, wrap level, and delete card tools
+- structural tree mutation is exposed through create child, create sibling before/after, move card before/after another card, wrap contiguous sibling ids in a parent, and delete card tools
+- `move_card` accepts exactly one of `beforeCardId` or `afterCardId`; the target card determines the destination parent and the moved card keeps its subtree
 - external `.fable` changes should appear in the open app without a manual reopen when the document is not dirty
 - MCP mutations remain a single undo step in the app state
 - oversized MCP payloads return structured errors instead of partial responses
@@ -376,6 +382,9 @@ Tree editing:
 - If the active empty card has children, the workspace should unwrap that card and restore focus to the originating child when known, otherwise the first child.
 - Document history should maintain both editing and navigation stacks in the shared store so undo/redo can be dispatched consistently from keyboard shortcuts and native menu actions in either mode.
 - New-document entry points should switch the app into editing mode immediately after opening the created document.
-- The editor placeholder string is `Your story starts here` for the first root card only; later root cards and non-root cards should render without placeholder copy.
-- Empty-card deletion should allow removing a root-level card whenever more than one root card exists, while still preventing deletion of the final remaining root.
-- `CardEditor` should suppress `Escape`-to-navigation on the empty root card so startup editing does not strand the user in navigation mode.
+- The editor placeholder string is `Your story starts here` for the first root card only; later root cards and non-root cards should render without editing placeholder copy.
+- Empty non-first cards should render a muted italic `empty card` placeholder in navigation and preview surfaces after editing is abandoned with no content. This placeholder must not be persisted into card content and must disappear when editing resumes and the user types.
+- Escape and in-editor card-to-card arrow navigation should abandon an empty leaf card by deleting it before changing mode or focus, including at root depth, unless it is the only card in the document.
+- When Backspace or Escape abandons an empty child leaf card from editing mode, focus should return to the deleted card's parent instead of the nearest spatial sibling.
+- Empty-card deletion should allow removing a root-level card whenever any other card exists in the tree. The final remaining card in the whole tree is protected from removal, and navigation-mode deletion should clear its content instead.
+- `CardEditor` should suppress `Escape`-to-navigation on the final remaining empty card so startup editing does not strand the user in navigation mode.

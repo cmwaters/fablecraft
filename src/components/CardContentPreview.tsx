@@ -156,15 +156,29 @@ function renderNode(node: PreviewNode, key: string): ReactNode {
 
 interface CardContentPreviewProps {
   contentJson: string;
+  placeholder?: string;
 }
 
-export function CardContentPreview({ contentJson }: CardContentPreviewProps) {
+export function CardContentPreview({
+  contentJson,
+  placeholder = "",
+}: CardContentPreviewProps) {
+  const fallbackText = contentText(contentJson);
+
+  if (placeholder && fallbackText.trim().length === 0) {
+    return (
+      <div className="fc-editor fc-preview text-[length:var(--fc-content-size)] leading-[var(--fc-content-line-height)] text-[var(--fc-color-muted)]">
+        <p className="m-0 whitespace-pre-wrap italic">{placeholder}</p>
+      </div>
+    );
+  }
+
   const previewDocument = parsePreviewDocument(contentJson);
 
   if (!previewDocument) {
     return (
       <div className="fc-editor fc-preview text-[length:var(--fc-content-size)] leading-[var(--fc-content-line-height)] text-[var(--fc-color-text)]">
-        <p className="m-0 whitespace-pre-wrap">{contentText(contentJson)}</p>
+        <p className="m-0 whitespace-pre-wrap">{fallbackText}</p>
       </div>
     );
   }

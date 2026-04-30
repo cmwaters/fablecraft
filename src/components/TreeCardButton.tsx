@@ -5,6 +5,7 @@ interface TreeCardButtonProps {
   borderColor: string;
   cardLabel?: string;
   contentJson: string;
+  placeholder?: string;
   isActive?: boolean;
   isNeighborhood: boolean;
   onMeasureHeight?: (height: number) => void;
@@ -17,6 +18,7 @@ export function TreeCardButton({
   borderColor,
   cardLabel,
   contentJson,
+  placeholder = "",
   isActive = false,
   isNeighborhood,
   onMeasureHeight,
@@ -85,7 +87,7 @@ export function TreeCardButton({
           {cardLabel}
         </p>
       ) : null}
-      <CardContentPreview contentJson={contentJson} />
+      <CardContentPreview contentJson={contentJson} placeholder={placeholder} />
     </div>
   );
 }

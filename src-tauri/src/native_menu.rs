@@ -12,6 +12,7 @@ pub const MENU_ACTION_EVENT: &str = "fablecraft://menu-action";
 const APP_SETTINGS: &str = "app.settings";
 const FILE_NEW_DOCUMENT: &str = "file.new_document";
 const FILE_OPEN_DOCUMENT: &str = "file.open_document";
+const FILE_SAVE: &str = "file.save";
 const FILE_IMPORT_MARKDOWN: &str = "file.import_markdown";
 const FILE_EXPORT_MARKDOWN: &str = "file.export_markdown";
 const EDIT_UNDO: &str = "edit.undo";
@@ -52,10 +53,13 @@ pub fn build_native_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R
     let open_document = MenuItemBuilder::with_id(FILE_OPEN_DOCUMENT, "Open Document")
         .accelerator("CmdOrCtrl+O")
         .build(app)?;
-    let import_markdown = MenuItemBuilder::with_id(FILE_IMPORT_MARKDOWN, "Import Markdown")
+    let save = MenuItemBuilder::with_id(FILE_SAVE, "Save")
+        .accelerator("CmdOrCtrl+S")
         .build(app)?;
-    let export_markdown = MenuItemBuilder::with_id(FILE_EXPORT_MARKDOWN, "Export Markdown")
-        .build(app)?;
+    let import_markdown =
+        MenuItemBuilder::with_id(FILE_IMPORT_MARKDOWN, "Import Markdown").build(app)?;
+    let export_markdown =
+        MenuItemBuilder::with_id(FILE_EXPORT_MARKDOWN, "Export Markdown").build(app)?;
 
     let undo = MenuItemBuilder::with_id(EDIT_UNDO, "Undo")
         .accelerator("CmdOrCtrl+Z")
@@ -92,10 +96,9 @@ pub fn build_native_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R
         .accelerator("CmdOrCtrl+Down")
         .build(app)?;
 
-    let command_palette =
-        MenuItemBuilder::with_id(TOOLS_COMMAND_PALETTE, "Command Palette")
-            .accelerator("CmdOrCtrl+K")
-            .build(app)?;
+    let command_palette = MenuItemBuilder::with_id(TOOLS_COMMAND_PALETTE, "Command Palette")
+        .accelerator("CmdOrCtrl+K")
+        .build(app)?;
     let search = MenuItemBuilder::with_id(TOOLS_SEARCH, "Search")
         .accelerator("CmdOrCtrl+F")
         .build(app)?;
@@ -131,6 +134,7 @@ pub fn build_native_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R
     let file_menu = SubmenuBuilder::new(app, "File")
         .item(&new_document)
         .item(&open_document)
+        .item(&save)
         .separator()
         .item(&import_markdown)
         .item(&export_markdown)
@@ -205,6 +209,7 @@ pub fn handle_native_menu_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent
         }
         FILE_NEW_DOCUMENT => emit_action(app, "new-document"),
         FILE_OPEN_DOCUMENT => emit_action(app, "open-document"),
+        FILE_SAVE => emit_action(app, "save"),
         FILE_IMPORT_MARKDOWN => emit_action(app, "import-markdown"),
         FILE_EXPORT_MARKDOWN => emit_action(app, "export-markdown"),
         APP_SETTINGS => emit_action(app, "settings"),

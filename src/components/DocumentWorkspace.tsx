@@ -6,10 +6,10 @@ import {
   canCreateCardsFromContent,
   cardContent,
   isContentEffectivelyEmpty,
-  primaryLayerId,
   replaceCardContent,
   trimTrailingEmptyParagraphs,
 } from "../domain/document/content";
+import { EMPTY_EDITOR_DOCUMENT_JSON } from "../domain/document/editorDocument";
 import {
   firstChildCardId,
   parentCardId,
@@ -52,6 +52,13 @@ function fallbackCardIdAfterDelete(snapshot: DocumentSnapshot, cardId: string) {
     previousCardInColumn(snapshot.cards, cardId) ??
     parentCardId(snapshot.cards, cardId) ??
     null
+  );
+}
+
+function fallbackCardIdAfterEmptyAbandon(snapshot: DocumentSnapshot, cardId: string) {
+  return (
+    parentCardId(snapshot.cards, cardId) ??
+    fallbackCardIdAfterDelete(snapshot, cardId)
   );
 }
 
@@ -135,8 +142,7 @@ export function DocumentWorkspace({
 
   const activeSnapshot =
     snapshot?.summary.documentId === document.documentId ? snapshot : null;
-  const contentLayerId = activeSnapshot ? primaryLayerId(activeSnapshot) : null;
-  const layerCardHeights =
+  const measuredCardHeights =
     activeSnapshot
       ? Object.fromEntries(
           activeSnapshot.cards
@@ -156,7 +162,7 @@ export function DocumentWorkspace({
     activeSnapshot?.cards.find((card) => card.id === activeCardId) ?? null;
   const selectedCardContent =
     activeSnapshot && activeCardId
-      ? cardContent(activeSnapshot, activeCardId, contentLayerId)
+      ? cardContent(activeSnapshot, activeCardId)
       : null;
   const canCreateStructure = selectedCardContent
     ? canCreateCardsFromContent(selectedCardContent)
@@ -165,24 +171,38 @@ export function DocumentWorkspace({
     ? isContentEffectivelyEmpty(selectedCardContent)
     : true;
   const isFirstRootCard = selectedCard?.parentId === null && selectedCard.orderIndex === 0;
+  const isOnlyCardInDocument = activeSnapshot?.cards.length === 1;
   const canLeaveEditing =
-    !selectedCard || !isFirstRootCard || !isSelectedCardEmpty;
-  const activePlaceholder =
-    isFirstRootCard ? "Your story starts here" : "";
+    !selectedCard || !isOnlyCardInDocument || !isSelectedCardEmpty;
+  const cardById = new Map(
+    (activeSnapshot?.cards ?? []).map((card) => [card.id, card]),
+  );
+  const isFirstRootCardId = (cardId: string) => {
+    const card = cardById.get(cardId);
+
+    return card?.parentId === null && card.orderIndex === 0;
+  };
+  const navigationEmptyPlaceholder =
+    mode === "navigation" && isSelectedCardEmpty && !isFirstRootCard
+      ? "empty card"
+      : "";
+  const activePlaceholder = isFirstRootCard
+    ? "Your story starts here"
+    : navigationEmptyPlaceholder;
   const stageLayoutResult =
     activeSnapshot && activeCardId
       ? stageLayout(activeSnapshot.cards, activeCardId, {
           cardHeight: uiMetrics.cardHeight,
-          cardHeights: layerCardHeights,
+          cardHeights: measuredCardHeights,
           cardWidth: uiMetrics.cardWidth,
           spacing: uiMetrics.spacing,
         })
       : { cards: [], emptyChildGap: null };
   const positionedCards =
-    activeSnapshot && contentLayerId
+    activeSnapshot
       ? stageLayoutResult.cards.map((position) => ({
           ...position,
-          contentJson: cardContent(activeSnapshot, position.cardId, contentLayerId),
+          contentJson: cardContent(activeSnapshot, position.cardId),
         }))
       : [];
   const emptyChildGap = stageLayoutResult.emptyChildGap;
@@ -256,6 +276,16 @@ export function DocumentWorkspace({
   function handleDeleteCurrentCard(cardId: string) {
     if (!activeSnapshot) {
       return false;
+    }
+
+    if (activeSnapshot.cards.length <= 1) {
+      updateSnapshot((snapshotToChange) =>
+        replaceCardContent(snapshotToChange, {
+          cardId,
+          contentJson: EMPTY_EDITOR_DOCUMENT_JSON,
+        }),
+      );
+      return true;
     }
 
     const fallbackCardId = fallbackCardIdAfterDelete(activeSnapshot, cardId);
@@ -417,30 +447,100 @@ export function DocumentWorkspace({
     }));
   }, [stagePanLimit.x, stagePanLimit.y]);
 
+  function unwrapEmptyCardWithChildren() {
+    if (!activeSnapshot || !activeCardId || !selectedCard) {
+      return null;
+    }
+
+    const hasChildren = activeSnapshot.cards.some(
+      (card) => card.parentId === activeCardId,
+    );
+
+    if (!hasChildren || !isContentEffectivelyEmpty(cardContent(activeSnapshot, activeCardId))) {
+      return null;
+    }
+
+    const fallbackCardId =
+      wrappedParentSourceChildRef.current[selectedCard.id] ??
+      firstChildCardId(activeSnapshot.cards, selectedCard.id);
+
+    applyNavigationChange((snapshotToChange) =>
+      unwrapCard(snapshotToChange, selectedCard.id),
+    );
+    delete wrappedParentSourceChildRef.current[selectedCard.id];
+
+    return fallbackCardId;
+  }
+
+  function deleteEmptyLeafCard(fallbackCardId: string | null) {
+    if (!activeSnapshot || !activeCardId || !selectedCard) {
+      return false;
+    }
+
+    const hasChildren = activeSnapshot.cards.some(
+      (card) => card.parentId === activeCardId,
+    );
+
+    if (
+      hasChildren ||
+      activeSnapshot.cards.length <= 1 ||
+      !isContentEffectivelyEmpty(cardContent(activeSnapshot, activeCardId))
+    ) {
+      return false;
+    }
+
+    applyNavigationChange((currentSnapshot) =>
+      deleteCardSubtree(currentSnapshot, activeCardId),
+    );
+    setActiveCardId(fallbackCardId);
+
+    return true;
+  }
+
+  function abandonEmptyCard(fallbackCardId: string | null) {
+    const unwrappedFallbackCardId = unwrapEmptyCardWithChildren();
+
+    if (unwrappedFallbackCardId) {
+      setActiveCardId(unwrappedFallbackCardId);
+      return unwrappedFallbackCardId;
+    }
+
+    if (deleteEmptyLeafCard(fallbackCardId)) {
+      return fallbackCardId;
+    }
+
+    return activeCardId;
+  }
+
   function leaveEditingMode() {
     if (!activeSnapshot || !activeCardId || !selectedCard) {
       setMode("navigation");
       return;
     }
 
-    const hasChildren = activeSnapshot.cards.some(
-      (card) => card.parentId === activeCardId,
-    );
-    const currentContent = cardContent(activeSnapshot, activeCardId, contentLayerId);
-
-    if (
-      selectedCard.parentId &&
-      !hasChildren &&
-      isContentEffectivelyEmpty(currentContent)
-    ) {
-      const fallbackCardId = fallbackCardIdAfterDelete(activeSnapshot, activeCardId);
-      applyNavigationChange((currentSnapshot) =>
-        deleteCardSubtree(currentSnapshot, activeCardId),
-      );
-      setActiveCardId(fallbackCardId);
-    }
+    abandonEmptyCard(fallbackCardIdAfterEmptyAbandon(activeSnapshot, activeCardId));
 
     setMode("navigation");
+  }
+
+  function navigateFromEditing(nextCardId: string | null, placement: EditorFocusPlacement) {
+    if (!nextCardId || !activeSnapshot || !activeCardId) {
+      return false;
+    }
+
+    const fallbackCardId = fallbackCardIdAfterDelete(activeSnapshot, activeCardId);
+    const cardIdToFocus = isSelectedCardEmpty
+      ? abandonEmptyCard(nextCardId)
+      : nextCardId;
+
+    if (!cardIdToFocus) {
+      return false;
+    }
+
+    return focusCardForEditing(
+      cardIdToFocus === activeCardId ? fallbackCardId : cardIdToFocus,
+      placement,
+    );
   }
 
   function handleStageWheel(event: ReactWheelEvent<HTMLDivElement>) {
@@ -504,7 +604,7 @@ export function DocumentWorkspace({
         return;
       }
 
-      if ((event.key === "Backspace" || event.key === "Delete") && selectedCard?.parentId) {
+      if ((event.key === "Backspace" || event.key === "Delete") && selectedCard) {
         event.preventDefault();
         handleDeleteCurrentCard(currentCardId);
         return;
@@ -727,10 +827,6 @@ export function DocumentWorkspace({
 
                         const newCardId = randomId("card");
                         applyNavigationChange((snapshotToChange) => {
-                          if (!contentLayerId) {
-                            return snapshotToChange;
-                          }
-
                           let nextSnapshot = createSiblingAfter(
                             snapshotToChange,
                             selectedCard.id,
@@ -740,9 +836,8 @@ export function DocumentWorkspace({
                           return replaceCardContent(nextSnapshot, {
                             cardId: selectedCard.id,
                             contentJson: trimTrailingEmptyParagraphs(
-                              cardContent(nextSnapshot, selectedCard.id, contentLayerId),
+                              cardContent(nextSnapshot, selectedCard.id),
                             ),
-                            layerId: contentLayerId,
                           });
                         });
                         focusCardForEditing(newCardId, "end");
@@ -763,38 +858,24 @@ export function DocumentWorkspace({
                           return;
                         }
 
-                        const hasChildren = activeSnapshot.cards.some(
-                          (card) => card.parentId === selectedCard.id,
-                        );
+                        const unwrappedFallbackCardId = unwrapEmptyCardWithChildren();
 
-                        if (hasChildren) {
-                          const fallbackCardId =
-                            wrappedParentSourceChildRef.current[selectedCard.id] ??
-                            firstChildCardId(activeSnapshot.cards, selectedCard.id);
-                          applyNavigationChange((snapshotToChange) =>
-                            unwrapCard(snapshotToChange, selectedCard.id),
-                          );
-                          delete wrappedParentSourceChildRef.current[selectedCard.id];
-                          focusCardForEditing(fallbackCardId, "end");
+                        if (unwrappedFallbackCardId) {
+                          focusCardForEditing(unwrappedFallbackCardId, "end");
                           return;
                         }
 
-                        const isLastRootCard =
-                          selectedCard.parentId === null &&
-                          activeSnapshot.cards.filter((card) => card.parentId === null).length === 1;
-
-                        if (isLastRootCard) {
+                        if (activeSnapshot.cards.length <= 1) {
                           return;
                         }
 
-                        const fallbackCardId = fallbackCardIdAfterDelete(
+                        const fallbackCardId = fallbackCardIdAfterEmptyAbandon(
                           activeSnapshot,
                           selectedCard.id,
                         );
-                        applyNavigationChange((snapshotToChange) =>
-                          deleteCardSubtree(snapshotToChange, selectedCard.id),
-                        );
-                        focusCardForEditing(fallbackCardId, "end");
+                        if (deleteEmptyLeafCard(fallbackCardId)) {
+                          focusCardForEditing(fallbackCardId, "end");
+                        }
                       }}
                       onMergeAbove={() => {
                         applyNavigationChange((snapshotToChange) =>
@@ -842,27 +923,27 @@ export function DocumentWorkspace({
                         );
                         focusCardForEditing(newCardId, "end");
                       }}
-                      onNavigateChild={() => {
+                      onNavigateChild={(placement = "start") => {
                         if (!activeSnapshot) {
                           return false;
                         }
 
-                        return focusCardForEditing(
+                        return navigateFromEditing(
                           firstChildCardId(activeSnapshot.cards, selectedCard.id),
-                          "start",
+                          placement,
                         );
                       }}
-                      onNavigateParent={() => {
+                      onNavigateParent={(placement = "end") => {
                         if (!activeSnapshot) {
                           return false;
                         }
 
-                        return focusCardForEditing(
+                        return navigateFromEditing(
                           parentCardId(activeSnapshot.cards, selectedCard.id),
-                          "end",
+                          placement,
                         );
                       }}
-                      onNavigateAbove={() => {
+                      onNavigateAbove={(placement = "end") => {
                         if (!activeSnapshot) {
                           return false;
                         }
@@ -876,9 +957,9 @@ export function DocumentWorkspace({
                           return false;
                         }
 
-                        return focusCardForEditing(previousCardId, "end");
+                        return navigateFromEditing(previousCardId, placement);
                       }}
-                      onNavigateBelow={() => {
+                      onNavigateBelow={(placement = "start") => {
                         if (!activeSnapshot) {
                           return false;
                         }
@@ -892,7 +973,7 @@ export function DocumentWorkspace({
                           return false;
                         }
 
-                        return focusCardForEditing(nextCardId, "start");
+                        return navigateFromEditing(nextCardId, placement);
                       }}
                       pendingTextInput={pendingEditorTextInput}
                       placeholder={activePlaceholder}
@@ -908,10 +989,6 @@ export function DocumentWorkspace({
                         const newCardId = randomId("card");
 
                         applyNavigationChange((snapshotToChange) => {
-                          if (!contentLayerId) {
-                            return snapshotToChange;
-                          }
-
                           let nextSnapshot = createSiblingAfter(
                             snapshotToChange,
                             selectedCard.id,
@@ -920,13 +997,11 @@ export function DocumentWorkspace({
                           nextSnapshot = replaceCardContent(nextSnapshot, {
                             cardId: selectedCard.id,
                             contentJson: splitContent.before,
-                            layerId: contentLayerId,
                           });
 
                           return replaceCardContent(nextSnapshot, {
                             cardId: newCardId,
                             contentJson: splitContent.after,
-                            layerId: contentLayerId,
                           });
                         });
 
@@ -934,13 +1009,10 @@ export function DocumentWorkspace({
                       }}
                       onUpdateContent={(contentJson) => {
                         updateSnapshot((snapshotToChange) =>
-                          contentLayerId
-                            ? replaceCardContent(snapshotToChange, {
-                                cardId: selectedCard.id,
-                                contentJson,
-                                layerId: contentLayerId,
-                              })
-                            : snapshotToChange,
+                          replaceCardContent(snapshotToChange, {
+                            cardId: selectedCard.id,
+                            contentJson,
+                          }),
                         );
                       }}
                     />
@@ -950,6 +1022,12 @@ export function DocumentWorkspace({
                     borderColor="transparent"
                     cardLabel={cardNumbers[card.cardId] ?? card.cardId.toUpperCase()}
                     contentJson={card.contentJson}
+                    placeholder={
+                      !isFirstRootCardId(card.cardId) &&
+                      isContentEffectivelyEmpty(card.contentJson)
+                        ? "empty card"
+                        : ""
+                    }
                     isActive={card.isActive}
                     isNeighborhood={card.isNeighborhood}
                     key={card.cardId}

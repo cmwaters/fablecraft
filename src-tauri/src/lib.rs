@@ -4,16 +4,16 @@ mod error;
 mod integrations;
 pub mod mcp;
 mod native_menu;
+pub mod session;
 pub mod storage;
 
 use app_state::AppState;
 use commands::{
     create_document, load_current_document, load_current_document_clock, open_document,
-    read_text_file, save_current_document, write_text_file,
+    read_text_file, save_current_document, save_document, write_text_file,
 };
 use integrations::{
-    enable_claude_desktop_integration, enable_codex_integration,
-    load_local_integration_statuses,
+    enable_claude_desktop_integration, enable_codex_integration, load_local_integration_statuses,
 };
 use mcp::{invoke_mcp_tool, list_mcp_tools};
 
@@ -37,6 +37,7 @@ pub fn run() {
             open_document,
             read_text_file,
             save_current_document,
+            save_document,
             write_text_file
         ])
         .run(tauri::generate_context!())

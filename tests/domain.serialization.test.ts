@@ -13,48 +13,11 @@ describe("document serialization", () => {
       ...snapshot,
       cards: [...snapshot.cards].reverse(),
       contents: [...snapshot.contents].reverse(),
-      layers: [...snapshot.layers].reverse(),
     };
 
     expect(serializeDocumentSnapshot(snapshot)).toBe(
       serializeDocumentSnapshot(reorderedSnapshot),
     );
-  });
-
-  it("normalizes layers by layerIndex and falls back to id for tied indexes", () => {
-    const snapshot = makeDocumentSnapshot();
-    const misorderedSnapshot = {
-      ...snapshot,
-      layers: [
-        {
-          color: "red" as const,
-          description: null,
-          documentId: "doc-1",
-          id: "layer-zeta",
-          isBase: false,
-          layerIndex: 1,
-          name: "Zeta",
-        },
-        {
-          color: "blue" as const,
-          description: null,
-          documentId: "doc-1",
-          id: "layer-alpha",
-          isBase: false,
-          layerIndex: 1,
-          name: "Alpha",
-        },
-        ...snapshot.layers,
-      ],
-    };
-
-    const normalized = normalizeDocumentSnapshot(misorderedSnapshot);
-
-    expect(normalized.layers.map((layer) => layer.id)).toEqual([
-      "layer-base",
-      "layer-alpha",
-      "layer-zeta",
-    ]);
   });
 
   it("groups cards by parent then order index when normalizing", () => {
@@ -102,11 +65,9 @@ describe("document serialization", () => {
     const emptySnapshot = {
       cards: [],
       contents: [],
-      layers: [],
       revisions: [],
       summary: {
         documentId: "doc-empty",
-        layerCount: 0,
         name: "Empty",
         openedAtMs: 0,
         path: "/tmp/empty.fable",

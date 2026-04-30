@@ -45,16 +45,6 @@ function collectDescendantIds(cards: CardRecord[], cardId: string) {
   return descendantIds;
 }
 
-function baseLayerId(snapshot: DocumentSnapshot) {
-  const baseLayer = snapshot.layers.find((layer) => layer.isBase);
-
-  if (!baseLayer) {
-    throw new Error("Fablecraft snapshots must always have a base layer.");
-  }
-
-  return baseLayer.id;
-}
-
 function createCardRecord(
   snapshot: DocumentSnapshot,
   card: Pick<CardRecord, "id" | "parentId" | "orderIndex">,
@@ -71,15 +61,12 @@ function createCardRecord(
 function upsertContentRecord(
   contents: DocumentSnapshot["contents"],
   cardId: string,
-  layerId: string,
   contentJson: string,
 ) {
-  const existingIndex = contents.findIndex(
-    (content) => content.cardId === cardId && content.layerId === layerId,
-  );
+  const existingIndex = contents.findIndex((content) => content.cardId === cardId);
 
   if (existingIndex === -1) {
-    return contents.concat({ cardId, contentJson, layerId });
+    return contents.concat({ cardId, contentJson });
   }
 
   return contents.map((content, index) =>
@@ -105,7 +92,6 @@ export function createChildCard(
     contents: snapshot.contents.concat({
       cardId,
       contentJson: EMPTY_EDITOR_DOCUMENT_JSON,
-      layerId: baseLayerId(snapshot),
     }),
   });
 }
@@ -138,7 +124,6 @@ export function createSiblingAfter(
     contents: snapshot.contents.concat({
       cardId,
       contentJson: EMPTY_EDITOR_DOCUMENT_JSON,
-      layerId: baseLayerId(snapshot),
     }),
   });
 }
@@ -177,7 +162,6 @@ export function createSiblingBefore(
     contents: snapshot.contents.concat({
       cardId,
       contentJson: EMPTY_EDITOR_DOCUMENT_JSON,
-      layerId: baseLayerId(snapshot),
     }),
   });
 }
@@ -216,7 +200,6 @@ export function wrapLevelInParent(
     contents: snapshot.contents.concat({
       cardId: newParentId,
       contentJson: EMPTY_EDITOR_DOCUMENT_JSON,
-      layerId: baseLayerId(snapshot),
     }),
   });
 }
@@ -230,10 +213,6 @@ export function moveCardWithinParent(
 
   if (!card) {
     throw new Error(`Unable to move missing card ${cardId}.`);
-  }
-
-  if (card.parentId === null) {
-    return normalizeDocumentSnapshot(snapshot);
   }
 
   const siblingGroup = snapshot.cards
@@ -496,34 +475,14 @@ function mergeCardIntoTargetSibling(
     parentId: targetId,
   }));
 
-  let nextContents = snapshot.contents.filter((content) => content.cardId !== sourceId);
-
-  for (const layer of snapshot.layers) {
-    const targetHasContent = nextContents.some(
-      (content) => content.cardId === targetId && content.layerId === layer.id,
-    );
-    const sourceHasContent = snapshot.contents.some(
-      (content) => content.cardId === sourceId && content.layerId === layer.id,
-    );
-
-    if (!targetHasContent && !sourceHasContent) {
-      continue;
-    }
-
-    nextContents = upsertContentRecord(
-      nextContents,
-      targetId,
-      layer.id,
-      mergeCardContentJson(
-        sourceFirst
-          ? cardContent(snapshot, sourceId, layer.id)
-          : cardContent(snapshot, targetId, layer.id),
-        sourceFirst
-          ? cardContent(snapshot, targetId, layer.id)
-          : cardContent(snapshot, sourceId, layer.id),
-      ),
-    );
-  }
+  const nextContents = upsertContentRecord(
+    snapshot.contents.filter((content) => content.cardId !== sourceId),
+    targetId,
+    mergeCardContentJson(
+      sourceFirst ? cardContent(snapshot, sourceId) : cardContent(snapshot, targetId),
+      sourceFirst ? cardContent(snapshot, targetId) : cardContent(snapshot, sourceId),
+    ),
+  );
 
   return normalizeDocumentSnapshot({
     ...snapshot,

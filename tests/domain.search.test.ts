@@ -8,7 +8,6 @@ describe("document search", () => {
     snapshot = replaceCardContent(snapshot, {
       cardId: "card-a",
       contentJson: contentJsonForPlainText("Alpha scene"),
-      layerId: "layer-base",
     });
 
     expect(searchDocument(snapshot, "scene")).toEqual([
@@ -32,12 +31,10 @@ describe("document search", () => {
     snapshot = replaceCardContent(snapshot, {
       cardId: "card-a",
       contentJson: contentJsonForPlainText("Before (parens) after."),
-      layerId: "layer-base",
     });
     snapshot = replaceCardContent(snapshot, {
       cardId: "card-b",
       contentJson: contentJsonForPlainText("Wild*card* and .dot pattern"),
-      layerId: "layer-base",
     });
 
     const parenResults = searchDocument(snapshot, "(parens)");
@@ -54,7 +51,6 @@ describe("document search", () => {
     snapshot = replaceCardContent(snapshot, {
       cardId: "card-a",
       contentJson: contentJsonForPlainText("Café résumé 🔥"),
-      layerId: "layer-base",
     });
 
     expect(searchDocument(snapshot, "CAFÉ").map((result) => result.cardId)).toEqual([

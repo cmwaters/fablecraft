@@ -26,7 +26,6 @@ describe("document store", () => {
       ...replaceCardContent(initialSnapshot, {
         cardId: "card-a",
         contentJson: markdownToContentJson("Updated beat"),
-        layerId: "layer-base",
       }),
       revisions: [
         {
@@ -64,7 +63,6 @@ describe("document store", () => {
     const nextSnapshot = replaceCardContent(initialSnapshot, {
       cardId: "card-a",
       contentJson: markdownToContentJson("Updated beat"),
-      layerId: "layer-base",
     });
 
     useDocumentStore.getState().applyNavigationChange(() => nextSnapshot);
@@ -78,6 +76,45 @@ describe("document store", () => {
     ).toContain("Updated beat");
   });
 
+  it("ignores stale save completions from a different document", () => {
+    useDocumentStore.getState().hydrateSnapshot(makeDocumentSnapshot());
+    useDocumentStore.getState().applyNavigationChange((snapshot) =>
+      replaceCardContent(snapshot, {
+        cardId: "card-a",
+        contentJson: markdownToContentJson("Unsaved change"),
+      }),
+    );
+
+    const nextDocument = {
+      ...makeDocumentSnapshot(),
+      cards: makeDocumentSnapshot().cards.map((card) => ({
+        ...card,
+        documentId: "doc-2",
+      })),
+      summary: {
+        documentId: "doc-2",
+        name: "Other",
+        openedAtMs: 2,
+        path: "/tmp/other.fable",
+      },
+    };
+
+    useDocumentStore.getState().hydrateSnapshot(nextDocument);
+    useDocumentStore.getState().markSaved(
+      {
+        revisionId: "rev-old-doc",
+        savedAtMs: 99,
+      },
+      "doc-1",
+    );
+
+    const state = useDocumentStore.getState();
+
+    expect(state.snapshot?.summary.documentId).toBe("doc-2");
+    expect(state.lastSavedAtMs).toBeNull();
+    expect(state.snapshot?.revisions).toHaveLength(0);
+  });
+
   it("clears dirty local edits when an external snapshot arrives mid-edit", () => {
     const initialSnapshot = makeDocumentSnapshot();
     useDocumentStore.getState().hydrateSnapshot(initialSnapshot);
@@ -86,7 +123,6 @@ describe("document store", () => {
       replaceCardContent(snapshot, {
         cardId: "card-a",
         contentJson: markdownToContentJson("Local unsaved change"),
-        layerId: "layer-base",
       }),
     );
 
@@ -96,7 +132,6 @@ describe("document store", () => {
     const externalSnapshot = replaceCardContent(initialSnapshot, {
       cardId: "card-b",
       contentJson: markdownToContentJson("Remote update to card-b"),
-      layerId: "layer-base",
     });
 
     useDocumentStore.getState().commitExternalSnapshot(externalSnapshot);
@@ -129,7 +164,6 @@ describe("document store", () => {
       replaceCardContent(snapshot, {
         cardId: "card-a",
         contentJson: markdownToContentJson("Draft change"),
-        layerId: "layer-base",
       }),
     );
 

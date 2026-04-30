@@ -59,6 +59,7 @@ describe("CardEditor keyboard behavior", () => {
   });
 
   afterEach(() => {
+    window.dispatchEvent(new KeyboardEvent("keyup", { key: "Tab" }));
     (
       globalThis as typeof globalThis & {
         IS_REACT_ACT_ENVIRONMENT?: boolean;
@@ -96,6 +97,7 @@ describe("CardEditor keyboard behavior", () => {
     });
 
     expect(props.onNavigateBelow).toHaveBeenCalledTimes(1);
+    expect(props.onNavigateBelow).toHaveBeenCalledWith("end");
     expect(props.onCreateSiblingBelow).not.toHaveBeenCalled();
 
     await act(async () => {
@@ -241,9 +243,104 @@ describe("CardEditor keyboard behavior", () => {
     });
 
     expect(props.onNavigateChild).toHaveBeenCalledTimes(1);
+    expect(props.onNavigateChild).toHaveBeenCalledWith();
 
     await act(async () => {
       root.unmount();
+    });
+  });
+
+  it("uses Tab+ArrowRight to navigate to a child at the end of its text", async () => {
+    const { container, props, root } = renderEditor({
+      onNavigateChild: vi.fn(() => true),
+    });
+
+    await act(async () => {
+      root.render(<CardEditor {...props} />);
+    });
+
+    const editorElement = container.querySelector(".ProseMirror") as HTMLElement | null;
+
+    expect(editorElement).not.toBeNull();
+
+    await act(async () => {
+      editorElement?.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          bubbles: true,
+          key: "Tab",
+        }),
+      );
+      editorElement?.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          bubbles: true,
+          key: "ArrowRight",
+        }),
+      );
+    });
+
+    expect(props.onNavigateChild).toHaveBeenCalledTimes(1);
+    expect(props.onNavigateChild).toHaveBeenCalledWith("end");
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it("keeps Tab-held navigation active after the editor remounts", async () => {
+    const firstProps = renderEditor({
+      onNavigateBelow: vi.fn(() => true),
+    });
+
+    await act(async () => {
+      firstProps.root.render(<CardEditor key="first" {...firstProps.props} />);
+    });
+
+    const firstEditor = firstProps.container.querySelector(".ProseMirror") as HTMLElement | null;
+
+    expect(firstEditor).not.toBeNull();
+
+    await act(async () => {
+      firstEditor?.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          bubbles: true,
+          key: "Tab",
+        }),
+      );
+      firstEditor?.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          bubbles: true,
+          key: "ArrowDown",
+        }),
+      );
+    });
+
+    const secondProps = {
+      ...firstProps.props,
+      contentJson: contentJsonForPlainText("Next card"),
+      onNavigateChild: vi.fn(() => true),
+    };
+
+    await act(async () => {
+      firstProps.root.render(<CardEditor key="second" {...secondProps} />);
+    });
+
+    const secondEditor = firstProps.container.querySelector(".ProseMirror") as HTMLElement | null;
+
+    await act(async () => {
+      secondEditor?.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          bubbles: true,
+          key: "ArrowRight",
+        }),
+      );
+    });
+
+    expect(firstProps.props.onNavigateBelow).toHaveBeenCalledWith("end");
+    expect(secondProps.onNavigateChild).toHaveBeenCalledTimes(1);
+    expect(secondProps.onNavigateChild).toHaveBeenCalledWith("end");
+
+    await act(async () => {
+      firstProps.root.unmount();
     });
   });
 });

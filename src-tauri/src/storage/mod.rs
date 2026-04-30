@@ -11,10 +11,8 @@ use crate::error::{AppError, AppErrorPayload, AppResult};
 
 mod migrations;
 
-const BASE_LAYER_COLOR: &str = "neutral";
 const DEFAULT_CARD_TYPE: &str = "card";
 const EMPTY_EDITOR_DOCUMENT: &str = r#"{"type":"doc","content":[{"type":"paragraph"}]}"#;
-const MAX_LAYERS: usize = 7;
 const REVISION_PREVIEW_LIMIT: i64 = 20;
 
 #[derive(Debug, Clone, Serialize)]
@@ -22,7 +20,6 @@ const REVISION_PREVIEW_LIMIT: i64 = 20;
 pub struct DocumentSummary {
     pub document_id: String,
     pub file_modified_at_ms: u64,
-    pub layer_count: usize,
     pub name: String,
     pub opened_at_ms: u64,
     pub path: String,
@@ -35,18 +32,6 @@ pub struct DocumentClock {
     pub document_id: String,
     pub file_modified_at_ms: u64,
     pub updated_at_ms: u64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LayerRecord {
-    pub color: String,
-    pub description: Option<String>,
-    pub document_id: String,
-    pub id: String,
-    pub is_base: bool,
-    pub layer_index: usize,
-    pub name: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -65,7 +50,6 @@ pub struct CardRecord {
 pub struct CardContentRecord {
     pub card_id: String,
     pub content_json: String,
-    pub layer_id: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -81,7 +65,6 @@ pub struct RevisionRecord {
 pub struct DocumentSnapshot {
     pub cards: Vec<CardRecord>,
     pub contents: Vec<CardContentRecord>,
-    pub layers: Vec<LayerRecord>,
     pub revisions: Vec<RevisionRecord>,
     pub summary: DocumentSummary,
 }
@@ -92,7 +75,6 @@ pub struct EditableDocumentSnapshot {
     pub cards: Vec<CardRecord>,
     pub contents: Vec<CardContentRecord>,
     pub document_id: String,
-    pub layers: Vec<LayerRecord>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -196,7 +178,10 @@ impl DocumentRepository {
         build_document_clock(&connection, &path)
     }
 
-    fn save_inner(path: PathBuf, snapshot: EditableDocumentSnapshot) -> AppResult<SaveDocumentResult> {
+    fn save_inner(
+        path: PathBuf,
+        snapshot: EditableDocumentSnapshot,
+    ) -> AppResult<SaveDocumentResult> {
         validate_fable_path(&path)?;
 
         if !path.exists() {
@@ -226,23 +211,6 @@ impl DocumentRepository {
 
         transaction.execute("DELETE FROM card_content", [])?;
         transaction.execute("DELETE FROM cards", [])?;
-        transaction.execute("DELETE FROM layers", [])?;
-
-        for layer in sorted_layers(&snapshot.layers) {
-            transaction.execute(
-                "INSERT INTO layers (id, document_id, name, description, layer_index, color, is_base)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-                params![
-                    layer.id,
-                    layer.document_id,
-                    layer.name,
-                    layer.description,
-                    layer.layer_index as i64,
-                    layer.color,
-                    if layer.is_base { 1_i64 } else { 0_i64 }
-                ],
-            )?;
-        }
 
         for card in sorted_cards(&snapshot.cards) {
             transaction.execute(
@@ -260,8 +228,8 @@ impl DocumentRepository {
 
         for content in sorted_contents(&snapshot.contents) {
             transaction.execute(
-                "INSERT INTO card_content (card_id, layer_id, content_json) VALUES (?1, ?2, ?3)",
-                params![content.card_id, content.layer_id, content.content_json],
+                "INSERT INTO card_content (card_id, content_json) VALUES (?1, ?2)",
+                params![content.card_id, content.content_json],
             )?;
         }
 
@@ -325,7 +293,6 @@ fn seed_document(connection: &mut Connection) -> AppResult<()> {
 
     let timestamp = now_ms()?;
     let document_id = Uuid::new_v4().to_string();
-    let base_layer_id = Uuid::new_v4().to_string();
     let root_card_id = Uuid::new_v4().to_string();
 
     let transaction = connection.unchecked_transaction()?;
@@ -336,28 +303,14 @@ fn seed_document(connection: &mut Connection) -> AppResult<()> {
     )?;
 
     transaction.execute(
-        "INSERT INTO layers (id, document_id, name, description, layer_index, color, is_base)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-        params![
-            base_layer_id,
-            document_id,
-            "Base",
-            Option::<String>::None,
-            0_i64,
-            BASE_LAYER_COLOR,
-            1_i64
-        ],
-    )?;
-
-    transaction.execute(
         "INSERT INTO cards (id, document_id, parent_id, order_index, type)
          VALUES (?1, ?2, NULL, ?3, ?4)",
         params![root_card_id, document_id, 0_i64, DEFAULT_CARD_TYPE],
     )?;
 
     transaction.execute(
-        "INSERT INTO card_content (card_id, layer_id, content_json) VALUES (?1, ?2, ?3)",
-        params![root_card_id, base_layer_id, EMPTY_EDITOR_DOCUMENT],
+        "INSERT INTO card_content (card_id, content_json) VALUES (?1, ?2)",
+        params![root_card_id, EMPTY_EDITOR_DOCUMENT],
     )?;
 
     transaction.commit()?;
@@ -367,7 +320,6 @@ fn seed_document(connection: &mut Connection) -> AppResult<()> {
 
 fn build_document_snapshot(connection: &Connection, path: &Path) -> AppResult<DocumentSnapshot> {
     let summary = summarize_document(connection, path)?;
-    let layers = load_layers(connection, &summary.document_id)?;
     let cards = load_cards(connection, &summary.document_id)?;
     let contents = load_contents(connection)?;
     let revisions = load_revisions(connection)?;
@@ -375,7 +327,6 @@ fn build_document_snapshot(connection: &Connection, path: &Path) -> AppResult<Do
     Ok(DocumentSnapshot {
         cards,
         contents,
-        layers,
         revisions,
         summary,
     })
@@ -422,16 +373,9 @@ fn summarize_document(connection: &Connection, path: &Path) -> AppResult<Documen
         |row| row.get(0),
     )?;
 
-    let layer_count: i64 = connection.query_row(
-        "SELECT COUNT(*) FROM layers WHERE document_id = ?1",
-        [existing_document_id.clone()],
-        |row| row.get(0),
-    )?;
-
     Ok(DocumentSummary {
         document_id: existing_document_id,
         file_modified_at_ms: file_modified_at_ms(path)?,
-        layer_count: layer_count as usize,
         name: path
             .file_stem()
             .and_then(|value| value.to_str())
@@ -457,28 +401,6 @@ fn document_id(connection: &Connection) -> AppResult<String> {
         })
 }
 
-fn load_layers(connection: &Connection, document_id: &str) -> AppResult<Vec<LayerRecord>> {
-    let mut statement = connection.prepare(
-        "SELECT id, document_id, name, description, layer_index, color, is_base
-         FROM layers
-         WHERE document_id = ?1
-         ORDER BY layer_index ASC, id ASC",
-    )?;
-    let rows = statement.query_map([document_id], |row| {
-        Ok(LayerRecord {
-            color: row.get(5)?,
-            description: row.get(3)?,
-            document_id: row.get(1)?,
-            id: row.get(0)?,
-            is_base: row.get(6)?,
-            layer_index: row.get::<_, i64>(4)? as usize,
-            name: row.get(2)?,
-        })
-    })?;
-
-    rows.collect::<Result<Vec<_>, _>>().map_err(AppError::from)
-}
-
 fn load_cards(connection: &Connection, document_id: &str) -> AppResult<Vec<CardRecord>> {
     let mut statement = connection.prepare(
         "SELECT id, document_id, parent_id, order_index, type
@@ -501,15 +423,14 @@ fn load_cards(connection: &Connection, document_id: &str) -> AppResult<Vec<CardR
 
 fn load_contents(connection: &Connection) -> AppResult<Vec<CardContentRecord>> {
     let mut statement = connection.prepare(
-        "SELECT card_id, layer_id, content_json
+        "SELECT card_id, content_json
          FROM card_content
-         ORDER BY layer_id ASC, card_id ASC",
+         ORDER BY card_id ASC",
     )?;
     let rows = statement.query_map([], |row| {
         Ok(CardContentRecord {
             card_id: row.get(0)?,
-            content_json: row.get(2)?,
-            layer_id: row.get(1)?,
+            content_json: row.get(1)?,
         })
     })?;
 
@@ -542,73 +463,8 @@ fn validate_snapshot(snapshot: &EditableDocumentSnapshot, document_id: &str) -> 
         ));
     }
 
-    validate_layers(&snapshot.layers, document_id)?;
     validate_cards(&snapshot.cards, document_id)?;
-    validate_contents(&snapshot.layers, &snapshot.cards, &snapshot.contents)?;
-
-    Ok(())
-}
-
-fn validate_layers(layers: &[LayerRecord], document_id: &str) -> AppResult<()> {
-    if layers.is_empty() {
-        return Err(AppError::invalid_input(
-            "layers_missing",
-            "A Fablecraft document must contain at least one layer.",
-        ));
-    }
-
-    if layers.len() > MAX_LAYERS {
-        return Err(AppError::invalid_input(
-            "too_many_layers",
-            "Fablecraft supports at most seven layers.",
-        ));
-    }
-
-    let mut seen_ids = HashSet::new();
-
-    for (expected_index, layer) in sorted_layers(layers).iter().enumerate() {
-        if layer.document_id != document_id {
-            return Err(AppError::invalid_input(
-                "layer_document_mismatch",
-                "Every layer must belong to the active document.",
-            ));
-        }
-
-        if !seen_ids.insert(layer.id.clone()) {
-            return Err(AppError::invalid_input(
-                "duplicate_layer_id",
-                "Layer identifiers must be unique within a document.",
-            ));
-        }
-
-        if layer.layer_index != expected_index {
-            return Err(AppError::invalid_input(
-                "invalid_layer_order",
-                "Layers must keep a contiguous index sequence.",
-            ));
-        }
-
-        if layer.color != layer_color_for_index(expected_index) {
-            return Err(AppError::invalid_input(
-                "invalid_layer_color",
-                "Layer colors must follow the deterministic MVP sequence.",
-            ));
-        }
-
-        if expected_index == 0 && !layer.is_base {
-            return Err(AppError::invalid_input(
-                "missing_base_layer",
-                "The first layer must always be the base layer.",
-            ));
-        }
-
-        if expected_index > 0 && layer.is_base {
-            return Err(AppError::invalid_input(
-                "multiple_base_layers",
-                "Only the first layer can be marked as the base layer.",
-            ));
-        }
-    }
+    validate_contents(&snapshot.cards, &snapshot.contents)?;
 
     Ok(())
 }
@@ -658,10 +514,10 @@ fn validate_cards(cards: &[CardRecord], document_id: &str) -> AppResult<()> {
         }
     }
 
-    if root_ids.len() != 1 {
+    if root_ids.is_empty() {
         return Err(AppError::invalid_input(
-            "invalid_root_card_count",
-            "The MVP tree must contain exactly one root card.",
+            "root_card_missing",
+            "A Fablecraft document must contain at least one root-depth card.",
         ));
     }
 
@@ -707,9 +563,8 @@ fn validate_cards(cards: &[CardRecord], document_id: &str) -> AppResult<()> {
         }
     }
 
-    let root_id = root_ids.into_iter().next().unwrap();
     let mut visited = HashSet::new();
-    let mut stack = vec![root_id];
+    let mut stack = root_ids;
 
     while let Some(card_id) = stack.pop() {
         if !visited.insert(card_id.clone()) {
@@ -726,40 +581,18 @@ fn validate_cards(cards: &[CardRecord], document_id: &str) -> AppResult<()> {
     if visited.len() != cards.len() {
         return Err(AppError::invalid_input(
             "disconnected_tree",
-            "All cards must belong to the same connected tree.",
+            "All cards must belong to the root-depth forest.",
         ));
     }
 
     Ok(())
 }
 
-fn validate_contents(
-    layers: &[LayerRecord],
-    cards: &[CardRecord],
-    contents: &[CardContentRecord],
-) -> AppResult<()> {
-    let layer_ids: HashSet<&String> = layers.iter().map(|layer| &layer.id).collect();
+fn validate_contents(cards: &[CardRecord], contents: &[CardContentRecord]) -> AppResult<()> {
     let card_ids: HashSet<&String> = cards.iter().map(|card| &card.id).collect();
-    let base_layer_id = layers
-        .iter()
-        .find(|layer| layer.is_base)
-        .map(|layer| layer.id.clone())
-        .ok_or_else(|| {
-            AppError::invalid_input(
-                "missing_base_layer",
-                "The document must retain a base layer.",
-            )
-        })?;
-    let mut seen_pairs = HashSet::new();
+    let mut seen_cards = HashSet::new();
 
     for content in contents {
-        if !layer_ids.contains(&content.layer_id) {
-            return Err(AppError::invalid_input(
-                "missing_content_layer",
-                "Every content record must reference an existing layer.",
-            ));
-        }
-
         if !card_ids.contains(&content.card_id) {
             return Err(AppError::invalid_input(
                 "missing_content_card",
@@ -767,34 +600,24 @@ fn validate_contents(
             ));
         }
 
-        if !seen_pairs.insert((content.card_id.clone(), content.layer_id.clone())) {
+        if !seen_cards.insert(content.card_id.clone()) {
             return Err(AppError::invalid_input(
                 "duplicate_content_record",
-                "Each card/layer pair can only have one content record.",
+                "Each card can only have one content record.",
             ));
         }
     }
 
     for card in cards {
-        if !seen_pairs.contains(&(card.id.clone(), base_layer_id.clone())) {
+        if !seen_cards.contains(&card.id) {
             return Err(AppError::invalid_input(
-                "missing_base_content",
-                "Every card must retain a base-layer content record.",
+                "missing_card_content",
+                "Every card must retain a content record.",
             ));
         }
     }
 
     Ok(())
-}
-
-fn sorted_layers(layers: &[LayerRecord]) -> Vec<LayerRecord> {
-    let mut sorted = layers.to_vec();
-    sorted.sort_by(|left, right| {
-        left.layer_index
-            .cmp(&right.layer_index)
-            .then(left.id.cmp(&right.id))
-    });
-    sorted
 }
 
 fn sorted_cards(cards: &[CardRecord]) -> Vec<CardRecord> {
@@ -833,24 +656,8 @@ fn sorted_cards(cards: &[CardRecord]) -> Vec<CardRecord> {
 
 fn sorted_contents(contents: &[CardContentRecord]) -> Vec<CardContentRecord> {
     let mut sorted = contents.to_vec();
-    sorted.sort_by(|left, right| {
-        left.layer_id
-            .cmp(&right.layer_id)
-            .then(left.card_id.cmp(&right.card_id))
-    });
+    sorted.sort_by(|left, right| left.card_id.cmp(&right.card_id));
     sorted
-}
-
-fn layer_color_for_index(index: usize) -> &'static str {
-    match index {
-        0 => "neutral",
-        1 => "red",
-        2 => "blue",
-        3 => "yellow",
-        4 => "green",
-        5 => "purple",
-        _ => "orange",
-    }
 }
 
 fn validate_fable_path(path: &Path) -> AppResult<()> {
@@ -889,30 +696,31 @@ mod tests {
     }
 
     #[test]
-    fn create_initializes_schema_and_base_layer() {
+    fn create_initializes_schema_and_root_card() {
         let path = temp_document_path("create");
 
         let summary = DocumentRepository::create(path.clone()).expect("document should create");
 
-        assert_eq!(summary.layer_count, 1);
         assert_eq!(summary.name, path.file_stem().unwrap().to_string_lossy());
 
         let connection = Connection::open(&path).expect("sqlite file should exist");
-        let layer_count: i64 = connection
-            .query_row("SELECT COUNT(*) FROM layers", [], |row| row.get(0))
-            .expect("layer query should succeed");
-        let base_layer_name: String = connection
-            .query_row("SELECT name FROM layers WHERE is_base = 1 LIMIT 1", [], |row| {
-                row.get(0)
-            })
-            .expect("base layer should exist");
         let card_count: i64 = connection
             .query_row("SELECT COUNT(*) FROM cards", [], |row| row.get(0))
             .expect("card query should succeed");
+        let content_count: i64 = connection
+            .query_row("SELECT COUNT(*) FROM card_content", [], |row| row.get(0))
+            .expect("content query should succeed");
+        let layer_table_count: i64 = connection
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'layers'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("schema query should succeed");
 
-        assert_eq!(layer_count, 1);
-        assert_eq!(base_layer_name, "Base");
         assert_eq!(card_count, 1);
+        assert_eq!(content_count, 1);
+        assert_eq!(layer_table_count, 0);
 
         fs::remove_file(path).expect("temp file should be removable");
     }
@@ -925,7 +733,6 @@ mod tests {
         let opened = DocumentRepository::open(path.clone()).expect("document should open");
 
         assert_eq!(opened.document_id, created.document_id);
-        assert_eq!(opened.layer_count, 1);
 
         fs::remove_file(path).expect("temp file should be removable");
     }
@@ -936,12 +743,6 @@ mod tests {
         DocumentRepository::create(path.clone()).expect("document should create");
 
         let snapshot = DocumentRepository::load(path.clone()).expect("snapshot should load");
-        let base_layer = snapshot
-            .layers
-            .iter()
-            .find(|layer| layer.is_base)
-            .expect("base layer should exist")
-            .clone();
         let root_card = snapshot
             .cards
             .iter()
@@ -949,7 +750,6 @@ mod tests {
             .expect("root card should exist")
             .clone();
         let child_card_id = Uuid::new_v4().to_string();
-        let extra_layer_id = Uuid::new_v4().to_string();
 
         let result = DocumentRepository::save(
             path.clone(),
@@ -969,22 +769,9 @@ mod tests {
                     CardContentRecord {
                         card_id: child_card_id,
                         content_json: EMPTY_EDITOR_DOCUMENT.to_string(),
-                        layer_id: base_layer.id.clone(),
                     },
                 ],
                 document_id: snapshot.summary.document_id.clone(),
-                layers: vec![
-                    base_layer,
-                    LayerRecord {
-                        color: "red".to_string(),
-                        description: Some("Secondary view".to_string()),
-                        document_id: snapshot.summary.document_id.clone(),
-                        id: extra_layer_id,
-                        is_base: false,
-                        layer_index: 1,
-                        name: "Character".to_string(),
-                    },
-                ],
             },
         )
         .expect("snapshot should save");
@@ -992,9 +779,62 @@ mod tests {
         let reopened = DocumentRepository::load(path.clone()).expect("snapshot should reload");
 
         assert_eq!(reopened.cards.len(), 2);
-        assert_eq!(reopened.layers.len(), 2);
+        assert_eq!(reopened.contents.len(), 2);
         assert_eq!(reopened.revisions.len(), 1);
         assert_eq!(reopened.revisions[0].id, result.revision_id);
+
+        fs::remove_file(path).expect("temp file should be removable");
+    }
+
+    #[test]
+    fn save_allows_multiple_root_depth_cards() {
+        let path = temp_document_path("multiple-roots");
+        DocumentRepository::create(path.clone()).expect("document should create");
+
+        let snapshot = DocumentRepository::load(path.clone()).expect("snapshot should load");
+        let root_card = snapshot
+            .cards
+            .iter()
+            .find(|card| card.parent_id.is_none())
+            .expect("root card should exist")
+            .clone();
+        let second_root_id = Uuid::new_v4().to_string();
+
+        DocumentRepository::save(
+            path.clone(),
+            EditableDocumentSnapshot {
+                cards: vec![
+                    root_card.clone(),
+                    CardRecord {
+                        document_id: snapshot.summary.document_id.clone(),
+                        id: second_root_id.clone(),
+                        order_index: 1,
+                        parent_id: None,
+                        card_type: DEFAULT_CARD_TYPE.to_string(),
+                    },
+                ],
+                contents: vec![
+                    snapshot.contents.first().expect("base content should exist").clone(),
+                    CardContentRecord {
+                        card_id: second_root_id,
+                        content_json: EMPTY_EDITOR_DOCUMENT.to_string(),
+                    },
+                ],
+                document_id: snapshot.summary.document_id.clone(),
+            },
+        )
+        .expect("snapshot with multiple root-depth cards should save");
+
+        let reopened = DocumentRepository::load(path.clone()).expect("snapshot should reload");
+        let roots = reopened
+            .cards
+            .iter()
+            .filter(|card| card.parent_id.is_none())
+            .collect::<Vec<_>>();
+
+        assert_eq!(roots.len(), 2);
+        assert_eq!(roots[0].order_index, 0);
+        assert_eq!(roots[1].order_index, 1);
 
         fs::remove_file(path).expect("temp file should be removable");
     }

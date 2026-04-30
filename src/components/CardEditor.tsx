@@ -21,16 +21,39 @@ interface CardEditorProps {
   onRedo: () => void;
   onMergeAbove: () => boolean;
   onMergeBelow: () => boolean;
-  onNavigateAbove: () => boolean;
-  onNavigateBelow: () => boolean;
-  onNavigateChild: () => boolean;
-  onNavigateParent: () => boolean;
+  onNavigateAbove: (placement?: "start" | "end") => boolean;
+  onNavigateBelow: (placement?: "start" | "end") => boolean;
+  onNavigateChild: (placement?: "start" | "end") => boolean;
+  onNavigateParent: (placement?: "start" | "end") => boolean;
   pendingTextInput?: string | null;
   onRequestNavigation: () => void;
   onSplitAtSelection: (selectionStart: number, selectionEnd: number) => void;
   onUndo: () => void;
   onUpdateContent: (contentJson: string) => void;
   placeholder?: string;
+}
+
+let tabKeyHeldAcrossEditors = false;
+let tabKeyListenersAttached = false;
+
+function setTabKeyHeldAcrossEditors(isHeld: boolean) {
+  tabKeyHeldAcrossEditors = isHeld;
+}
+
+function ensureTabKeyListeners() {
+  if (tabKeyListenersAttached || typeof window === "undefined") {
+    return;
+  }
+
+  window.addEventListener("keyup", (event) => {
+    if (event.key === "Tab") {
+      setTabKeyHeldAcrossEditors(false);
+    }
+  });
+  window.addEventListener("blur", () => {
+    setTabKeyHeldAcrossEditors(false);
+  });
+  tabKeyListenersAttached = true;
 }
 
 function selectionTextOffsets(editor: NonNullable<ReturnType<typeof useEditor>>) {
@@ -93,8 +116,10 @@ export function CardEditor({
   onUpdateContent,
   placeholder = "",
 }: CardEditorProps) {
-  const tabHeldRef = useRef(false);
+  ensureTabKeyListeners();
+  const tabHeldRef = useRef(tabKeyHeldAcrossEditors);
   const wasEditingRef = useRef(false);
+  const isTabHeld = () => tabHeldRef.current || tabKeyHeldAcrossEditors;
   const editor = useEditor({
     autofocus: false,
     content: JSON.parse(contentJson),
@@ -197,6 +222,30 @@ export function CardEditor({
           }
         }
 
+        if (isTabHeld() && event.key === "ArrowUp") {
+          event.preventDefault();
+          onNavigateAbove("end");
+          return true;
+        }
+
+        if (isTabHeld() && event.key === "ArrowDown") {
+          event.preventDefault();
+          onNavigateBelow("end");
+          return true;
+        }
+
+        if (isTabHeld() && event.key === "ArrowRight") {
+          event.preventDefault();
+          onNavigateChild("end");
+          return true;
+        }
+
+        if (isTabHeld() && event.key === "ArrowLeft") {
+          event.preventDefault();
+          onNavigateParent("end");
+          return true;
+        }
+
         if (event.key === "ArrowUp" || event.key === "ArrowDown") {
           const offsets = selectionTextOffsets(editor);
           const direction = event.key === "ArrowUp" ? "up" : "down";
@@ -256,35 +305,12 @@ export function CardEditor({
         if (event.key === "Tab") {
           event.preventDefault();
           tabHeldRef.current = true;
-          return true;
-        }
-
-        if (tabHeldRef.current && event.key === "ArrowUp") {
-          event.preventDefault();
-          onNavigateAbove();
-          return true;
-        }
-
-        if (tabHeldRef.current && event.key === "ArrowDown") {
-          event.preventDefault();
-          onNavigateBelow();
-          return true;
-        }
-
-        if (tabHeldRef.current && event.key === "ArrowRight") {
-          event.preventDefault();
-          onNavigateChild();
-          return true;
-        }
-
-        if (tabHeldRef.current && event.key === "ArrowLeft") {
-          event.preventDefault();
-          onNavigateParent();
+          setTabKeyHeldAcrossEditors(true);
           return true;
         }
 
         if (event.key === "Enter" && event.shiftKey === false && event.altKey === false && event.metaKey === false && event.ctrlKey === false) {
-          if (tabHeldRef.current) {
+          if (isTabHeld()) {
             event.preventDefault();
             if (!canCreateStructure) {
               return true;
@@ -377,20 +403,6 @@ export function CardEditor({
       editor.commands.setContent(JSON.parse(contentJson), { emitUpdate: false });
     }
   }, [contentJson, editor]);
-
-  useEffect(() => {
-    function handleKeyUp(event: KeyboardEvent) {
-      if (event.key === "Tab") {
-        tabHeldRef.current = false;
-      }
-    }
-
-    window.addEventListener("keyup", handleKeyUp);
-
-    return () => {
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, []);
 
   useEffect(() => {
     if (!editor || !isEditing) {

@@ -149,6 +149,38 @@ describe("TreeCardButton", () => {
     });
   });
 
+  it("renders an empty preview placeholder without changing stored content", () => {
+    HTMLElement.prototype.getBoundingClientRect = () => mockRect(84);
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <TreeCardButton
+          borderColor="#111111"
+          cardLabel="B01"
+          contentJson='{"type":"doc","content":[{"type":"paragraph"}]}'
+          isNeighborhood
+          onClick={() => {}}
+          placeholder="empty card"
+          x={0}
+          y={0}
+        />,
+      );
+    });
+
+    const paragraph = container.querySelector(".fc-preview p");
+
+    expect(paragraph?.textContent).toBe("empty card");
+    expect(paragraph?.className).toContain("italic");
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   it("keeps the active border thin and softens neighborhood vs distant cards differently", () => {
     HTMLElement.prototype.getBoundingClientRect = () => mockRect(180);
 
